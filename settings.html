@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings – Paws Pet Resort & Spa</title>
+  <link rel="icon" href="/favicon.ico">
+
+  <!-- Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+
+  <script>
+  async function populateLoggedInAs() {
+    const { data } = await supabaseClient.auth.getSession()
+    const session = data.session
+    if (!session) return
+
+    const user = session.user
+
+    const avatar =
+      user.user_metadata?.avatar_url ||
+      user.user_metadata?.picture ||
+      user.identities?.[0]?.identity_data?.avatar_url ||
+      ''
+
+    document.getElementById('loggedInAvatar').src = avatar
+    document.getElementById('loggedInName').textContent =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      'Account'
+    document.getElementById('loggedInEmail').textContent =
+      user.email || ''
+  }
+
+  document.addEventListener('header:ready', populateLoggedInAs)
+</script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass { backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  </style>
+</head>
+
+<body
+  class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen opacity-0 transition-opacity duration-200"
+  data-auth="checking"
+>
+
+  <!-- HEADER -->
+  <div id="header"></div>
+
+  <div class="pt-16 flex">
+
+    <!-- SIDEBAR -->
+    <aside
+      id="sideMenu"
+      class="fixed lg:relative z-30 w-64 h-screen
+             bg-white/40 dark:bg-white/10 glass
+             border-r border-white/10
+             transform -translate-x-full lg:translate-x-0
+             transition-transform duration-300
+             pt-6 px-5"
+    ></aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 px-6 py-14 max-w-4xl mx-auto">
+
+      <!-- PAGE HEADER -->
+      <header class="mb-10">
+        <h1 class="text-4xl font-extrabold mb-2">
+          Settings
+        </h1>
+        <p class="opacity-60 text-lg">
+          Manage your account and preferences
+        </p>
+      </header>
+
+      <!-- SETTINGS SECTIONS -->
+      <div class="space-y-8">
+
+        <!-- PREFERENCES -->
+        <section class="glass bg-white/50 dark:bg-white/10 rounded-2xl p-6">
+          <h2 class="text-xl font-semibold mb-4">Preferences</h2>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-medium">Dark mode</p>
+              <p class="text-sm opacity-60">Toggle light / dark theme</p>
+            </div>
+
+            <button
+              id="themeToggle"
+              class="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition"
+            >
+              Toggle
+            </button>
+          </div>
+        </section>
+
+        <!-- SECURITY -->
+<section class="glass bg-white/50 dark:bg-white/10 rounded-2xl p-6">
+  <h2 class="text-xl font-semibold mb-4">Security</h2>
+
+  <!-- Logged in as -->
+  <div
+    id="loggedInAs"
+    class="flex items-center justify-between gap-4 p-4 rounded-xl
+           bg-black/5 dark:bg-white/5"
+  >
+    <div class="flex items-center gap-4 min-w-0">
+      <img
+        id="loggedInAvatar"
+        class="w-12 h-12 rounded-full object-cover border border-white/30"
+        alt=""
+      />
+
+      <div class="min-w-0">
+        <p class="text-sm opacity-60">Logged in as</p>
+        <p id="loggedInName" class="font-medium truncate"></p>
+        <p id="loggedInEmail" class="text-sm opacity-60 truncate"></p>
+      </div>
+    </div>
+
+    <img
+      src="https://a.slack-edge.com/80588/marketing/img/icons/icon_slack_hash_colored.png"
+      alt="Slack"
+      class="w-5 h-5 mr-5"
+      title="Signed in with Slack"
+    />
+  </div>
+
+  <!-- Logout (bottom) -->
+  <div class="mt-6 pt-4 border-t border-white/10">
+    <button
+      id="logoutBtnSettings"
+      class="px-4 py-2 rounded-xl
+             bg-red-500/10 text-red-600
+             dark:text-red-400
+             hover:bg-red-500/20
+             transition"
+    >
+      Log out
+    </button>
+  </div>
+</section>
+
+
+
+      </div>
+    </main>
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer"></div>
+
+  <!-- PARTIAL LOADERS -->
+  <script>
+    fetch('/partials/header.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html
+        document.dispatchEvent(new Event('header:ready'))
+      })
+
+    fetch('/partials/sidebar.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('sideMenu').innerHTML = html
+      })
+
+    fetch('/partials/footer.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('footer').innerHTML = html
+      })
+  </script>
+
+  <!-- SUPABASE + APP LOGIC -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+
+  <!-- SETTINGS-ONLY LOGOUT -->
+  <script>
+    document.addEventListener('click', e => {
+      if (e.target.id === 'logoutBtnSettings') {
+        supabaseClient.auth.signOut().then(() => location.href = '/')
+      }
+    })
+  </script>
+
+</body>
+</html>

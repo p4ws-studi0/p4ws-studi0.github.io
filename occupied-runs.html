@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Occupied Runs</title>
+
+  <link rel="icon" href="/favicon.ico">
+
+  <!-- Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="/styles.css">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body
+  class="font-sans bg-gradient-to-br from-slate-100 to-slate-200
+         dark:from-[#0b0f14] dark:to-[#1e2126]
+         text-slate-900 dark:text-white
+         min-h-screen opacity-0 transition-opacity duration-200"
+>
+
+<div id="header"></div>
+
+<div class="pt-16 flex">
+
+  <aside
+    id="sideMenu"
+    class="fixed lg:relative z-30 w-64 h-screen
+           bg-white/40 dark:bg-white/10 glass
+           border-r border-white/10
+           transform -translate-x-full lg:translate-x-0
+           transition-transform duration-300
+           pt-6 px-5"
+  ></aside>
+
+  <main class="flex-1 px-6 py-20 max-w-4xl mx-auto">
+
+    <header class="mb-14">
+      <h1 class="text-5xl font-extrabold tracking-tight">
+        Occupied Runs
+      </h1>
+      <p class="mt-3 text-base opacity-60 max-w-xl">
+        Generate a printable PDF report.
+      </p>
+    </header>
+
+    <section
+      class="rounded-2xl
+             bg-white/60 dark:bg-white/[0.04]
+             backdrop-blur-xl
+             border border-white/10
+             p-8 md:p-10
+             space-y-10">
+
+      <!-- FILE -->
+      <div class="space-y-2">
+        <label class="text-xs font-semibold uppercase tracking-wide opacity-50">
+          CSV File
+        </label>
+
+        <div
+          id="dropZone"
+          class="relative h-40 rounded-xl
+                 flex items-center justify-center
+                 border border-dashed border-white/20
+                 bg-white/50 dark:bg-white/[0.05]
+                 transition">
+
+          <input
+            id="fileInput"
+            type="file"
+            accept=".csv"
+            class="absolute inset-0 opacity-0 cursor-pointer"
+          />
+
+          <div class="text-center pointer-events-none space-y-2">
+            <!-- ICON -->
+            <svg
+              class="mx-auto h-6 w-6 opacity-50"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5">
+              <path d="M12 3v12" />
+              <path d="M7 8l5-5 5 5" />
+              <path d="M5 21h14" />
+            </svg>
+
+            <div class="text-sm font-medium">
+              Drop file or click to upload
+            </div>
+
+            <div
+              id="fileName"
+              class="text-xs font-medium text-blue-400 hidden">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="flex flex-wrap items-end gap-6">
+        <div class="w-56">
+          <label class="block text-xs font-semibold uppercase tracking-wide opacity-50 mb-2">
+            Report Date
+          </label>
+          <input
+            id="reportDate"
+            type="date"
+            class="w-full px-3 py-2 rounded-lg
+                   bg-white/70 dark:bg-white/[0.06]
+                   border border-white/20
+                   focus:outline-none focus:ring-1 focus:ring-blue-400/50"
+          />
+        </div>
+
+        <button
+          id="runBtn"
+          class="relative px-7 py-3 rounded-lg
+                 bg-blue-600 text-white
+                 text-sm font-semibold
+                 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]
+                 hover:bg-blue-700
+                 transition
+                 disabled:opacity-50 disabled:cursor-not-allowed">
+          Run
+        </button>
+
+        <div id="status" class="text-xs opacity-60"></div>
+      </div>
+
+      <!-- PROGRESS -->
+      <div id="progressWrap" class="hidden">
+        <div class="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+          <div
+            id="progressBar"
+            class="h-full bg-blue-500"
+            style="width:0%">
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT -->
+      <div
+        id="result"
+        class="hidden pt-6 border-t border-white/10">
+        <a
+          id="pdfLink"
+          href="#"
+          target="_blank"
+          class="inline-flex items-center
+                 px-6 py-3 rounded-lg
+                 bg-emerald-500 hover:bg-emerald-600
+                 text-white text-sm font-semibold
+                 transition">
+          View PDF
+        </a>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<div id="footer"></div>
+
+<!-- TEMPLATE SCRIPTS -->
+<script>
+  fetch('/partials/header.html')
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById('header').innerHTML = html
+      document.body.classList.remove('opacity-0')
+    })
+
+  fetch('/partials/sidebar.html')
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById('sideMenu').innerHTML = html
+    })
+
+  fetch('/partials/footer.html')
+    .then(r => r.text())
+    .then(html => {
+      document.getElementById('footer').innerHTML = html
+    })
+</script>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="/script.js"></script>
+
+<!-- PAGE LOGIC -->
+<script>
+(() => {
+  const dropZone = document.getElementById('dropZone')
+  const fileInput = document.getElementById('fileInput')
+  const fileName = document.getElementById('fileName')
+  const reportDate = document.getElementById('reportDate')
+  const runBtn = document.getElementById('runBtn')
+  const status = document.getElementById('status')
+  const progressWrap = document.getElementById('progressWrap')
+  const progressBar = document.getElementById('progressBar')
+  const result = document.getElementById('result')
+  const pdfLink = document.getElementById('pdfLink')
+
+  const ENDPOINT =
+    'https://script.google.com/macros/s/AKfycbwP2dtYH9NTWXrNDLS1CekGYxegQwHgSQrv9S2QrBi_yy5TtnOUb0GOp7PAbBY4JDKqDg/exec'
+
+  let selectedFile = null
+  let startTime = null
+  let rafId = null
+
+  // Date UX: empty until focused
+  reportDate.addEventListener('focus', () => {
+    if (!reportDate.value) {
+      reportDate.valueAsDate = new Date()
+    }
+  })
+
+  function setFile(file) {
+    selectedFile = file
+    fileName.textContent = file.name
+    fileName.classList.remove('hidden')
+    status.textContent = 'File ready'
+  }
+
+  dropZone.addEventListener('dragover', e => e.preventDefault())
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault()
+    if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0])
+  })
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0])
+  })
+
+  function animateProgress(ts) {
+    if (!startTime) startTime = ts
+    const elapsed = (ts - startTime) / 1000
+
+    // Linear → gentle ease-out toward 92%
+    const target = 92
+    const duration = 18
+    const progress = Math.min(
+      target,
+      (elapsed / duration) * target
+    )
+
+    progressBar.style.width = `${progress}%`
+    rafId = requestAnimationFrame(animateProgress)
+  }
+
+  runBtn.addEventListener('click', () => {
+    if (!selectedFile) return alert('Upload a CSV file first.')
+    if (!reportDate.value) return alert('Select a report date.')
+
+    runBtn.disabled = true
+    result.classList.add('hidden')
+    progressWrap.classList.remove('hidden')
+    progressBar.style.width = '0%'
+    status.textContent = 'Processing'
+    startTime = null
+
+    rafId = requestAnimationFrame(animateProgress)
+
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result.split(',')[1]
+
+        const res = await fetch(ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            file: base64,
+            filename: selectedFile.name,
+            mimeType: selectedFile.type,
+            reportDate: reportDate.value
+          })
+        })
+
+        const text = await res.text()
+        if (text.startsWith('ERROR')) throw new Error(text)
+
+        cancelAnimationFrame(rafId)
+        progressBar.style.width = '100%'
+
+        const bytes = Uint8Array.from(atob(text), c => c.charCodeAt(0))
+        const blob = new Blob([bytes], { type: 'application/pdf' })
+
+        pdfLink.href = URL.createObjectURL(blob)
+        result.classList.remove('hidden')
+        status.textContent = 'Complete'
+      } catch (err) {
+        alert(err.message || err)
+        status.textContent = 'Error'
+      } finally {
+        cancelAnimationFrame(rafId)
+        runBtn.disabled = false
+      }
+    }
+
+    reader.readAsDataURL(selectedFile)
+  })
+})()
+</script>
+
+</body>
+</html>

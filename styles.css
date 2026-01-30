@@ -1,0 +1,161 @@
+    body { font-family: 'Inter', sans-serif;  }
+    .glass { backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+
+    @media print {
+      #header, #footer, #sideMenu { display: none !important; }
+      .pt-16 { padding-top: 0 !important; }
+      main {
+        margin: 0 !important;
+        padding: 20px !important;
+        max-width: 100% !important;
+      }
+      html, body {
+        background: white !important;
+        color: black !important;
+      }
+    }
+
+
+
+.prose img {
+  height: auto !important;
+}
+
+body {
+  letter-spacing: -0.01em;
+}
+
+.glass {
+  backdrop-filter: blur(20px) saturate(115%);
+  -webkit-backdrop-filter: blur(20px) saturate(115%);
+}
+
+    /* =========================================================
+   LEGACY KB SAFETY
+   - Mobile overflow protection
+   - Dark mode readability
+   - NO layout or font changes
+   ========================================================= */
+
+/* ---------- MOBILE SAFETY ---------- */
+
+/* Prevent horizontal overflow */
+main,
+article {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure all legacy content wraps correctly */
+.prose * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Make media responsive */
+.prose img,
+.prose table,
+.prose iframe {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Neutralize fixed-width legacy junk */
+.prose [width],
+.prose [style*="width"] {
+  max-width: 100% !important;
+}
+
+/* ---------- DARK MODE SAFETY ---------- */
+
+.dark .prose,
+.dark .prose p,
+.dark .prose li,
+.dark .prose span,
+.dark .prose font {
+  color: rgb(229 231 235); /* slate-200 */
+}
+
+/* Headings */
+.dark .prose h1,
+.dark .prose h2,
+.dark .prose h3,
+.dark .prose h4 {
+  color: #ffffff;
+}
+
+/* Links */
+.dark .prose a {
+  color: rgb(147 197 253); /* blue-300 */
+}
+
+/* Override hard-coded dark colors */
+.dark .prose [style*="color:#000"],
+.dark .prose [style*="color: #000"],
+.dark .prose [style*="color:black"] {
+  color: rgb(229 231 235) !important;
+}
+
+/* Tables */
+.dark .prose table {
+  background-color: transparent;
+}
+
+.dark .prose th {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark .prose td {
+  color: rgb(229 231 235);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Horizontal rules */
+.dark .prose hr {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* List markers */
+.dark .prose ul > li::marker,
+.dark .prose ol > li::marker {
+  color: rgb(156 163 175); /* slate-400 */
+}
+
+/* Code blocks */
+.dark .prose pre,
+.dark .prose code {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: rgb(229 231 235);
+}
+
+
+/* -----------------------------
+   GLOBAL LAYOUT FIX
+----------------------------- */
+
+/* header is 4rem tall */
+:root {
+  --header-h: 4rem;
+}
+
+/* layout wrapper */
+.layout {
+  min-height: calc(100vh - var(--header-h));
+  display: flex;
+}
+
+/* sidebar */
+#sideMenu {
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+}
+
+/* prevent body scroll double-ups */
+body {
+  overflow-x: hidden;
+}
+
+

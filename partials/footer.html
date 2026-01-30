@@ -1,0 +1,37 @@
+<footer class="mt-24 border-t border-white/10 bg-white/30 dark:bg-black/30 glass">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+
+    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+
+      <!-- Left -->
+      <div class="text-sm opacity-70">
+        © <span id="year"></span> Paws Pet Resort & Spa
+      </div>
+
+      <!-- Center -->
+      <div class="text-sm opacity-70">
+        Internal Knowledge Base
+      </div>
+
+      <!-- Right -->
+      <div class="flex items-center gap-4 text-sm">
+        <a href="/settings.html"
+           class="opacity-70 hover:opacity-100 transition">
+          Settings
+        </a>
+        <span class="opacity-40">•</span>
+        <a href="/notes.html"
+           class="opacity-70 hover:opacity-100 transition">
+          Notes
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+</footer>
+
+<script>
+  // Auto-update year
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>

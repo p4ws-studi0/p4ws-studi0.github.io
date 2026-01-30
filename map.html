@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Active Rooms</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+</head>
+
+<body class="min-h-screen bg-slate-100 dark:bg-[#0b0f14] text-slate-900 dark:text-white">
+
+<main class="pt-16 px-6 max-w-5xl mx-auto">
+  <h1 class="text-3xl font-extrabold mb-4">Active Rooms</h1>
+
+  <div id="roomGrid" class="space-y-8"></div>
+</main>
+
+<script>
+async function loadRooms() {
+  const res = await fetch(
+    'https://api.gingrapp.com/v1/reservations?status=checked_in',
+    {
+      headers: {
+        Authorization: 'Bearer YOUR_API_KEY'
+      }
+    }
+  );
+
+  if (!res.ok) throw new Error('API error');
+
+  const data = await res.json();
+  const rooms = data.reservations
+    .map(r => r.run?.code)
+    .filter(Boolean);
+
+  renderRooms([...new Set(rooms)].sort());
+}
+
+
+</script>
+
+</body>
+</html>

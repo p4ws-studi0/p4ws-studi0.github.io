@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paws HQ</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          boxShadow: {
+            soft: '0 10px 40px rgba(0,0,0,.08)',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body
+  class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126]
+         text-slate-900 dark:text-white min-h-screen opacity-0 transition-opacity duration-200"
+  data-auth="checking"
+>
+
+  <!-- HEADER -->
+  <div id="header"></div>
+
+  <!-- LAYOUT -->
+  <div class="pt-16 flex">
+
+    <!-- SIDEBAR -->
+    <aside
+      id="sideMenu"
+      class="fixed lg:relative z-30 w-64 h-screen
+             bg-white/40 dark:bg-white/10 glass
+             border-r border-white/10
+             transform -translate-x-full lg:translate-x-0
+             transition-transform duration-300
+             pt-6 px-5"
+    ></aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 px-6 py-20 max-w-6xl mx-auto">
+
+      <!-- HERO -->
+      <section class="mb-24">
+        <div class="max-w-3xl">
+          <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
+            Paws HQ
+          </h1>
+
+          <h2
+            id="welcomeMessage"
+            class="opacity-70 text-lg md:text-xl font-semibold mb-10 transition-opacity duration-500"
+          ></h2>
+        </div>
+
+        <!-- SEARCH -->
+        <div class="relative max-w-3xl">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="🔎  Search policies, procedures, tips…"
+            class="w-full py-5 px-7 text-lg rounded-2xl
+                   bg-white/70 dark:bg-white/10
+                   glass
+                   border border-white/20
+                   shadow-soft
+                   focus:outline-none focus:ring-2 focus:ring-blue-500
+                   transition"
+          />
+
+          <div
+            id="searchResults"
+            class="absolute z-50 mt-4 w-full hidden
+                   rounded-2xl
+                   bg-white/80 dark:bg-[#0b0d12]/95
+                   backdrop-blur-xl
+                   border border-white/20
+                   shadow-2xl
+                   overflow-hidden"
+          ></div>
+        </div>
+      </section>
+
+      <!-- PRIMARY ACTIONS -->
+<section class="mt-4">
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6">
+
+    <!-- Petcare Procedures -->
+    <a href="/kb/petcare-procedures"
+       class="group rounded-3xl bg-white/60 dark:bg-white/10 glass
+              border border-white/10 shadow-soft
+              hover:shadow-2xl transition-all duration-300
+              active:scale-[0.98]
+              p-7 flex flex-col items-center text-center
+              focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">🐶</div>
+      <h3 class="font-semibold text-base sm:text-lg">Petcare Procedures</h3>
+    </a>
+
+    <!-- Activity Procedures -->
+    <a href="/kb/activity-procedures"
+       class="group rounded-3xl bg-white/60 dark:bg-white/10 glass border border-white/10 shadow-soft hover:shadow-2xl transition-all duration-300 active:scale-[0.98] p-7 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">🎾</div>
+      <h3 class="font-semibold text-base sm:text-lg">Activity Procedures</h3>
+    </a>
+
+    <!-- Gingr Procedures -->
+    <a href="/kb/gingr-procedures"
+       class="group rounded-3xl bg-white/60 dark:bg-white/10 glass border border-white/10 shadow-soft hover:shadow-2xl transition-all duration-300 active:scale-[0.98] p-7 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">🧾</div>
+      <h3 class="font-semibold text-base sm:text-lg">Gingr Procedures</h3>
+    </a>
+
+    <!-- Customer Service -->
+    <a href="/kb/customer-service-procedures"
+       class="group rounded-3xl bg-white/60 dark:bg-white/10 glass border border-white/10 shadow-soft hover:shadow-2xl transition-all duration-300 active:scale-[0.98] p-7 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">😀</div>
+      <h3 class="font-semibold text-base sm:text-lg">Customer Service</h3>
+    </a>
+
+    <!-- Facility Maintenance -->
+    <a href="/kb/facility-maintenance-procedures"
+       class="group rounded-3xl bg-white/60 dark:bg-white/10 glass border border-white/10 shadow-soft hover:shadow-2xl transition-all duration-300 active:scale-[0.98] p-7 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">🏠</div>
+      <h3 class="font-semibold text-base sm:text-lg">Facility Maintenance</h3>
+    </a>
+
+    <!-- Administrative -->
+    <a href="/kb/administrative-procedures"
+       class="group rounded-3xl bg-white/60 dark:bg-white/10 glass border border-white/10 shadow-soft hover:shadow-2xl transition-all duration-300 active:scale-[0.98] p-7 flex flex-col items-center text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">📌</div>
+      <h3 class="font-semibold text-base sm:text-lg">Administrative Procedures</h3>
+    </a>
+
+  </div>
+</section>
+
+
+
+
+    </main>
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer"></div>
+
+  <!-- PARTIAL LOADERS -->
+  <script>
+    fetch('/partials/header.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html
+        document.dispatchEvent(new Event('header:ready'))
+      })
+
+    fetch('/partials/sidebar.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('sideMenu').innerHTML = html
+      })
+
+    fetch('/partials/footer.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('footer').innerHTML = html
+      })
+  </script>
+
+  <!-- SUPABASE SDK -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <!-- APP LOGIC -->
+  <script src="/script.js"></script>
+
+</body>
+</html>
