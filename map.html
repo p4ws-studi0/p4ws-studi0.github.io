@@ -1,44 +1,92 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Active Rooms</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #020617;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1e293b;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      text-transform: uppercase;
+      font-size: 12px;
+      opacity: .7;
+    }
+  </style>
 </head>
+<body>
 
-<body class="min-h-screen bg-slate-100 dark:bg-[#0b0f14] text-slate-900 dark:text-white">
+<h1>Active Rooms</h1>
 
-<main class="pt-16 px-6 max-w-5xl mx-auto">
-  <h1 class="text-3xl font-extrabold mb-4">Active Rooms</h1>
-
-  <div id="roomGrid" class="space-y-8"></div>
-</main>
+<table>
+  <thead>
+    <tr>
+      <th>Room</th>
+      <th>Pet</th>
+      <th>Breed</th>
+      <th>Owner</th>
+      <th>Type</th>
+      <th>Start</th>
+      <th>End</th>
+    </tr>
+  </thead>
+  <tbody id="rows">
+    <tr><td colspan="7">Loading…</td></tr>
+  </tbody>
+</table>
 
 <script>
-async function loadRooms() {
-  const res = await fetch(
-    'https://api.gingrapp.com/v1/reservations?status=checked_in',
-    {
-      headers: {
-        Authorization: 'Bearer YOUR_API_KEY'
-      }
+fetch("http://localhost:8000/api/rooms")
+  .then(r => r.json())
+  .then(json => {
+    console.log("BOH RAW", json);
+
+    const rowsEl = document.getElementById("rows");
+
+    // combine both arrays — THIS IS KEY
+    const records = [
+      ...(json.data.checking_in || []),
+      ...(json.data.checking_out || [])
+    ];
+
+    if (!records.length) {
+      rowsEl.innerHTML = `<tr><td colspan="7">No active rooms</td></tr>`;
+      return;
     }
-  );
 
-  if (!res.ok) throw new Error('API error');
+    rowsEl.innerHTML = records.map(r => `
+      <tr>
+        <td>${r.run_name || "—"}</td>
+        <td>${r.a_first}</td>
+        <td>${r.breed_name}</td>
+        <td>${r.o_last}</td>
+        <td>${r.type.trim()}</td>
+        <td>${formatDate(r.start_date)}</td>
+        <td>${formatDate(r.end_date)}</td>
+      </tr>
+    `).join("");
+  });
 
-  const data = await res.json();
-  const rooms = data.reservations
-    .map(r => r.run?.code)
-    .filter(Boolean);
-
-  renderRooms([...new Set(rooms)].sort());
+function formatDate(unix) {
+  if (!unix) return "—";
+  return new Date(unix * 1000).toLocaleDateString();
 }
-
-
 </script>
 
 </body>

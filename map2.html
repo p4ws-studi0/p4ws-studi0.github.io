@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paws Deck Map - Active Rooms</title>
+
+  <link rel="icon" href="/favicon.ico">
+  
+  <!-- Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="/styles.css">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          typography: {
+            DEFAULT: {
+              css: {
+                maxWidth: '100%',
+                color: 'inherit',
+                fontFamily: 'inherit',
+                h1: { fontWeight: '700' },
+                h2: { fontWeight: '600' },
+                h3: { fontWeight: '600' },
+                p: { marginTop: '0.75em', marginBottom: '0.75em' },
+                ul: { marginTop: '0.75em', marginBottom: '0.75em' },
+                li: { marginTop: '0.25em', marginBottom: '0.25em' },
+                span: { color: 'inherit' },
+                font: { color: 'inherit' }
+              }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @media (max-width: 768px) {
+  html {
+    zoom: 0.25;
+  }
+}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .map-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .glass {
+      background: rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .dark .glass {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-strong {
+      background: rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(24px) saturate(200%);
+      -webkit-backdrop-filter: blur(24px) saturate(200%);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .dark .glass-strong {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .header-section {
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .header-section h1 {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    .dark .header-section h1 {
+      background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .dark .legend-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .legend-box {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+    }
+
+    .dark .legend-box {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stats-card {
+      background: rgba(0, 0, 0, 0.03);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .dark .stats-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stats-card h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #1e293b;
+    }
+
+    .dark .stats-card h2 {
+      color: #ffffff;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-item {
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .dark .stat-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .dark .stat-label {
+      color: #94a3b8;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cell {
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(0, 0, 0, 0.02);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #64748b;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dark .cell {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .cell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.03) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .dark .cell::before {
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    }
+
+    .cell:hover::before {
+      opacity: 1;
+    }
+
+    .cell:hover {
+      background: rgba(0, 0, 0, 0.05);
+      transform: scale(1.05);
+      z-index: 10;
+      border-color: rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark .cell:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .cell.occupied {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+      color: #16a34a;
+      font-weight: 700;
+      border-color: rgba(34, 197, 94, 0.25);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.15),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .dark .cell.occupied {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%);
+      color: #22c55e;
+      border-color: rgba(34, 197, 94, 0.3);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.2),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .cell.occupied::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .dark .cell.occupied::after {
+      background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.15) 0%, transparent 50%);
+    }
+
+    .cell.occupied:hover {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(16, 185, 129, 0.18) 100%);
+      border-color: rgba(34, 197, 94, 0.4);
+      box-shadow: 0 0 32px rgba(34, 197, 94, 0.3),
+                  0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .dark .cell.occupied:hover {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(16, 185, 129, 0.25) 100%);
+      border-color: rgba(34, 197, 94, 0.5);
+      box-shadow: 0 0 32px rgba(34, 197, 94, 0.4),
+                  0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .thick-left { border-left: 2px solid rgba(0, 0, 0, 0.12); }
+    .thick-right { border-right: 2px solid rgba(0, 0, 0, 0.12); }
+    .thick-top { border-top: 2px solid rgba(0, 0, 0, 0.12); }
+    .thick-bottom { border-bottom: 2px solid rgba(0, 0, 0, 0.12); }
+
+    .dark .thick-left { border-left: 2px solid rgba(255, 255, 255, 0.15); }
+    .dark .thick-right { border-right: 2px solid rgba(255, 255, 255, 0.15); }
+    .dark .thick-top { border-top: 2px solid rgba(255, 255, 255, 0.15); }
+    .dark .thick-bottom { border-bottom: 2px solid rgba(255, 255, 255, 0.15); }
+    
+    .no-border-left { border-left: none; }
+    .no-border-right { border-right: none; }
+    .no-border-top { border-top: none; }
+    .no-border-bottom { border-bottom: none; }
+
+    .tooltip {
+      position: fixed;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
+                  0 0 0 1px rgba(0, 0, 0, 0.05);
+      max-width: 320px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .dark .tooltip {
+      background: rgba(2, 6, 23, 0.95);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+                  0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .tooltip.show {
+      display: block;
+      animation: tooltipFadeIn 0.2s ease-out;
+    }
+
+    @keyframes tooltipFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tooltip-row {
+      margin: 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .tooltip-label {
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .dark .tooltip-label {
+      color: #94a3b8;
+    }
+
+    .tooltip-value {
+      color: #1e293b;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .dark .tooltip-value {
+      color: #e5e7eb;
+    }
+
+    .tooltip-title {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .section-divider {
+      width: 3px;
+      background: linear-gradient(180deg, 
+        rgba(0, 0, 0, 0.08) 0%, 
+        rgba(0, 0, 0, 0.12) 50%, 
+        rgba(0, 0, 0, 0.08) 100%);
+    }
+
+    .dark .section-divider {
+      background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        rgba(255, 255, 255, 0.15) 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    }
+
+    .section-label {
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      margin-top: 16px;
+      background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.01em;
+    }
+
+    .dark .section-label {
+      background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .deck-section {
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .dark .deck-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 18px;
+      font-weight: 500;
+      color: #64748b;
+    }
+
+    .dark .loading {
+      color: #94a3b8;
+    }
+
+    .loading::after {
+      content: '...';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+  </style>
+</head>
+
+<body
+  class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126]
+         text-slate-900 dark:text-white min-h-screen opacity-0 transition-opacity duration-200"
+>
+
+  <div id="header"></div>
+
+  <div class="pt-16 flex">
+<!--
+    <aside
+      id="sideMenu"
+      class="fixed lg:relative z-30 w-64 h-screen
+             bg-white/40 dark:bg-white/10 glass
+             border-r border-white/10
+             transform -translate-x-full lg:translate-x-0
+             transition-transform duration-300
+             pt-6 px-5"
+    ></aside>
+-->
+    <main class="flex-1 px-6 py-14 max-w-none">
+
+      <!-- 🔽 MAP CONTENT BELOW 🔽 -->
+      <div class="map-container">
+    <div class="header-section">
+      <h1>Paws Deck Map</h1>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-box" style="background: rgba(255, 255, 255, 0.03);"></div>
+          <span>Available</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-box" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(16, 185, 129, 0.2) 100%);"></div>
+          <span>Occupied</span>
+        </div>
+      </div>
+      <div id="loading" class="loading">Loading active rooms</div>
+    </div>
+
+    <div id="gingr-summary" class="stats-card" style="display: none;">
+      <h2>Today's Reservations</h2>
+      <div id="stats" class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-label">Check-ins</div>
+          <div class="stat-value" id="checkins">—</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Check-outs</div>
+          <div class="stat-value" id="checkouts">—</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Total Active</div>
+          <div class="stat-value" id="total">—</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const today = new Date().toISOString().split("T")[0];
+
+      fetch(`http://localhost:8000/reservations?date=2026-01-31`)
+        .then(res => {
+          if (!res.ok) throw new Error("Server error");
+          return res.json();
+        })
+        .then(data => {
+          const totals = data.gingr_response.totals;
+          
+          document.getElementById('gingr-summary').style.display = 'block';
+          document.getElementById('checkins').textContent = totals.check_in_total;
+          document.getElementById('checkouts').textContent = totals.check_out_total;
+          document.getElementById('total').textContent = totals.active_total;
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    </script>
+
+    <!-- X-terior Deck -->
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 60px;">
+      <div>
+        <div style="text-align: center; margin-bottom: 12px; font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;" class="dark:text-slate-400">X-terior Deck</div>
+        <div class="deck-section" style="display: grid; grid-template-columns: repeat(17, 38px); padding: 0; overflow: hidden;">
+          <div class="cell" data-room="X1" style="height: 90px; border-left: none;">X 1</div>
+          <div class="cell" data-room="X2" style="height: 90px;">X 2</div>
+          <div class="cell" data-room="X3" style="height: 90px;">X 3</div>
+          <div class="cell" data-room="X4" style="height: 90px;">X 4</div>
+          <div class="cell" data-room="X5" style="height: 90px;">X 5</div>
+          <div class="cell" data-room="X6" style="height: 90px;">X 6</div>
+          <div class="cell" data-room="X7" style="height: 90px;">X 7</div>
+          <div class="cell" data-room="X8" style="height: 90px;">X 8</div>
+          <div class="cell" data-room="X9" style="height: 90px;">X 9</div>
+          <div class="cell" data-room="X10" style="height: 90px;">X 10</div>
+          <div class="cell" data-room="X11" style="height: 90px;">X 11</div>
+          <div class="cell" data-room="X12" style="height: 90px;">X 12</div>
+          <div class="cell" data-room="X14" style="height: 90px;">X 14</div>
+          <div class="cell" data-room="X15" style="height: 90px;">X 15</div>
+          <div class="cell" data-room="X16" style="height: 90px;">X 16</div>
+          <div class="cell" data-room="X17" style="height: 90px;">X 17</div>
+          <div class="cell" data-room="X18" style="height: 90px; border-right: none;">X 18</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lux Hall 2 Section -->
+    <div style="display: flex; width: fit-content;">
+      <!-- Left column: LQ 6-12 -->
+      <div style="display: grid; grid-template-rows: repeat(7, 50px); width: 60px;">
+        <div class="cell thick-left thick-top" data-room="LQ12">LQ 12</div>
+        <div class="cell thick-left" data-room="LQ11">LQ 11</div>
+        <div class="cell thick-left" data-room="LQ10">LQ 10</div>
+        <div class="cell thick-left" data-room="LQ9">LQ 9</div>
+        <div class="cell thick-left" data-room="LQ8">LQ 8</div>
+        <div class="cell thick-left" data-room="LQ7">LQ 7</div>
+        <div class="cell thick-left thick-bottom" data-room="LQ6">LQ 6</div>
+      </div>
+      
+      <!-- Thick border -->
+      <div class="section-divider"></div>
+      
+      <!-- Center aisle: Lux Hall 2 -->
+      <div style="display: grid; grid-template-rows: 0px 350px; width: 86px;">
+        <div></div>
+        <div class="cell thick-left thick-right thick-top thick-bottom" data-room="LuxHall2" style="display: flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1.3;">Lux<br>Hall<br>2</div>
+      </div>
+      
+      <!-- Right column: LQ 14-20 -->
+      <div style="display: grid; grid-template-rows: 50px 50px 50px 50px 50px 50px 50px; width: 60px;">
+        <div class="cell thick-top" data-room="LQ14">LQ 14</div>
+        <div class="cell" data-room="LQ15">LQ 15</div>
+        <div class="cell" data-room="LQ16">LQ 16</div>
+        <div class="cell" data-room="LQ17">LQ 17</div>
+        <div class="cell" data-room="LQ18">LQ 18</div>
+        <div class="cell thick-bottom" data-room="LQ19">LQ 19</div>
+        <div class="cell thick-bottom" data-room="LQ20">LQ 20</div>
+      </div>
+
+      <!-- Lux Hall 2 + Lux Hall 1 ROW -->
+      <div style="display:flex; align-items:flex-start;">
+        <!-- Lux Hall 1 -->
+        <div style="display:flex;">
+          <!-- LK column -->
+          <div style="display:grid; grid-template-rows:repeat(4, 63px); width:70px;">
+            <div class="cell thick-left thick-top" data-room="LK4">LK 4</div>
+            <div class="cell thick-left" data-room="LK3">LK 3</div>
+            <div class="cell thick-left" data-room="LK2">LK 2</div>
+            <div class="cell thick-left thick-bottom" data-room="LK1">LK 1</div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- Lux Hall 1 center -->
+          <div style="width:86px;">
+            <div class="cell thick-left thick-right thick-top thick-bottom" data-room="LuxHall1" style="height:252px; font-size:11px; line-height:1.3;">Lux<br>Hall<br>1</div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- LQ 1–5 -->
+          <div style="display:grid; grid-template-rows:repeat(5, 50.4px); width:61px;">
+            <div class="cell thick-top" data-room="LQ5">LQ 5</div>
+            <div class="cell" data-room="LQ4">LQ 4</div>
+            <div class="cell" data-room="LQ3">LQ 3</div>
+            <div class="cell" data-room="LQ2">LQ 2</div>
+            <div class="cell thick-bottom" data-room="LQ1">LQ 1</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TD / LD + Outside West + OW -->
+      <div style="display:flex; align-items:flex-start;">
+        <!-- TD column -->
+        <div style="width:52px;">
+          <div class="cell thick-left thick-top" data-room="TD12" style="height:28px;">TD 12</div>
+          <div class="cell thick-left" data-room="TD14" style="height:28px;">TD 14</div>
+          <div class="cell thick-left" data-room="TD15" style="height:28px;">TD 15</div>
+          <div class="cell thick-left" data-room="TD16" style="height:28px;">TD 16</div>
+          <div class="cell thick-left" data-room="TD17" style="height:28px;">TD 17</div>
+          <div class="cell thick-left" data-room="TD18" style="height:28px;">TD 18</div>
+          <div class="cell thick-left" data-room="TD19" style="height:28px;">TD 19</div>
+          <div class="cell thick-left" data-room="TD20" style="height:28px;">TD 20</div>
+          <div class="cell thick-left" data-room="TD21" style="height:28px;">TD 21</div>
+          <div class="cell thick-left" data-room="TD22" style="height:28px;">TD 22</div>
+          <div class="cell thick-left" data-room="TD23" style="height:28px;">TD 23</div>
+          <div class="cell thick-left" data-room="TD24" style="height:28px;">TD 24</div>
+          <div class="cell thick-left" data-room="TD25" style="height:28px;">TD 25</div>
+          <div class="cell thick-left thick-bottom" data-room="TD26" style="height:28px;">TD 26</div>
+        </div>
+
+        <!-- LD column -->
+        <div style="width:52px;">
+          <div class="cell thick-top thick-right" data-room="LD11" style="height:36px;">LD 11</div>
+          <div class="cell thick-right" data-room="LD10" style="height:36px;">LD 10</div>
+          <div class="cell thick-right" data-room="LD9" style="height:36px;">LD 9</div>
+          <div class="cell thick-right" data-room="LD8" style="height:36px;">LD 8</div>
+          <div class="cell thick-right" data-room="LD7" style="height:36px;">LD 7</div>
+          <div class="cell thick-right" data-room="LD6" style="height:36px;">LD 6</div>
+          <div class="cell thick-right" data-room="LD5" style="height:36px;">LD 5</div>
+          <div class="cell thick-right" data-room="LD4" style="height:36px;">LD 4</div>
+          <div class="cell thick-right" data-room="LD3" style="height:36px;">LD 3</div>
+          <div class="cell thick-right" data-room="LD1" style="height:34px;">LD 1</div>
+          <div class="cell thick-right thick-bottom" data-room="LD1" style="height:34px;">LD 1</div>
+        </div>
+
+        <!-- Outside West -->
+        <div class="cell thick-right thick-top thick-bottom" data-room="OutsideWest" style="width:40px; height:420px; writing-mode:vertical-rl; transform:rotate(180deg); font-size:12px;">Outside West</div>
+
+        <!-- OW column -->
+        <div style="width:86px;">
+          <div class="cell thick-top" data-room="OW10" style="height:38px;">OW 10</div>
+          <div class="cell" data-room="OW9" style="height:38px;">OW 9</div>
+          <div class="cell" data-room="OW8" style="height:38px;">OW 8</div>
+          <div class="cell" data-room="OW7" style="height:38px;">OW 7</div>
+          <div class="cell" data-room="OW6" style="height:38px;">OW 6</div>
+          <div class="cell" data-room="OW5" style="height:38px;">OW 5</div>
+          <div class="cell" data-room="OW4" style="height:38px;">OW 4</div>
+          <div class="cell" data-room="OW3" style="height:38px;">OW 3</div>
+          <div class="cell" data-room="OW2" style="height:38px;">OW 2</div>
+          <div class="cell thick-bottom" data-room="OW1" style="height:51px;">OW 1</div>
+        </div>
+
+        <!-- WEST SECTION -->
+        <div style="display:flex; align-items:flex-start;">
+          <!-- LEFT W column -->
+          <div style="width:70px;">
+            <div class="cell thick-left thick-top" data-room="W10" style="height:38px;">W 10</div>
+            <div class="cell thick-left" data-room="W9" style="height:38px;">W 9</div>
+            <div class="cell thick-left" data-room="W8" style="height:38px;">W 8</div>
+            <div class="cell thick-left" data-room="W7" style="height:38px;">W 7</div>
+            <div class="cell thick-left" data-room="W6" style="height:38px;">W 6</div>
+            <div class="cell thick-left" data-room="W5" style="height:38px;">W 5</div>
+            <div class="cell thick-left" data-room="W4" style="height:38px;">W 4</div>
+            <div class="cell thick-left" data-room="W3" style="height:38px;">W 3</div>
+            <div class="cell thick-left" data-room="W2" style="height:38px;">W 2</div>
+            <div class="cell thick-left thick-bottom" data-room="W1" style="height:51px;">W 1</div>
+          </div>
+
+          <!-- WEST label -->
+          <div class="cell thick-left thick-right thick-top thick-bottom" data-room="West" style="width:40px; height:504px; writing-mode:vertical-rl; transform:rotate(180deg); font-size:12px;">West</div>
+
+          <!-- RIGHT W column -->
+          <div style="width:70px;">
+            <div class="cell thick-top thick-right" data-room="W11" style="height:38px;">W 11</div>
+            <div class="cell thick-right" data-room="W12" style="height:38px;">W 12</div>
+            <div class="cell thick-right" data-room="W14" style="height:38px;">W 14</div>
+            <div class="cell thick-right" data-room="W15" style="height:38px;">W 15</div>
+            <div class="cell thick-right" data-room="W16" style="height:38px;">W 16</div>
+            <div class="cell thick-right" data-room="W17" style="height:38px;">W 17</div>
+            <div class="cell thick-right" data-room="W18" style="height:38px;">W 18</div>
+            <div class="cell thick-right" data-room="W19" style="height:38px;">W 19</div>
+            <div class="cell thick-right" data-room="W20" style="height:38px;">W 20</div>
+            <div class="cell thick-right" data-room="W21" style="height:38px;">W 21</div>
+            <div class="cell thick-right" data-room="W22" style="height:38px;">W 22</div>
+            <div class="cell thick-right thick-bottom" data-room="W23" style="height:38px;">W 23</div>
+          </div>
+        </div>
+
+        <!-- IN BETWEEN SECTION -->
+        <div style="display:flex; align-items:flex-start;">
+          <!-- LEFT OW column -->
+          <div style="width:86px;">
+            <div class="cell thick-left thick-top" data-room="OW11" style="height:38px;">OW 11</div>
+            <div class="cell thick-left" data-room="OW12" style="height:38px;">OW 12</div>
+            <div class="cell thick-left" data-room="OW14" style="height:38px;">OW 14</div>
+            <div class="cell thick-left" data-room="OW15" style="height:38px;">OW 15</div>
+            <div class="cell thick-left" data-room="OW16" style="height:38px;">OW 16</div>
+            <div class="cell thick-left" data-room="OW17" style="height:38px;">OW 17</div>
+            <div class="cell thick-left" data-room="OW18" style="height:38px;">OW 18</div>
+            <div class="cell thick-left" data-room="OW19" style="height:38px;">OW 19</div>
+            <div class="cell thick-left" data-room="OW20" style="height:38px;">OW 20</div>
+            <div class="cell thick-left" data-room="OW21" style="height:38px;">OW 21</div>
+            <div class="cell thick-left" data-room="OW22" style="height:38px;">OW 22</div>
+            <div class="cell thick-left thick-bottom" data-room="OW23" style="height:38px;">OW 23</div>
+          </div>
+
+          <!-- IN BETWEEN label -->
+          <div class="cell thick-left thick-right thick-top thick-bottom" data-room="InBetween" style="width:40px; height:494px; writing-mode:vertical-rl; transform:rotate(180deg); font-size:12px;">In&nbsp;Between</div>
+
+          <!-- RIGHT OE column -->
+          <div style="width:86px;">
+            <div class="cell thick-top thick-right" data-room="OE10" style="height:38px;">OE 10</div>
+            <div class="cell thick-right" data-room="OE9" style="height:38px;">OE 9</div>
+            <div class="cell thick-right" data-room="OE8" style="height:38px;">OE 8</div>
+            <div class="cell thick-right" data-room="OE7" style="height:38px;">OE 7</div>
+            <div class="cell thick-right" data-room="OE6" style="height:38px;">OE 6</div>
+            <div class="cell thick-right" data-room="OE5" style="height:38px;">OE 5</div>
+            <div class="cell thick-right" data-room="OE4" style="height:38px;">OE 4</div>
+            <div class="cell thick-right" data-room="OE3" style="height:38px;">OE 3</div>
+            <div class="cell thick-right" data-room="OE2" style="height:38px;">OE 2</div>
+            <div class="cell thick-right thick-bottom" data-room="OE1" style="height:51px;">OE 1</div>
+          </div>
+        </div>
+
+        <!-- EAST SECTION -->
+        <div style="display:flex; align-items:flex-start;">
+          <!-- LEFT E column -->
+          <div style="width:70px;">
+            <div class="cell thick-left thick-top" data-room="E10" style="height:38px;">E 10</div>
+            <div class="cell thick-left" data-room="E9" style="height:38px;">E 9</div>
+            <div class="cell thick-left" data-room="E8" style="height:38px;">E 8</div>
+            <div class="cell thick-left" data-room="E7" style="height:38px;">E 7</div>
+            <div class="cell thick-left" data-room="E6" style="height:38px;">E 6</div>
+            <div class="cell thick-left" data-room="E5" style="height:38px;">E 5</div>
+            <div class="cell thick-left" data-room="E4" style="height:38px;">E 4</div>
+            <div class="cell thick-left" data-room="E3" style="height:38px;">E 3</div>
+            <div class="cell thick-left" data-room="E2" style="height:38px;">E 2</div>
+            <div class="cell thick-left thick-bottom" data-room="E1" style="height:51px;">E 1</div>
+          </div>
+
+          <!-- EAST label -->
+          <div class="cell thick-left thick-right thick-top thick-bottom" data-room="East" style="width:40px; height:504px; writing-mode:vertical-rl; transform:rotate(180deg); font-size:12px;">East</div>
+
+          <!-- RIGHT E column -->
+          <div style="width:70px;">
+            <div class="cell thick-top thick-right" data-room="E11" style="height:38px;">E 11</div>
+            <div class="cell thick-right" data-room="E12" style="height:38px;">E 12</div>
+            <div class="cell thick-right" data-room="E14" style="height:38px;">E 14</div>
+            <div class="cell thick-right" data-room="E15" style="height:38px;">E 15</div>
+            <div class="cell thick-right" data-room="E16" style="height:38px;">E 16</div>
+            <div class="cell thick-right" data-room="E17" style="height:38px;">E 17</div>
+            <div class="cell thick-right" data-room="E18" style="height:38px;">E 18</div>
+            <div class="cell thick-right" data-room="E19" style="height:38px;">E 19</div>
+            <div class="cell thick-right" data-room="E20" style="height:38px;">E 20</div>
+            <div class="cell thick-right" data-room="E21" style="height:38px;">E 21</div>
+            <div class="cell thick-right" data-room="E22" style="height:38px;">E 22</div>
+            <div class="cell thick-right thick-bottom" data-room="E23" style="height:38px;">E 23</div>
+          </div>
+        </div>
+
+        <!-- OE COLUMN -->
+        <div style="width:86px;">
+          <div class="cell thick-left thick-top" data-room="OE11" style="height:38px;">OE 11</div>
+          <div class="cell thick-left" data-room="OE12" style="height:38px;">OE 12</div>
+          <div class="cell thick-left" data-room="OE14" style="height:38px;">OE 14</div>
+          <div class="cell thick-left" data-room="OE15" style="height:38px;">OE 15</div>
+          <div class="cell thick-left" data-room="OE16" style="height:38px;">OE 16</div>
+          <div class="cell thick-left" data-room="OE17" style="height:38px;">OE 17</div>
+          <div class="cell thick-left" data-room="OE18" style="height:38px;">OE 18</div>
+          <div class="cell thick-left" data-room="OE19" style="height:38px;">OE 19</div>
+          <div class="cell thick-left" data-room="OE20" style="height:38px;">OE 20</div>
+          <div class="cell thick-left" data-room="OE21" style="height:38px;">OE 21</div>
+          <div class="cell thick-left" data-room="OE22" style="height:38px;">OE 22</div>
+          <div class="cell thick-left thick-bottom" data-room="OE23" style="height:38px;">OE 23</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW WRAPPER -->
+    <div style="display:flex; gap:60px; align-items:flex-start; justify-content:flex-start;">
+      <!-- NORTH SECTION -->
+      <div style="flex:0 0 640px;">
+        <div class="deck-section" style="padding:24px 32px 40px; display:flex; justify-content:space-between; align-items:flex-start; gap:40px;">
+          <!-- Group 1 -->
+          <div style="display:grid; grid-template-rows:repeat(4,38px); width:70px;">
+            <div class="cell" data-room="N33">N 33</div>
+            <div class="cell" data-room="N32">N 32</div>
+            <div class="cell" data-room="N31">N 31</div>
+            <div class="cell" data-room="N30">N 30</div>
+          </div>
+
+          <!-- Group 2 -->
+          <div style="display:grid; grid-template-columns:repeat(2,70px); grid-template-rows:repeat(4,38px);">
+            <div class="cell" data-room="N26">N 26</div>
+            <div class="cell" data-room="N25">N 25</div>
+            <div class="cell" data-room="N27">N 27</div>
+            <div class="cell" data-room="N24">N 24</div>
+            <div class="cell" data-room="N28">N 28</div>
+            <div class="cell" data-room="N23">N 23</div>
+            <div class="cell" data-room="N29">N 29</div>
+            <div class="cell" data-room="N22">N 22</div>
+          </div>
+
+          <!-- Group 3 -->
+          <div style="display:grid; grid-template-columns:repeat(2,70px); grid-template-rows:repeat(4,38px);">
+            <div class="cell" data-room="N18">N 18</div>
+            <div class="cell" data-room="N17">N 17</div>
+            <div class="cell" data-room="N19">N 19</div>
+            <div class="cell" data-room="N16">N 16</div>
+            <div class="cell" data-room="N20">N 20</div>
+            <div class="cell" data-room="N15">N 15</div>
+            <div class="cell" data-room="N21">N 21</div>
+            <div class="cell" data-room="N14">N 14</div>
+          </div>
+
+          <!-- Group 4 -->
+          <div style="display:grid; grid-template-columns:repeat(2,70px); grid-template-rows:repeat(4,38px);">
+            <div class="cell" data-room="N9">N 9</div>
+            <div class="cell" data-room="N8">N 8</div>
+            <div class="cell" data-room="N10">N 10</div>
+            <div class="cell" data-room="N7">N 7</div>
+            <div class="cell" data-room="N11">N 11</div>
+            <div class="cell" data-room="N6">N 6</div>
+            <div class="cell" data-room="N12">N 12</div>
+            <div class="cell" data-room="N5">N 5</div>
+          </div>
+
+          <!-- Group 5 -->
+          <div style="display:grid; grid-template-rows:repeat(4,38px); width:70px;">
+            <div class="cell" data-room="N1">N 1</div>
+            <div class="cell" data-room="N2">N 2</div>
+            <div class="cell" data-room="N3">N 3</div>
+            <div class="cell" data-room="N4">N 4</div>
+          </div>
+        </div>
+        <div class="section-label" style="margin-top:12px;">North</div>
+      </div>
+
+      <!-- MINI MANSIONS -->
+      <div style="flex:0 0 280;">
+        <div class="deck-section" style="padding:18px 18px 22px; width:280px;">
+          <!-- TOP ROOMS -->
+          <div style="display:flex; justify-content:flex-start;">
+            <div class="cell" data-room="MM9" style="width:40px; height:38px;">MM 9</div>
+            <div class="cell" data-room="MM10" style="width:40px; height:38px;">MM 10</div>
+            <div class="cell" data-room="MM11" style="width:40px; height:38px;">MM 11</div>
+            <div class="cell" data-room="MM12" style="width:40px; height:38px;">MM 12</div>
+
+            <div style="display:grid; grid-template-rows:repeat(2,38px);">
+              <div class="cell" data-room="MM17" style="width:40px;">MM 17</div>
+              <div class="cell" data-room="MM14" style="width:40px;">MM 14</div>
+            </div>
+
+            <div style="display:grid; grid-template-rows:repeat(2,38px);">
+              <div class="cell" data-room="MM16" style="width:40px;">MM 16</div>
+              <div class="cell" data-room="MM15" style="width:40px;">MM 15</div>
+            </div>
+          </div>
+
+          <div style="text-align:center; font-size:32px; margin:26px 0;"></div>
+
+          <!-- BOTTOM ROOMS -->
+          <div style="display:flex;">
+            <div style="display:grid; grid-template-rows:repeat(2,38px);">
+              <div class="cell" data-room="MM3" style="width:40px;">MM 3</div>
+              <div class="cell" data-room="MM8" style="width:40px;">MM 8</div>
+            </div>
+
+            <div style="display:grid; grid-template-rows:repeat(2,38px);">
+              <div class="cell" data-room="MM2" style="width:40px;">MM 2</div>
+              <div class="cell" data-room="MM7" style="width:40px;">MM 7</div>
+            </div>
+
+            <div class="cell" data-room="MM6" style="width:40px; height:76px;">MM 6</div>
+            <div class="cell" data-room="MM5" style="width:40px; height:76px;">MM 5</div>
+
+            <div style="display:grid; grid-template-rows:repeat(2,38px);">
+              <div class="cell" data-room="MM1" style="width:40px;">MM 1</div>
+              <div class="cell" data-room="MM4" style="width:40px;">MM 4</div>
+            </div>
+          </div>
+        </div>
+        <div class="section-label" style="margin-top:24px;">Mini Mansions</div>
+      </div>
+
+      <!-- CAT ROOM -->
+      <div style="flex:0 0 620px;">
+        <div class="deck-section" style="padding:24px; width:220px;">
+          <div style="display:flex; align-items:center;">
+            <div style="display:grid; grid-template-rows:repeat(3,38px);">
+              <div class="cell" data-room="CR9" style="width:40px;">CR 9</div>
+              <div class="cell" data-room="CR8" style="width:40px;">CR 8</div>
+              <div class="cell" data-room="CR7" style="width:40px;">CR 7</div>
+            </div>
+
+            <div style="flex:1; text-align:center; font-size:32px;"></div>
+
+            <div style="display:grid; grid-template-columns:repeat(3,38px); grid-template-rows:repeat(2,40px);">
+              <div class="cell" data-room="CR5">CR 5</div>
+              <div class="cell" data-room="CR3">CR 3</div>
+              <div class="cell" data-room="CR1">CR 1</div>
+              <div class="cell" data-room="CR6">CR 6</div>
+              <div class="cell" data-room="CR4">CR 4</div>
+              <div class="cell" data-room="CR2">CR 2</div>
+            </div>
+          </div>
+        </div>
+        <div class="section-label" style="text-align:left; margin-top:16px;">Cat<br>Room</div>
+      </div>
+      </div>
+
+      <!-- 🔼 END MAP CONTENT 🔼 -->
+
+    </main>
+  </div>
+
+  <div id="footer"></div>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="tooltip"></div>
+
+  <script>
+    fetch('/partials/header.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html
+        document.body.classList.remove('opacity-0')
+      })
+
+    fetch('/partials/sidebar.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('sideMenu').innerHTML = html
+      })
+
+    fetch('/partials/footer.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('footer').innerHTML = html
+      })
+  </script>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+
+  <script>
+    // Room data storage
+    let roomData = {};
+    
+    // Normalize room name for matching
+    function normalizeRoomName(name) {
+      return name.replace(/\s+/g, '').toUpperCase();
+    }
+
+    // Fetch room data from API
+    async function fetchRoomData() {
+      try {
+        const response = await fetch("http://localhost:8000/api/rooms");
+        const json = await response.json();
+        
+        console.log("API Response:", json);
+        
+        const records = [
+          ...(json.data.checking_in || []),
+          ...(json.data.checking_out || [])
+        ];
+        
+        records.forEach(record => {
+          if (record.run_name) {
+            const normalizedName = normalizeRoomName(record.run_name);
+            roomData[normalizedName] = record;
+          }
+        });
+        
+        console.log("Processed room data:", roomData);
+        
+        document.getElementById('loading').style.display = 'none';
+        
+        highlightRooms();
+        
+      } catch (error) {
+        console.error("Error fetching room data:", error);
+        document.getElementById('loading').textContent = 'Error loading room data. Make sure the API is running on localhost:8000';
+      }
+    }
+
+    // Highlight rooms that are occupied
+    function highlightRooms() {
+      document.querySelectorAll('.cell[data-room]').forEach(cell => {
+        const roomName = cell.getAttribute('data-room');
+        const normalizedName = normalizeRoomName(roomName);
+        
+        if (roomData[normalizedName]) {
+          cell.classList.add('occupied');
+        }
+      });
+    }
+
+    // Format date
+    function formatDate(unix) {
+      if (!unix) return "—";
+      return new Date(unix * 1000).toLocaleDateString();
+    }
+
+    // Tooltip functionality
+    const tooltip = document.getElementById('tooltip');
+    
+    document.querySelectorAll('.cell[data-room]').forEach(cell => {
+      cell.addEventListener('mouseenter', function(e) {
+        const roomName = this.getAttribute('data-room');
+        const normalizedName = normalizeRoomName(roomName);
+        const data = roomData[normalizedName];
+        
+        if (data) {
+          tooltip.innerHTML = `
+            <div class="tooltip-title">${roomName}</div>
+            <div class="tooltip-row">
+              <div class="tooltip-label">Pet</div>
+              <div class="tooltip-value">${data.a_first || '—'}</div>
+            </div>
+            <div class="tooltip-row">
+              <div class="tooltip-label">Breed</div>
+              <div class="tooltip-value">${data.breed_name || '—'}</div>
+            </div>
+            <div class="tooltip-row">
+              <div class="tooltip-label">Owner</div>
+              <div class="tooltip-value">${data.o_last || '—'}</div>
+            </div>
+            <div class="tooltip-row">
+              <div class="tooltip-label">Type</div>
+              <div class="tooltip-value">${data.type ? data.type.trim() : '—'}</div>
+            </div>
+            <div class="tooltip-row">
+              <div class="tooltip-label">Check-in</div>
+              <div class="tooltip-value">${formatDate(data.start_date)}</div>
+            </div>
+            <div class="tooltip-row">
+              <div class="tooltip-label">Check-out</div>
+              <div class="tooltip-value">${formatDate(data.end_date)}</div>
+            </div>
+          `;
+          
+          const rect = this.getBoundingClientRect();
+          tooltip.style.left = (e.pageX + 15) + 'px';
+          tooltip.style.top = (e.pageY + 15) + 'px';
+          tooltip.classList.add('show');
+        }
+      });
+      
+      cell.addEventListener('mouseleave', function() {
+        tooltip.classList.remove('show');
+      });
+      
+      cell.addEventListener('mousemove', function(e) {
+        tooltip.style.left = (e.pageX + 15) + 'px';
+        tooltip.style.top = (e.pageY + 15) + 'px';
+      });
+      
+      cell.addEventListener('click', function() {
+        const roomName = this.getAttribute('data-room');
+        const normalizedName = normalizeRoomName(roomName);
+        const data = roomData[normalizedName];
+        
+        if (data) {
+          console.log('Room clicked:', roomName, data);
+        } else {
+          console.log('Room clicked:', roomName, '(available)');
+        }
+      });
+    });
+
+    // Fetch data on page load
+    fetchRoomData();
+    
+    // Refresh every 30 seconds
+    setInterval(fetchRoomData, 30000);
+  </script>
+</body>
+</html>

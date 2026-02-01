@@ -17,9 +17,7 @@ const supabaseClient = supabase.createClient(
 function signInWithSlack() {
   supabaseClient.auth.signInWithOAuth({
     provider: 'slack_oidc',
-    options: {
-      redirectTo: 'http://127.0.0.1:5500/auth/callback'
-    }
+
   })
 }
 
@@ -482,4 +480,3 @@ document.addEventListener('click', e => {
     document.getElementById('searchResults')?.classList.add('hidden')
   }
 })
-document.dispatchEvent(new Event('supabase:ready'))
