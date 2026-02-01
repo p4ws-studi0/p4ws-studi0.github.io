@@ -16,7 +16,7 @@ const supabaseClient = supabase.createClient(
 
 function signInWithSlack() {
   supabaseClient.auth.signInWithOAuth({
-    provider: 'slack',
+    provider: 'slack_oidc',
 
   })
 }
@@ -29,7 +29,7 @@ function getSlackAvatar(session) {
   if (!session?.user) return null
 
   const slackIdentity = session.user.identities?.find(
-    i => i.provider === 'slack'
+    i => i.provider === 'slack_oidc'
   )
 
   return (
