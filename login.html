@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="dark overflow-x-hidden">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to Paws HQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Paws HQ</title>
 
   <link rel="icon" href="/favicon.ico">
 
@@ -24,15 +24,15 @@
         extend: {
           animation: {
             float: 'float 6s ease-in-out infinite',
-            fadeUp: 'fadeUp .8s ease-out forwards'
+            fadeUp: 'fadeUp .7s ease-out forwards'
           },
           keyframes: {
             float: {
-              '0%, 100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-12px)' }
+              '0%,100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' }
             },
             fadeUp: {
-              '0%': { opacity: 0, transform: 'translateY(20px)' },
+              '0%': { opacity: 0, transform: 'translateY(16px)' },
               '100%': { opacity: 1, transform: 'translateY(0)' }
             }
           }
@@ -42,11 +42,25 @@
   </script>
 
   <style>
-    html, body {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: hidden; /* 🔑 hard stop */
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      height: 100%;
       font-family: 'Inter', sans-serif;
+      background: #050507;
+      color: white;
+
+      /* 🔑 allows rubber band */
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
     }
 
     .glass {
@@ -56,124 +70,101 @@
   </style>
 </head>
 
-<body class="relative min-h-screen bg-[#050507] text-white overflow-x-hidden">
+<body>
 
-  <!-- BACKGROUND GLOW (SAFE) -->
-  <div class="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+  <!-- FULL VIEWPORT CANVAS -->
+  <div class="relative w-full h-[100svh] overflow-hidden">
 
-    <!-- TOP GLOW -->
-    <div
-      class="
-        absolute
-        top-[-20%]
-        left-1/2
-        -translate-x-1/2
-        w-[90vw]
-        max-w-[520px]
-        h-[520px]
-        bg-yellow-600/20
-        rounded-full
-        blur-[140px]
-      "
-    ></div>
+    <!-- BACKGROUND GLOWS (CLIPPED) -->
+    <div class="absolute inset-0 pointer-events-none -z-10">
 
-    <!-- BOTTOM GLOW -->
-    <div
-      class="
-        absolute
-        bottom-[-25%]
-        left-1/2
-        -translate-x-1/2
-        w-[85vw]
-        max-w-[480px]
-        h-[480px]
-        bg-blue-500/20
-        rounded-full
-        blur-[140px]
-      "
-    ></div>
+      <div
+        class="absolute top-[-25%] left-1/2 -translate-x-1/2
+               w-[520px] h-[520px]
+               bg-yellow-600/20
+               rounded-full blur-[140px]">
+      </div>
 
-  </div>
+      <div
+        class="absolute bottom-[-30%] left-1/2 -translate-x-1/2
+               w-[480px] h-[480px]
+               bg-blue-500/20
+               rounded-full blur-[140px]">
+      </div>
 
-  <!-- CENTER -->
-  <main class="min-h-screen flex items-center justify-center px-4">
+    </div>
 
-    <div
-      class="
-        w-full max-w-md
-        glass
-        bg-white/10
-        border border-white/15
-        rounded-[28px]
-        shadow-[0_30px_80px_rgba(0,0,0,0.6)]
-        px-6 sm:px-10
-        py-10 sm:py-12
-        text-center
-        opacity-0 animate-fadeUp
-      "
-    >
+    <!-- CENTERED CONTENT -->
+    <main class="grid place-items-center w-full h-full px-4">
 
-      <!-- LOGO -->
-      <div class="relative mb-5">
+      <div
+        class="
+          w-full max-w-[420px]
+          glass
+          bg-white/10
+          border border-white/15
+          rounded-[28px]
+          shadow-[0_30px_80px_rgba(0,0,0,0.65)]
+          px-6 sm:px-10
+          py-10 sm:py-12
+          text-center
+          opacity-0 animate-fadeUp
+        "
+      >
+
+        <!-- LOGO -->
         <img
           src="/paws-crown.png"
           alt="Paws HQ"
+          class="w-14 h-14 mx-auto mb-4 drop-shadow-xl animate-float"
+        />
+
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
+          Paws HQ
+        </h1>
+
+        <p class="text-white/60 mt-4 mb-6 text-sm leading-relaxed">
+          Internal knowledge, policies, and tools
+        </p>
+
+        <!-- SLACK LOGIN -->
+        <button
+          onclick="signInWithSlack()"
           class="
-            w-14 h-14 sm:w-16 sm:h-16
-            mx-auto
-            drop-shadow-xl
-            animate-float
-            mix-blend-screen
+            w-full
+            flex items-center justify-center gap-3
+            px-6 py-4
+            rounded-xl
+            font-semibold
+            bg-white text-black
+            hover:bg-white/90
+            transition
+            shadow-lg
+            hover:shadow-2xl
+            active:scale-[0.97]
           "
-        />
+        >
+          <img
+            src="https://a.slack-edge.com/80588/marketing/img/icons/icon_slack_hash_colored.png"
+            class="w-5 h-5"
+            alt=""
+          />
+          Continue with Slack
+        </button>
+
+        <p class="mt-6 text-xs text-white/40">
+          Access restricted to the Paws Slack workspace
+        </p>
+
       </div>
-
-      <!-- TITLE -->
-      <h1 class="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-        Paws HQ
-      </h1>
-
-      <p class="text-white/60 mt-4 mb-6 text-sm leading-relaxed">
-        Internal knowledge, policies, and tools
-      </p>
-
-      <!-- SLACK LOGIN -->
-      <button
-        onclick="signInWithSlack()"
-        class="
-          w-full
-          flex items-center justify-center gap-3
-          px-6 py-4
-          rounded-xl
-          font-semibold
-          bg-white text-black
-          hover:bg-white/90
-          transition-all duration-200
-          shadow-lg
-          hover:shadow-2xl
-          active:scale-[0.98]
-        "
-      >
-        <img
-          src="https://a.slack-edge.com/80588/marketing/img/icons/icon_slack_hash_colored.png"
-          class="w-5 h-5"
-          alt=""
-        />
-        Continue with Slack
-      </button>
-
-      <!-- TRUST LINE -->
-      <p class="mt-6 text-xs text-white/40">
-        Access is restricted to the Paws Slack workspace
-      </p>
-    </div>
-  </main>
+    </main>
+  </div>
 
   <!-- SUPABASE -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/script.js"></script>
 
-  <!-- AUTO REDIRECT IF ALREADY LOGGED IN -->
+  <!-- AUTO REDIRECT -->
   <script>
     supabaseClient.auth.getSession().then(({ data }) => {
       if (data.session) {
