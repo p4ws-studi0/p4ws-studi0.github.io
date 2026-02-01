@@ -16,10 +16,8 @@ const supabaseClient = supabase.createClient(
 
 function signInWithSlack() {
   supabaseClient.auth.signInWithOAuth({
-    provider: 'slack',
-    options: {
-      redirectTo: 'https://hq.pawspet.com/auth/callback'
-    }
+    provider: 'slack_oidc',
+
   })
 }
 
