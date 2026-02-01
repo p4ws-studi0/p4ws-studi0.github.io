@@ -18,7 +18,7 @@ function signInWithSlack() {
   supabaseClient.auth.signInWithOAuth({
     provider: 'slack',
     options: {
-      redirectTo: 'https://hq.pawspet.com'
+      redirectTo: 'https://hq.pawspet.com/auth/callback'
     }
   })
 }
