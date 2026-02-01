@@ -16,10 +16,13 @@ const supabaseClient = supabase.createClient(
 
 function signInWithSlack() {
   supabaseClient.auth.signInWithOAuth({
-    provider: 'slack_oidc',
-
+    provider: 'slack',
+    options: {
+      redirectTo: 'https://hq.pawspet.com'
+    }
   })
 }
+
 
 /*************************************************
  * AUTH UI (RUN ONLY AFTER HEADER LOAD)
