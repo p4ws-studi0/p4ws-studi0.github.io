@@ -1,20 +1,111 @@
     body { font-family: 'Inter', sans-serif;  }
     .glass { backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 
-    @media print {
-      #header, #footer, #sideMenu { display: none !important; }
-      .pt-16 { padding-top: 0 !important; }
-      main {
-        margin: 0 !important;
-        padding: 20px !important;
-        max-width: 100% !important;
-      }
-      html, body {
-        background: white !important;
-        color: black !important;
-      }
-    }
+@media print {
 
+  /* Hide UI chrome */
+  #header,
+  #footer,
+  #sideMenu {
+    display: none !important;
+  }
+
+  /* Remove layout offsets */
+  .pt-16 {
+    padding-top: 0 !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 34px !important;
+    max-width: 100% !important;
+  }
+
+  /* Force sane print colors */
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: light;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Kill dark-mode variants */
+  .dark *,
+  [class*="dark:"] {
+    background: transparent !important;
+    color: #000000 !important;
+    border-color: #e5e7eb !important;
+    box-shadow: none !important;
+  }
+
+  /* Typography cleanup */
+  h1, h2, h3 {
+    color: #000000 !important;
+    page-break-after: avoid;
+  }
+
+  p, li {
+    color: #000000 !important;
+  }
+
+  /* Glass / blur nuked */
+  .glass {
+    backdrop-filter: none !important;
+    background: #ffffff !important;
+  }
+
+  /* Images print normally */
+  img {
+    mix-blend-mode: normal !important;
+    filter: none !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Tables stop being disasters */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #d1d5db !important;
+    padding: 6px 8px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Links readable on paper */
+  a {
+    color: #000000 !important;
+    text-decoration: underline !important;
+  }
+
+  a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #555;
+  }
+
+  /* Prevent weird page breaks */
+  article,
+  section {
+    break-inside: avoid;
+  }
+
+  @media print {
+  @page {
+    margin: 18mm 20mm 28mm 18mm;
+  }
+}
+
+}
 
 
 .prose img {
@@ -157,5 +248,9 @@ article {
 body {
   overflow-x: hidden;
 }
+
+
+
+
 
 

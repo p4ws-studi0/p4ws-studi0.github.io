@@ -183,18 +183,44 @@ supabaseClient.auth.onAuthStateChange(() => {
 
 /*************************************************
  * SIDEBAR TOGGLE (INJECTED-SAFE)
+ * - Toggle via #menuToggle
+ * - Close on ESC
+ * - Close on click outside
  *************************************************/
+
 document.addEventListener('click', e => {
   const toggle = e.target.closest('#menuToggle')
-  if (!toggle) return
+  const sideMenu = document.getElementById('sideMenu')
+  if (!sideMenu) return
 
-  if (window.innerWidth >= 1024) return
+  const isOpen = !sideMenu.classList.contains('-translate-x-full')
+
+  // Toggle button clicked
+  if (toggle) {
+    sideMenu.classList.toggle('-translate-x-full')
+    toggle.classList.toggle('open')
+    return
+  }
+
+  // Clicked outside sidebar while open
+  if (
+    isOpen &&
+    !e.target.closest('#sideMenu')
+  ) {
+    sideMenu.classList.add('-translate-x-full')
+    document.getElementById('menuToggle')?.classList.remove('open')
+  }
+})
+
+// ESC key closes sidebar
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return
 
   const sideMenu = document.getElementById('sideMenu')
   if (!sideMenu) return
 
-  sideMenu.classList.toggle('-translate-x-full')
-  toggle.classList.toggle('open')
+  sideMenu.classList.add('-translate-x-full')
+  document.getElementById('menuToggle')?.classList.remove('open')
 })
 
 
@@ -212,10 +238,15 @@ document.addEventListener('click', e => {
   )
 })
 
-// restore theme on load
-if (localStorage.getItem('theme') === 'light') {
+// restore theme on load (DEFAULT = LIGHT)
+const savedTheme = localStorage.getItem('theme')
+
+if (savedTheme === 'dark') {
+  document.documentElement.classList.add('dark')
+} else {
   document.documentElement.classList.remove('dark')
 }
+
 
 
 

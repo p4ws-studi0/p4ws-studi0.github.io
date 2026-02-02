@@ -4,59 +4,42 @@
     <!-- LEFT -->
     <div class="flex items-center gap-4">
 
-      <!-- Mobile hamburger -->
-<button
-  id="menuToggle"
-  aria-label="Toggle menu"
-  class="
-    -ml-2
-    relative
-    w-10 h-10
-    lg:hidden
-    rounded-lg
-    hover:bg-black/5 dark:hover:bg-white/10
-    transition
-  "
->
-  <span class="bar bar-1 absolute left-2 right-2 top-[11px] h-[2px] bg-current"></span>
-  <span class="bar bar-2 absolute left-2 right-2 top-[19px] h-[2px] bg-current"></span>
-  <span class="bar bar-3 absolute left-2 right-2 top-[27px] h-[2px] bg-current"></span>
-</button>
+      <!-- HAMBURGER -->
+      <button
+        id="menuToggle"
+        aria-label="Toggle menu"
+        class="
+          -ml-2
+          relative
+          w-10 h-10
+          rounded-lg
+          hover:bg-black/5 dark:hover:bg-white/10
+          transition
+        "
+      >
+        <span class="bar absolute left-2 right-2 top-[11px] h-[2px] bg-current"></span>
+        <span class="bar absolute left-2 right-2 top-[19px] h-[2px] bg-current"></span>
+        <span class="bar absolute left-2 right-2 top-[27px] h-[2px] bg-current"></span>
+      </button>
 
-
-
-
-      <!-- LOGO + TITLE -->
-<a
-  href="/"
-  class="flex items-center gap-3 group"
-  aria-label="Go to home"
->
-  <img
-    src="/paws-crown.png"
-    alt="Paws Crown"
-    class="
-      w-9 h-9
-      opacity-100
-      transition-transform duration-200
-      group-hover:scale-105
-      mix-blend-multiply dark:mix-blend-screen
-      drop-shadow-sm
-    "
-  />
-<!--
-  <span
-    class="
-      font-bold tracking-tight text-lg
-      opacity-100
-      transition-transform duration-200
-      group-hover:scale-105
-    "
-  >
-    Paws HQ
-  </span>
-  -->
-</a>
+      <!-- LOGO -->
+      <a
+        href="/"
+        class="flex items-center gap-3 group"
+        aria-label="Go to home"
+      >
+        <img
+          src="/paws-crown.png"
+          alt="Paws Crown"
+          class="
+            w-9 h-9
+            transition-transform duration-200
+            group-hover:scale-105
+            mix-blend-multiply dark:mix-blend-screen
+            drop-shadow-sm
+          "
+        />
+      </a>
 
     </div>
 
@@ -65,7 +48,7 @@
 
       <button
         onclick="window.print()"
-        class="text-lg opacity-100 hover:opacity-80 transition"
+        class="text-lg hover:opacity-80 transition"
         title="Print"
       >
         🖨️
@@ -73,16 +56,30 @@
 
       <button
         id="themeToggle"
-        class="text-lg opacity-100 hover:opacity-80 transition"
+        class="text-lg hover:opacity-80 transition"
         title="Toggle theme"
       >
         🌗
       </button>
 
-      <!-- AVATAR WRAPPER (avatar injected here) -->
-      <div id="avatarWrapper" class="relative opacity-100 hover:opacity-80 transition"></div>
+      <!-- Avatar injected here -->
+      <div id="avatarWrapper" class="relative hover:opacity-80 transition"></div>
 
     </div>
 
   </div>
+
+  <!-- HEADER SCRIPT -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('menuToggle')
+      const sidebar = document.getElementById('sideMenu')
+
+      if (!btn || !sidebar) return
+
+      btn.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full')
+      })
+    })
+  </script>
 </header>
