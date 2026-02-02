@@ -21,7 +21,6 @@ function signInWithSlack() {
   })
 }
 
-
 /*************************************************
  * AUTH UI (RUN ONLY AFTER HEADER LOAD)
  *************************************************/
@@ -53,7 +52,6 @@ async function updateHeaderAuthUI() {
   const { data } = await supabaseClient.auth.getSession()
   const session = data.session
 
-
   // login button
   if (loginBtn) {
     loginBtn.style.display = session ? 'none' : 'inline-flex'
@@ -61,7 +59,15 @@ async function updateHeaderAuthUI() {
 
   // avatar
   if (!session) return
-  if (headerRight.querySelector('.user-avatar')) return
+
+  // Wait for avatarWrapper to exist
+  const avatarWrapper = await waitForElement('avatarWrapper', 3000)
+  if (!avatarWrapper) {
+    console.warn('avatarWrapper not found after waiting')
+    return
+  }
+
+  if (avatarWrapper.querySelector('.user-avatar')) return
 
   const avatarUrl = getSlackAvatar(session)
   if (!avatarUrl) {
@@ -69,58 +75,78 @@ async function updateHeaderAuthUI() {
     return
   }
 
-const avatarWrapper = document.getElementById('avatarWrapper')
-if (!avatarWrapper) return
+  avatarWrapper.innerHTML = `
+    <div class="relative">
+      <img
+        src="${avatarUrl}"
+        class="user-avatar w-9 h-9 rounded-full object-cover border border-white/30 cursor-pointer hover:scale-105 transition"
+        id="avatarBtn"
+      />
 
-if (avatarWrapper.querySelector('.user-avatar')) return
-
-avatarWrapper.innerHTML = `
-  <div class="relative">
-    <img
-      src="${avatarUrl}"
-      class="user-avatar w-9 h-9 rounded-full object-cover border border-white/30 cursor-pointer hover:scale-105 transition"
-      id="avatarBtn"
-    />
-
-    <!-- DROPDOWN -->
-    <div
-      id="avatarMenu"
-      class="
-        hidden absolute right-0 mt-3 w-48
-        rounded-xl overflow-hidden
-        bg-white/80 dark:bg-[#0b0d12]/90
-        backdrop-blur-xl
-        border border-white/20
-        shadow-xl
-        text-sm
-      "
-    >
-      <div class="px-4 py-3 border-b border-white/10">
-        <p class="font-medium">
-          ${session.user.user_metadata?.full_name || 'Account'}
-        </p>
-        <p class="opacity-60 text-xs truncate">
-          ${session.user.email || ''}
-        </p>
-      </div>
-
-      <button
-        id="logoutBtn"
-        class="w-full text-left px-4 py-2 hover:bg-black/5 dark:hover:bg-white/10 transition"
+      <!-- DROPDOWN -->
+      <div
+        id="avatarMenu"
+        class="
+          hidden absolute right-0 mt-3 w-48
+          rounded-xl overflow-hidden
+          bg-white/80 dark:bg-[#0b0d12]/90
+          backdrop-blur-xl
+          border border-white/20
+          shadow-xl
+          text-sm
+        "
       >
-        Log out
-      </button>
-    </div>
-  </div>
-`
+        <div class="px-4 py-3 border-b border-white/10">
+          <p class="font-medium">
+            ${session.user.user_metadata?.full_name || 'Account'}
+          </p>
+          <p class="opacity-60 text-xs truncate">
+            ${session.user.email || ''}
+          </p>
+        </div>
 
+        <button
+          id="logoutBtn"
+          class="w-full text-left px-4 py-2 hover:bg-black/5 dark:hover:bg-white/10 transition"
+        >
+          Log out
+        </button>
+      </div>
+    </div>
+  `
 
   console.log('✅ Avatar injected')
-
-  
 }
 
+// Helper function to wait for an element
+function waitForElement(id, timeout = 5000) {
+  return new Promise((resolve) => {
+    const element = document.getElementById(id)
+    if (element) {
+      resolve(element)
+      return
+    }
 
+    const observer = new MutationObserver(() => {
+      const element = document.getElementById(id)
+      if (element) {
+        observer.disconnect()
+        clearTimeout(timeoutId)
+        resolve(element)
+      }
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+
+    const timeoutId = setTimeout(() => {
+      observer.disconnect()
+      resolve(null)
+    }, timeout)
+  })
+}
 
 
 
