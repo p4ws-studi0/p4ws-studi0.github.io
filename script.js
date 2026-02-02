@@ -21,6 +21,7 @@ function signInWithSlack() {
   })
 }
 
+
 /*************************************************
  * AUTH UI (RUN ONLY AFTER HEADER LOAD)
  *************************************************/
@@ -114,7 +115,6 @@ avatarWrapper.innerHTML = `
 `
 
 
-  headerRight.appendChild(img)
   console.log('✅ Avatar injected')
 
   

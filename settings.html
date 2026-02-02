@@ -16,42 +16,22 @@
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { darkMode: 'class' }</script>
-
   <script>
-  async function populateLoggedInAs() {
-    const { data } = await supabaseClient.auth.getSession()
-    const session = data.session
-    if (!session) return
-
-    const user = session.user
-
-    const avatar =
-      user.user_metadata?.avatar_url ||
-      user.user_metadata?.picture ||
-      user.identities?.[0]?.identity_data?.avatar_url ||
-      ''
-
-    document.getElementById('loggedInAvatar').src = avatar
-    document.getElementById('loggedInName').textContent =
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      'Account'
-    document.getElementById('loggedInEmail').textContent =
-      user.email || ''
-  }
-
-  document.addEventListener('header:ready', populateLoggedInAs)
-</script>
+    tailwind.config = { darkMode: 'class' }
+  </script>
 
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .glass { backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+    .glass {
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
   </style>
 </head>
 
 <body
-  class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen opacity-0 transition-opacity duration-200"
+  class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126]
+         text-slate-900 dark:text-white min-h-screen opacity-0 transition-opacity duration-200"
   data-auth="checking"
 >
 
@@ -76,9 +56,7 @@
 
       <!-- PAGE HEADER -->
       <header class="mb-10">
-        <h1 class="text-4xl font-extrabold mb-2">
-          Settings
-        </h1>
+        <h1 class="text-4xl font-extrabold mb-2">Settings</h1>
         <p class="opacity-60 text-lg">
           Manage your account and preferences
         </p>
@@ -99,7 +77,10 @@
 
             <button
               id="themeToggle"
-              class="px-4 py-2 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition"
+              class="px-4 py-2 rounded-xl
+                     bg-black/5 dark:bg-white/10
+                     hover:bg-black/10 dark:hover:bg-white/20
+                     transition"
             >
               Toggle
             </button>
@@ -107,53 +88,51 @@
         </section>
 
         <!-- SECURITY -->
-<section class="glass bg-white/50 dark:bg-white/10 rounded-2xl p-6">
-  <h2 class="text-xl font-semibold mb-4">Security</h2>
+        <section class="glass bg-white/50 dark:bg-white/10 rounded-2xl p-6">
+          <h2 class="text-xl font-semibold mb-4">Security</h2>
 
-  <!-- Logged in as -->
-  <div
-    id="loggedInAs"
-    class="flex items-center justify-between gap-4 p-4 rounded-xl
-           bg-black/5 dark:bg-white/5"
-  >
-    <div class="flex items-center gap-4 min-w-0">
-      <img
-        id="loggedInAvatar"
-        class="w-12 h-12 rounded-full object-cover border border-white/30"
-        alt=""
-      />
+          <!-- Logged in as -->
+          <div
+            id="loggedInAs"
+            class="flex items-center justify-between gap-4 p-4 rounded-xl
+                   bg-black/5 dark:bg-white/5"
+          >
+            <div class="flex items-center gap-4 min-w-0">
+              <img
+                id="loggedInAvatar"
+                class="w-12 h-12 rounded-full object-cover border border-white/30"
+                alt=""
+              />
 
-      <div class="min-w-0">
-        <p class="text-sm opacity-60">Logged in as</p>
-        <p id="loggedInName" class="font-medium truncate"></p>
-        <p id="loggedInEmail" class="text-sm opacity-60 truncate"></p>
-      </div>
-    </div>
+              <div class="min-w-0">
+                <p class="text-sm opacity-60">Logged in as</p>
+                <p id="loggedInName" class="font-medium truncate"></p>
+                <p id="loggedInEmail" class="text-sm opacity-60 truncate"></p>
+              </div>
+            </div>
 
-    <img
-      src="https://a.slack-edge.com/80588/marketing/img/icons/icon_slack_hash_colored.png"
-      alt="Slack"
-      class="w-5 h-5 mr-5"
-      title="Signed in with Slack"
-    />
-  </div>
+            <img
+              src="https://a.slack-edge.com/80588/marketing/img/icons/icon_slack_hash_colored.png"
+              alt="Slack"
+              class="w-5 h-5 mr-5"
+              title="Signed in with Slack"
+            />
+          </div>
 
-  <!-- Logout (bottom) -->
-  <div class="mt-6 pt-4 border-t border-white/10">
-    <button
-      id="logoutBtnSettings"
-      class="px-4 py-2 rounded-xl
-             bg-red-500/10 text-red-600
-             dark:text-red-400
-             hover:bg-red-500/20
-             transition"
-    >
-      Log out
-    </button>
-  </div>
-</section>
-
-
+          <!-- Logout -->
+          <div class="mt-6 pt-4 border-t border-white/10">
+            <button
+              id="logoutBtnSettings"
+              class="px-4 py-2 rounded-xl
+                     bg-red-500/10 text-red-600
+                     dark:text-red-400
+                     hover:bg-red-500/20
+                     transition"
+            >
+              Log out
+            </button>
+          </div>
+        </section>
 
       </div>
     </main>
@@ -184,15 +163,52 @@
       })
   </script>
 
-  <!-- SUPABASE + APP LOGIC -->
+  <!-- SUPABASE -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/script.js"></script>
+
+  <!-- AUTH UI FIX (NO RACE CONDITIONS) -->
+  <script>
+    function populateLoggedInAsFromUser(user) {
+      if (!user) return
+
+      const avatar =
+        user.user_metadata?.avatar_url ||
+        user.user_metadata?.picture ||
+        user.identities?.[0]?.identity_data?.avatar_url ||
+        ''
+
+      document.getElementById('loggedInAvatar').src = avatar
+      document.getElementById('loggedInName').textContent =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        'Account'
+      document.getElementById('loggedInEmail').textContent =
+        user.email || ''
+    }
+
+    // Covers refresh
+    supabaseClient.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        populateLoggedInAsFromUser(data.session.user)
+      }
+    })
+
+    // Covers first load / hydration
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        populateLoggedInAsFromUser(session.user)
+      }
+    })
+  </script>
 
   <!-- SETTINGS-ONLY LOGOUT -->
   <script>
     document.addEventListener('click', e => {
       if (e.target.id === 'logoutBtnSettings') {
-        supabaseClient.auth.signOut().then(() => location.href = '/')
+        supabaseClient.auth.signOut().then(() => {
+          location.href = '/'
+        })
       }
     })
   </script>
