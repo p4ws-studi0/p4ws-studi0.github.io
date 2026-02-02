@@ -112,9 +112,6 @@
   height: auto !important;
 }
 
-body {
-  letter-spacing: -0.01em;
-}
 
 .glass {
   backdrop-filter: blur(20px) saturate(115%);
