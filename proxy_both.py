@@ -8,7 +8,7 @@ from datetime import date
 # CONFIG
 # ==============================
 SUBDOMAIN = "pawspet"
-API_KEY = "9592bc4615d1c42b4e7cfbf04b16cf35"  # ← PUT YOUR GINGR API KEY HERE
+API_KEY = ""  # ← PUT YOUR GINGR API KEY HERE
 PORT = 8000
 
 ROOMS_URL = f"https://{SUBDOMAIN}.gingrapp.com/api/v1/back_of_house"
