@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Daily Care Sheet</title>
+
+  <link
+    rel="icon"
+    href="/favicon.ico"
+  >
+
+
+  <!-- Inter -->
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  >
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="/styles.css"
+  >
+
+
+  <!-- Tailwind -->
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+
+  <script>
+
+    tailwind.config = {
+      darkMode: 'class'
+    }
+
+  </script>
+
+</head>
+
+
+<body
+  class="
+    bg-gradient-to-br
+    from-slate-100
+    to-slate-200
+
+    dark:from-[#0b0f14]
+    dark:to-[#1e2126]
+
+    text-slate-900
+    dark:text-white
+
+    min-h-screen
+
+    opacity-0
+    transition-opacity
+    duration-200
+  "
+>
+
+
+  <!-- HEADER -->
+
+  <div id="header"></div>
+
+
+
+  <div class="pt-16 flex">
+
+
+    <!-- SIDEBAR -->
+
+    <aside
+      id="sideMenu"
+
+      class="
+        fixed
+        z-30
+
+        w-64
+        h-screen
+
+        bg-white/10
+        dark:bg-white/10
+
+        glass
+
+        border-r
+        border-white/10
+
+        -translate-x-full
+
+        pt-6
+        px-5
+      "
+    ></aside>
+
+
+
+    <!-- CONTENT -->
+
+    <main
+      class="
+        flex-1
+
+        min-h-[calc(100vh-4rem)]
+
+        flex
+        items-center
+        justify-center
+
+        px-6
+      "
+    >
+
+
+      <button
+        id="careSheetButton"
+
+        type="button"
+
+        class="
+          flex
+          items-center
+          gap-3
+
+          bg-[#181879]
+
+          hover:bg-[#202092]
+
+          active:scale-[0.98]
+
+          disabled:opacity-60
+          disabled:cursor-wait
+
+          text-white
+
+          font-semibold
+          text-lg
+
+          px-8
+          py-4
+
+          rounded-2xl
+
+          shadow-lg
+          shadow-black/10
+
+          transition-all
+          duration-200
+        "
+      >
+
+
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+
+          width="22"
+          height="22"
+
+          viewBox="0 0 24 24"
+
+          fill="none"
+
+          stroke="currentColor"
+
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+
+          <path
+            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+          />
+
+          <polyline
+            points="14 2 14 8 20 8"
+          />
+
+          <line
+            x1="16"
+            y1="13"
+            x2="8"
+            y2="13"
+          />
+
+          <line
+            x1="16"
+            y1="17"
+            x2="8"
+            y2="17"
+          />
+
+        </svg>
+
+
+        <span id="buttonText">
+
+          Open Daily Care Sheet
+
+        </span>
+
+
+      </button>
+
+
+    </main>
+
+
+  </div>
+
+
+
+  <!-- FOOTER -->
+
+  <div id="footer"></div>
+
+
+
+  <script>
+
+    /********************************************
+     * PAWS HQ PARTIALS
+     ********************************************/
+
+
+    fetch('/partials/header.html')
+
+      .then(function(response) {
+
+        return response.text();
+
+      })
+
+      .then(function(html) {
+
+        document
+          .getElementById('header')
+          .innerHTML = html;
+
+
+        document.body
+          .classList
+          .remove('opacity-0');
+
+      });
+
+
+
+    fetch('/partials/sidebar.html')
+
+      .then(function(response) {
+
+        return response.text();
+
+      })
+
+      .then(function(html) {
+
+        document
+          .getElementById('sideMenu')
+          .innerHTML = html;
+
+      });
+
+
+
+    fetch('/partials/footer.html')
+
+      .then(function(response) {
+
+        return response.text();
+
+      })
+
+      .then(function(html) {
+
+        document
+          .getElementById('footer')
+          .innerHTML = html;
+
+      });
+
+
+
+    /********************************************
+     * RUN CARDS
+     ********************************************/
+
+
+    const WEB_APP_URL =
+      'https://script.google.com/macros/s/AKfycbx3JhK3Uz_pJx655YQ7DdNNgBUVs9s-Yfkhlc9xqabrhIdWJMQJU2d0xePWk4EuxDpTLg/exec';
+
+
+
+    const button =
+      document.getElementById(
+        'careSheetButton'
+      );
+
+
+    const buttonText =
+      document.getElementById(
+        'buttonText'
+      );
+
+
+
+    button.addEventListener(
+      'click',
+      openCareSheet
+    );
+
+
+
+    function openCareSheet() {
+
+
+      /*
+       * Open tab immediately.
+       *
+       * Doing this inside the user's click
+       * prevents popup blockers from stopping it.
+       */
+
+const pdfWindow = window.open(
+  '/report-loading.html?report=Daily%20Care%20Sheet',
+  '_blank'
+);
+
+
+
+      if (!pdfWindow) {
+
+        alert(
+          'Please allow pop-ups for Paws HQ.'
+        );
+
+        return;
+
+      }
+
+
+
+      /********************************************
+       * LOADING TAB
+       ********************************************/
+
+
+      pdfWindow.document.title =
+        'Run Cards';
+
+
+      pdfWindow.document.body.style.margin =
+        '0';
+
+
+      pdfWindow.document.body.style.height =
+        '100vh';
+
+
+      pdfWindow.document.body.style.display =
+        'flex';
+
+
+      pdfWindow.document.body.style.alignItems =
+        'center';
+
+
+      pdfWindow.document.body.style.justifyContent =
+        'center';
+
+
+      pdfWindow.document.body.style.background =
+        '#f8fafc';
+
+
+      pdfWindow.document.body.style.fontFamily =
+        'Inter, Arial, sans-serif';
+
+
+      pdfWindow.document.body.style.color =
+        '#181879';
+
+
+      pdfWindow.document.body.style.fontWeight =
+        '600';
+
+
+      pdfWindow.document.body.innerText =
+        'Preparing Run Cards...';
+
+
+
+      /********************************************
+       * BUTTON LOADING STATE
+       ********************************************/
+
+
+      button.disabled =
+        true;
+
+
+      buttonText.innerText =
+        'Preparing...';
+
+
+
+      /********************************************
+       * JSONP CALLBACK
+       ********************************************/
+
+
+      const callbackName =
+        'runCardsCallback_' +
+        Date.now();
+
+
+
+      const requestScript =
+        document.createElement(
+          'script'
+        );
+
+
+
+      window[callbackName] =
+        function(pdfUrl) {
+
+
+          /*
+           * This is now a REAL Supabase
+           * application/pdf URL.
+           *
+           * Navigate the waiting tab directly
+           * to it.
+           */
+
+          pdfWindow.location.replace(
+            pdfUrl
+          );
+
+
+
+          /****************************************
+           * CLEANUP
+           ****************************************/
+
+
+          delete window[
+            callbackName
+          ];
+
+
+          requestScript.remove();
+
+
+          button.disabled =
+            false;
+
+
+          buttonText.innerText =
+            'Open Daily Care Sheet';
+
+        };
+
+
+
+      /********************************************
+       * ERROR HANDLING
+       ********************************************/
+
+
+      requestScript.onerror =
+        function() {
+
+
+          pdfWindow.close();
+
+
+          delete window[
+            callbackName
+          ];
+
+
+          requestScript.remove();
+
+
+          button.disabled =
+            false;
+
+
+          buttonText.innerText =
+            'Open Daily Care Sheet';
+
+
+          alert(
+            'Unable to generate Run Cards.'
+          );
+
+        };
+
+
+
+      /********************************************
+       * CALL APPS SCRIPT
+       ********************************************/
+
+
+      requestScript.src =
+        WEB_APP_URL +
+
+        '?callback=' +
+
+        encodeURIComponent(
+          callbackName
+        ) +
+
+        '&t=' +
+
+        Date.now();
+
+
+
+      document.head.appendChild(
+        requestScript
+      );
+
+    }
+
+  </script>
+
+
+
+  <!-- Supabase -->
+
+  <script
+    src="https://unpkg.com/@supabase/supabase-js@2"
+  ></script>
+
+
+
+  <!-- Paws HQ -->
+
+  <script
+    src="/script.js"
+  ></script>
+
+
+</body>
+
+</html>

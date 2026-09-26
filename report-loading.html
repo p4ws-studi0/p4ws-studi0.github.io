@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en" class="dark overflow-x-hidden">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Preparing Report – Paws HQ</title>
+
+  <link rel="icon" href="/favicon.ico">
+
+  <!-- Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .glass {
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    /* BACKGROUND */
+    .hyperspace {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: -20;
+    }
+
+    .hyperspace::before {
+      content: '';
+      position: absolute;
+      inset: -100%;
+
+      background:
+        repeating-radial-gradient(
+          circle at center,
+          rgba(255,255,255,0.12) 0px,
+          rgba(255,255,255,0.12) 1px,
+          transparent 2px,
+          transparent 7px
+        );
+
+      animation: warp 7s linear infinite;
+      transform-origin: center;
+    }
+
+    @keyframes warp {
+      0% {
+        transform: scale(0.45);
+        opacity: 0.08;
+      }
+
+      100% {
+        transform: scale(1.65);
+        opacity: 0.34;
+      }
+    }
+
+    /* LOADER */
+    .loader {
+      position: relative;
+      width: 126px;
+      height: 126px;
+      margin: 0 auto 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .core {
+      position: relative;
+      z-index: 5;
+
+      width: 66px;
+      height: 66px;
+
+      border-radius: 22px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,0.14),
+          rgba(255,255,255,0.05)
+        );
+
+      border: 1px solid rgba(255,255,255,0.16);
+
+      box-shadow:
+        0 12px 35px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.15);
+
+      animation: coreFloat 2.5s ease-in-out infinite;
+    }
+
+    .core img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+      mix-blend-mode: screen;
+      filter:
+        drop-shadow(0 0 10px rgba(255,255,255,0.12));
+    }
+
+    @keyframes coreFloat {
+      0%, 100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.055);
+      }
+    }
+
+    /* ORBITS */
+    .orbit {
+      position: absolute;
+      border-radius: 9999px;
+      border: 1px solid rgba(255,255,255,0.13);
+    }
+
+    .orbit-one {
+      width: 100px;
+      height: 100px;
+      animation: rotateOrbit 2.4s linear infinite;
+    }
+
+    .orbit-two {
+      width: 124px;
+      height: 124px;
+      border-color: rgba(96,165,250,0.16);
+      animation: rotateOrbitReverse 4s linear infinite;
+    }
+
+    @keyframes rotateOrbit {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes rotateOrbitReverse {
+      from {
+        transform: rotate(360deg);
+      }
+
+      to {
+        transform: rotate(0deg);
+      }
+    }
+
+    /* ORBITING DOTS */
+    .orbit-one::before {
+      content: '';
+      position: absolute;
+
+      width: 8px;
+      height: 8px;
+
+      top: -4px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      border-radius: 9999px;
+
+      background: rgba(255,255,255,0.95);
+
+      box-shadow:
+        0 0 12px rgba(255,255,255,0.8),
+        0 0 28px rgba(96,165,250,0.55);
+    }
+
+    .orbit-two::before {
+      content: '';
+      position: absolute;
+
+      width: 6px;
+      height: 6px;
+
+      bottom: -3px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      border-radius: 9999px;
+
+      background: rgba(96,165,250,0.95);
+
+      box-shadow:
+        0 0 14px rgba(96,165,250,0.85),
+        0 0 26px rgba(96,165,250,0.45);
+    }
+
+    /* RADAR PULSES */
+    .pulse-ring {
+      position: absolute;
+
+      width: 72px;
+      height: 72px;
+
+      border-radius: 9999px;
+
+      border: 1px solid rgba(255,255,255,0.16);
+
+      animation: pulseOut 2.4s ease-out infinite;
+    }
+
+    .pulse-ring:nth-child(2) {
+      animation-delay: 1.2s;
+    }
+
+    @keyframes pulseOut {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.55;
+      }
+
+      100% {
+        transform: scale(1.75);
+        opacity: 0;
+      }
+    }
+
+    /* STATUS DOTS */
+    .status-dots {
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 18px;
+    }
+
+    .status-dots span {
+      width: 5px;
+      height: 5px;
+
+      border-radius: 9999px;
+
+      background: rgba(255,255,255,0.45);
+
+      animation: dotPulse 1.35s ease-in-out infinite;
+    }
+
+    .status-dots span:nth-child(2) {
+      animation-delay: 0.18s;
+    }
+
+    .status-dots span:nth-child(3) {
+      animation-delay: 0.36s;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% {
+        transform: translateY(0);
+        opacity: 0.3;
+      }
+
+      50% {
+        transform: translateY(-4px);
+        opacity: 1;
+      }
+    }
+
+    /* CARD GLOW */
+    .report-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-card::before {
+      content: '';
+
+      position: absolute;
+
+      width: 220px;
+      height: 220px;
+
+      left: 50%;
+      top: -145px;
+
+      transform: translateX(-50%);
+
+      background:
+        rgba(59,130,246,0.18);
+
+      border-radius: 9999px;
+
+      filter: blur(70px);
+
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+
+<body
+  class="
+    relative
+    min-h-screen
+    bg-[#050507]
+    text-white
+    overflow-hidden
+  "
+>
+
+  <!-- BACKGROUND -->
+  <div class="hyperspace"></div>
+
+
+  <!-- BACKGROUND GLOWS -->
+  <div class="fixed inset-0 -z-10 pointer-events-none">
+
+    <div
+      class="
+        absolute
+        top-[-30%]
+        left-1/2
+        -translate-x-1/2
+
+        w-[520px]
+        h-[520px]
+
+        bg-blue-500/25
+
+        rounded-full
+        blur-[160px]
+      "
+    ></div>
+
+    <div
+      class="
+        absolute
+        bottom-[-30%]
+        left-1/2
+        -translate-x-1/2
+
+        w-[420px]
+        h-[420px]
+
+        bg-sky-400/20
+
+        rounded-full
+        blur-[160px]
+      "
+    ></div>
+
+  </div>
+
+
+  <!-- CENTER -->
+  <main
+    class="
+      min-h-screen
+      flex
+      items-center
+      justify-center
+      px-6
+    "
+  >
+
+    <div
+      class="
+        report-card
+        glass
+
+        bg-white/10
+
+        border
+        border-white/15
+
+        rounded-[28px]
+
+        shadow-[0_40px_100px_rgba(0,0,0,0.7)]
+
+        px-10
+        py-12
+
+        text-center
+
+        w-full
+        max-w-sm
+      "
+    >
+
+      <!-- ANIMATED LOADER -->
+      <div class="loader">
+
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+
+        <div class="orbit orbit-two"></div>
+        <div class="orbit orbit-one"></div>
+
+        <div class="core">
+          <img
+            src="/paws-crown.png"
+            alt="Paws HQ"
+          >
+        </div>
+
+      </div>
+
+
+      <!-- TEXT -->
+      <h1
+        class="
+          text-xl
+          font-semibold
+          tracking-[-0.01em]
+          mb-2
+        "
+      >
+        Preparing your report
+      </h1>
+
+
+      <p
+        class="
+          text-white/55
+          text-sm
+        "
+      >
+        Just a moment while everything comes together.
+      </p>
+
+
+      <!-- ANIMATED DOTS -->
+      <div class="status-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+    </div>
+
+  </main>
+
+</body>
+</html>
