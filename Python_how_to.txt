@@ -1,0 +1,4 @@
+generate_kb_indexes.py: update sidebar/pages
+
+scrape.py: rebuild search index
+
