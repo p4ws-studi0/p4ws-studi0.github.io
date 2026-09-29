@@ -64,7 +64,7 @@ function harness({at = '2026-12-31T23:59:00Z'} = {}) {
     querySelectorAll(selector){return selector==='[data-view]' ? views : [];},addEventListener(){}};
   const context = vm.createContext({document,window:{addEventListener(){}},supabaseClient:client,
     crypto:{randomUUID:()=> '00000000-0000-4000-8000-000000000099'},Date:FixedDate,
-    setInterval(){return 1;},clearInterval(){},console});
+    setInterval(){return 1;},clearInterval(){},setTimeout(){return 1;},clearTimeout(){},console});
   vm.runInContext(sourceWithHooks,context,{filename:'tours.js'});
   const app = context.__tours;
   return {app,get,api,signOut(){api.session=null;assert.ok(api.authCallback);api.authCallback('SIGNED_OUT');}};

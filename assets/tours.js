@@ -5,7 +5,7 @@
   const TABLE = 'hq_tours';
   const $ = id => document.getElementById(id);
   const state = { rows: [], view: 'upcoming', ready: false, loading: false, busy: false,
-    editing: null, deleting: null, undo: null, user: null, refreshTimer: null, authEpoch: 0 };
+    editing: null, deleting: null, undo: null, user: null, refreshTimer: null, toastTimer: null, authEpoch: 0 };
   const labels = {
     file: { yes: 'File on record', no: 'No file', unknown: 'File unknown' },
     booking: { confirmed: 'Booking confirmed', tentative: 'Tentative booking', none: 'No booking', unknown: 'Booking unknown' }
@@ -43,11 +43,20 @@
     $('pageMessage').hidden = !text;
     $('pageMessage').classList.toggle('is-error', error);
   }
+  function dismissToast() {
+    clearTimeout(state.toastTimer);
+    state.toastTimer = null;
+    state.undo = null;
+    $('toast').hidden = true;
+    $('undoDelete').hidden = true;
+  }
   function toast(text, undo = null) {
+    clearTimeout(state.toastTimer);
     state.undo = undo;
     $('toastText').textContent = text;
     $('undoDelete').hidden = !undo;
     $('toast').hidden = false;
+    state.toastTimer = setTimeout(dismissToast, 5000);
   }
   function enableControls() {
     $('addTour').disabled = !state.ready || state.busy || state.loading;
@@ -313,7 +322,7 @@
     supabaseClient.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         state.authEpoch++; state.ready=false; state.rows=[]; state.user=null;
-        state.undo=null; state.editing=null; state.deleting=null; $('toast').hidden=true;
+        state.editing=null; state.deleting=null; dismissToast();
         $('tourDialog').close(); $('deleteDialog').close(); $('tourForm').reset();
         render(); message('Sign in to Paws HQ to view tours.');
       }
