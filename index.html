@@ -1,179 +1,689 @@
 <!DOCTYPE html>
+
 <html lang="en" class="dark">
+
 <head>
+
   <meta charset="UTF-8" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+
 
   <title>Paws HQ</title>
 
+
+
   <link rel="icon" href="/favicon.ico">
+
   <link rel="stylesheet" href="styles.css">
+
   <link rel="stylesheet" href="/assets/home-tours.css?v=2">
+
   <link rel="stylesheet" href="/assets/tour-editor.css?v=1">
+
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
+
+
   <!-- Inter -->
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
+
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+
+
   <link
+
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+
     rel="stylesheet"
+
   >
 
+
+
   <!-- Tailwind -->
+
   <script src="https://cdn.tailwindcss.com"></script>
 
+
+
   <script>
+
     tailwind.config = {
+
       darkMode: 'class',
+
       theme: {
+
         extend: {
+
           boxShadow: {
+
             soft: '0 10px 40px rgba(0,0,0,.08)',
+
           }
+
         }
+
       }
+
     }
+
   </script>
+
 </head>
 
 
+
+
+
 <body
+
   class="bg-gradient-to-br from-slate-100 to-slate-200
+
          dark:from-[#0b0f14] dark:to-[#1e2126]
+
          text-slate-900 dark:text-white
+
          min-h-screen opacity-0 transition-opacity duration-200"
+
   data-auth="checking"
+
 >
 
+
+
   <!-- HEADER -->
+
   <div id="header"></div>
 
 
+
+
+
   <!-- LAYOUT -->
+
   <div class="pt-16 flex">
 
 
+
+
+
     <!-- SIDEBAR -->
+
     <aside
+
       id="sideMenu"
+
       class="fixed z-30 w-64 h-screen
+
              bg-white/10 dark:bg-white/10 glass
+
              border-r border-white/10
+
              -translate-x-full
+
              pt-6 px-5"
+
     ></aside>
 
 
+
+
+
     <!-- MAIN -->
-    <main class="flex-1 px-6 py-20 max-w-6xl mx-auto">
+
+    <main class="flex-1 px-6 py-10 md:py-12 max-w-6xl mx-auto">
+
+
+
 
 
       <!-- HERO -->
-      <section class="mb-24">
+    <section class="mb-8">
+      <div class="max-w-3xl">
+        <h1
+          class="text-4xl md:text-5xl font-extrabold tracking-tight mb-3"
+        >
+          Paws HQ
+        </h1>
 
-        <div class="max-w-3xl">
-
-          <h1
-            class="text-5xl md:text-6xl font-extrabold tracking-tight mb-6"
-          >
-            Paws HQ
-          </h1>
-
-          <h2
-            id="welcomeMessage"
-            class="opacity-70 text-lg md:text-xl font-semibold mb-10 transition-opacity duration-500"
-          ></h2>
-
-        </div>
+        <h2
+          id="welcomeMessage"
+          class="opacity-70 text-base md:text-lg font-semibold transition-opacity duration-500"
+        ></h2>
+      </div>
+    </section>
 
 
-        <!-- SEARCH -->
-        <div class="relative max-w-3xl">
+    <!-- QUICK ACCESS -->
+    <section
+      class="relative z-20 overflow-visible mb-6 rounded-3xl
+             bg-white/60 dark:bg-white/10
+             glass
+             border border-white/10
+             shadow-soft
+             p-4 md:p-5"
+      style="overflow: visible;"
+      aria-labelledby="quickAccessTitle"
+    >
+      <div class="flex items-center justify-between gap-4 mb-3">
+        <h2
+          id="quickAccessTitle"
+          class="text-lg md:text-xl font-bold tracking-tight"
+        >
+          Quick Access
+        </h2>
+      </div>
 
-          <input
-            id="searchInput"
-            type="text"
-            placeholder="🔎  Search policies, procedures, tips…"
-            class="w-full py-5 px-7 text-lg rounded-2xl
-                   bg-white/70 dark:bg-white/10
-                   glass
-                   border border-white/20
-                   shadow-soft
-                   focus:outline-none focus:ring-2 focus:ring-blue-500
-                   transition"
-          />
-
-          <div
-            id="searchResults"
-            class="absolute z-50 mt-4 w-full hidden
-                   rounded-2xl
-                   bg-white/80 dark:bg-[#0b0d12]/95
-                   backdrop-blur-xl
-                   border border-white/20
-                   shadow-2xl
-                   overflow-hidden"
-          ></div>
-
-        </div>
-
-      </section>
+      <!-- Add future quick-access items inside this row -->
+      <div class="relative z-20 flex flex-wrap items-start gap-2.5">
+<div class="relative inline-block">
 
 
 
-      <!-- RUN CARDS DROPDOWN -->
-      <section class="mb-6">
-
-        <div class="relative inline-block">
 
 
           <!-- MAIN BUTTON -->
+
           <button
+
             id="runCardsButton"
+
+            type="button"
+
+            aria-haspopup="true"
+
+            aria-expanded="false"
+
+
+
+            class="
+
+              inline-flex
+
+              items-center
+
+              gap-2.5
+
+
+
+              px-4
+
+              py-2.5
+
+
+
+              rounded-xl
+
+
+
+              bg-white
+
+              dark:bg-white/10
+
+
+
+              hover:bg-slate-50
+
+              dark:hover:bg-white/15
+
+
+
+              text-slate-900
+
+              dark:text-white
+
+
+
+              text-sm
+
+              font-semibold
+
+
+
+              border
+
+              border-black/10
+
+              dark:border-white/15
+
+
+
+              shadow-soft
+
+
+
+              active:scale-[0.98]
+
+
+
+              disabled:opacity-60
+
+              disabled:cursor-wait
+
+
+
+              transition-all
+
+              duration-200
+
+            "
+
+          >
+
+
+
+            <!-- DOCUMENT ICON -->
+
+            <svg
+
+              xmlns="http://www.w3.org/2000/svg"
+
+              width="17"
+
+              height="17"
+
+              viewBox="0 0 24 24"
+
+              fill="none"
+
+              stroke="currentColor"
+
+              stroke-width="2"
+
+              stroke-linecap="round"
+
+              stroke-linejoin="round"
+
+            >
+
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+
+              <polyline points="14 2 14 8 20 8"/>
+
+              <line x1="16" y1="13" x2="8" y2="13"/>
+
+              <line x1="16" y1="17" x2="8" y2="17"/>
+
+            </svg>
+
+
+
+            <span id="runCardsButtonText">
+
+              Run Cards
+
+            </span>
+
+
+
+            <!-- CHEVRON -->
+
+            <svg
+
+              id="runCardsChevron"
+
+              xmlns="http://www.w3.org/2000/svg"
+
+              width="15"
+
+              height="15"
+
+              viewBox="0 0 24 24"
+
+              fill="none"
+
+              stroke="currentColor"
+
+              stroke-width="2.5"
+
+              stroke-linecap="round"
+
+              stroke-linejoin="round"
+
+              class="transition-transform duration-200"
+
+            >
+
+              <polyline points="6 9 12 15 18 9"></polyline>
+
+            </svg>
+
+
+
+          </button>
+
+
+
+
+
+          <!-- DROPDOWN -->
+
+          <div
+
+            id="runCardsMenu"
+
+
+
+            class="
+
+              hidden
+
+
+
+              absolute
+
+              left-0
+
+              top-full
+
+
+
+              mt-2
+
+              w-44
+
+
+
+              rounded-xl
+
+
+
+              bg-white
+
+              dark:bg-[#16191f]
+
+
+
+              text-slate-900
+
+              dark:text-white
+
+
+
+              border
+
+              border-black/10
+
+              dark:border-white/15
+
+
+
+              shadow-xl
+
+
+
+              overflow-hidden
+
+
+
+              z-50
+
+            "
+
+          >
+
+
+
+
+
+            <!-- TODAY -->
+
+            <button
+
+              type="button"
+
+              data-start="today"
+
+
+
+              class="
+
+                run-card-option
+
+
+
+                w-full
+
+
+
+                flex
+
+                items-center
+
+                gap-3
+
+
+
+                px-4
+
+                py-3
+
+
+
+                text-left
+
+                text-sm
+
+                font-medium
+
+
+
+                hover:bg-slate-100
+
+                dark:hover:bg-white/10
+
+
+
+                transition
+
+              "
+
+            >
+
+
+
+              <svg
+
+                xmlns="http://www.w3.org/2000/svg"
+
+                width="17"
+
+                height="17"
+
+                viewBox="0 0 24 24"
+
+                fill="none"
+
+                stroke="currentColor"
+
+                stroke-width="2"
+
+                stroke-linecap="round"
+
+                stroke-linejoin="round"
+
+              >
+
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+
+                <line x1="16" y1="2" x2="16" y2="6"/>
+
+                <line x1="8" y1="2" x2="8" y2="6"/>
+
+                <line x1="3" y1="10" x2="21" y2="10"/>
+
+                <circle cx="12" cy="16" r="1"/>
+
+              </svg>
+
+
+
+              Today
+
+
+
+            </button>
+
+
+
+
+
+            <!-- DIVIDER -->
+
+            <div
+
+              class="h-px bg-black/5 dark:bg-white/10"
+
+            ></div>
+
+
+
+
+
+            <!-- TOMORROW -->
+
+            <button
+
+              type="button"
+
+              data-start="tomorrow"
+
+
+
+              class="
+
+                run-card-option
+
+
+
+                w-full
+
+
+
+                flex
+
+                items-center
+
+                gap-3
+
+
+
+                px-4
+
+                py-3
+
+
+
+                text-left
+
+                text-sm
+
+                font-medium
+
+
+
+                hover:bg-slate-100
+
+                dark:hover:bg-white/10
+
+
+
+                transition
+
+              "
+
+            >
+
+
+
+              <svg
+
+                xmlns="http://www.w3.org/2000/svg"
+
+                width="17"
+
+                height="17"
+
+                viewBox="0 0 24 24"
+
+                fill="none"
+
+                stroke="currentColor"
+
+                stroke-width="2"
+
+                stroke-linecap="round"
+
+                stroke-linejoin="round"
+
+              >
+
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+
+                <line x1="16" y1="2" x2="16" y2="6"/>
+
+                <line x1="8" y1="2" x2="8" y2="6"/>
+
+                <line x1="3" y1="10" x2="21" y2="10"/>
+
+                <path d="M9 16h6"/>
+
+                <path d="m13 14 2 2-2 2"/>
+
+              </svg>
+
+
+
+              Tomorrow
+
+
+
+            </button>
+
+
+
+          </div>
+
+
+
+        </div>
+
+        <!-- PRINTABLES DROPDOWN -->
+        <div class="relative inline-block">
+          <button
+            id="printablesButton"
             type="button"
             aria-haspopup="true"
             aria-expanded="false"
-
             class="
               inline-flex
               items-center
               gap-2.5
-
               px-4
               py-2.5
-
               rounded-xl
-
               bg-white
               dark:bg-white/10
-
               hover:bg-slate-50
               dark:hover:bg-white/15
-
               text-slate-900
               dark:text-white
-
               text-sm
               font-semibold
-
               border
               border-black/10
               dark:border-white/15
-
               shadow-soft
-
               active:scale-[0.98]
-
-              disabled:opacity-60
-              disabled:cursor-wait
-
               transition-all
               duration-200
             "
           >
-
-            <!-- DOCUMENT ICON -->
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="17"
@@ -184,20 +694,17 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="6 9 6 2 18 2 18 9"/>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
             </svg>
 
-            <span id="runCardsButtonText">
-              Run Cards
-            </span>
+            <span>Printables</span>
 
-            <!-- CHEVRON -->
             <svg
-              id="runCardsChevron"
+              id="printablesChevron"
               xmlns="http://www.w3.org/2000/svg"
               width="15"
               height="15"
@@ -208,823 +715,1971 @@
               stroke-linecap="round"
               stroke-linejoin="round"
               class="transition-transform duration-200"
+              aria-hidden="true"
             >
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
-
           </button>
 
-
-          <!-- DROPDOWN -->
           <div
-            id="runCardsMenu"
-
+            id="printablesMenu"
             class="
               hidden
-
               absolute
               left-0
               top-full
-
               mt-2
-              w-44
-
+              w-72
+              max-w-[calc(100vw-3rem)]
+              max-h-[26rem]
+              overflow-y-auto
+              overscroll-contain
               rounded-xl
-
               bg-white
               dark:bg-[#16191f]
-
               text-slate-900
               dark:text-white
-
               border
               border-black/10
               dark:border-white/15
-
               shadow-xl
-
-              overflow-hidden
-
               z-50
             "
           >
-
-
-            <!-- TODAY -->
-            <button
-              type="button"
-              data-start="today"
-
-              class="
-                run-card-option
-
-                w-full
-
-                flex
-                items-center
-                gap-3
-
-                px-4
-                py-3
-
-                text-left
-                text-sm
-                font-medium
-
-                hover:bg-slate-100
-                dark:hover:bg-white/10
-
-                transition
-              "
-            >
-
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-                <circle cx="12" cy="16" r="1"/>
-              </svg>
-
-              Today
-
-            </button>
-
-
-            <!-- DIVIDER -->
+            
             <div
-              class="h-px bg-black/5 dark:bg-white/10"
-            ></div>
-
-
-            <!-- TOMORROW -->
-            <button
-              type="button"
-              data-start="tomorrow"
-
-              class="
-                run-card-option
-
-                w-full
-
-                flex
-                items-center
-                gap-3
-
-                px-4
-                py-3
-
-                text-left
-                text-sm
-                font-medium
-
-                hover:bg-slate-100
-                dark:hover:bg-white/10
-
-                transition
-              "
+              class="sticky top-0 z-10 p-3
+                     bg-white/95 dark:bg-[#16191f]/95
+                     backdrop-blur
+                     border-b border-black/5 dark:border-white/10"
             >
+              <div class="relative">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
 
+                <input
+                  id="printablesSearch"
+                  type="text"
+                  placeholder="Search printables..."
+                  autocomplete="off"
+                  class="w-full rounded-lg
+                         bg-slate-100 dark:bg-white/10
+                         border border-black/5 dark:border-white/10
+                         py-2 pl-9 pr-3
+                         text-sm
+                         placeholder:text-slate-400 dark:placeholder:text-slate-500
+                         focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <p
+                id="printablesNoResults"
+                class="hidden pt-3 pb-1 text-sm text-center opacity-60"
+              >
+                No printables found.
+              </p>
+            </div>
+
+            <a
+              href="https://drive.google.com/file/d/1sFI_KVLiKANgpnrbv60cjCWwp-Nk6ObL/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="17"
-                height="17"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
               >
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-                <path d="M9 16h6"/>
-                <path d="m13 14 2 2-2 2"/>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
               </svg>
-
-              Tomorrow
-
-            </button>
-
+              <span>Tip Log</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1ip-FBeIqNSfJ1m2qYux53hsD9Bk9PO7Y/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Laundry Log</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1PT7kgFB_94RhGC0lPQF24eJaYcR7k8EQ/view"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Tour Questionarre</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/15RDnjZpk3rtYkSodfJ03bs7rTe5e6hgQ/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Special Instructions Sheet</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1Jyp4bV11QlQzxvfcNEUQuLbBSgy2EWO2/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Daily Grooming Checklist</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1pr2JltnxBUMcHz4896G2ru8bccbaQBzT/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>First Day Sheet</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/11yNq_dr0Z4AfemVuUIaIqoXGrzN1OpNX/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Dog Suite List</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1zbASc8d5NJ5gj3_eFa957QOi1GT3oucc/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Grooming Notes for Customer</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1602YWCwIQrVCpynxISkp2R6NUpO2rjw_/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Confirmation Call Checklist</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://docs.google.com/document/d/1JRANZc4CzA8ErFQcFh5rccNxpxRUmjpyePS4XNft56A/edit"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>SOP Document</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://docs.google.com/document/d/1WFEXrs88nvsbr07KGiRI0s1bLho7vuJqL0Y5yrbPvJE/edit?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Incident Policy</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1ppXMocTA0BSM80ySX8mKtPdqMX_pXX8y/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Employment Application Form</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1Z9OEsOYVQTpXXeYG7aSBcJQpa3z1d1A4/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Room Screws Tracking Sheet</span>
+            </a><div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://docs.google.com/document/d/1GXQzlerwv9_1QMXQ_MrTLVDU6LEZVliI/edit?usp=drive_link&ouid=116959091218697574983&rtpof=true&sd=true"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="printable-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Employee Handbook</span>
+            </a>
           </div>
-
         </div>
 
-      </section>
+      </div>
+    </section>
 
 
+    <!-- TODAY’S TOURS -->
 
-      <!-- TODAY’S TOURS -->
-      <section id="homeToursWidget" class="home-tours glass" aria-labelledby="homeToursTitle">
+      <section id="homeToursWidget" class="home-tours glass relative z-0" aria-labelledby="homeToursTitle">
+
         <div class="home-tours-heading">
+
           <div class="home-tours-heading-main">
+
             <span class="home-tours-symbol" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2"/></svg></span>
+
             <div>
+
               <div class="home-tours-title-line"><h2 id="homeToursTitle">Today’s Tours</h2><span id="homeToursCount" class="home-tours-count" aria-label="Tour count unavailable">—</span></div>
+
               <p id="homeToursDate" class="home-tours-date"></p>
+
             </div>
+
           </div>
+
           <div class="home-tours-heading-actions">
+
             <button id="homeToursAdd" class="home-tours-add" type="button" disabled><span aria-hidden="true">+</span> Schedule tour</button>
+
             <a href="/tours.html" class="home-tours-open" aria-label="Open the full tour schedule">View all tours<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3l-8 8M10 21H3v-7M3 21l8-8"/></svg></a>
+
           </div>
+
         </div>
+
         <div class="home-tours-columns" aria-hidden="true"><span>Time</span><span>Customer</span><span>Customer details</span><span>Staff</span><span class="home-tours-actions-label">Actions</span></div>
+
         <ul id="homeToursList" class="home-tours-list" aria-label="All tours scheduled for today"><li class="home-tours-empty">Loading today’s tours…</li></ul>
+
         <div class="home-tours-footer">
+
           <p id="homeToursStatus" role="status" aria-live="polite">Connecting…</p>
+
           <button id="homeToursRefresh" class="home-tours-refresh" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button>
+
         </div>
+
       </section>
 
-      <!-- PRIMARY ACTIONS -->
-      <section class="mt-4">
+
+
+      <!-- KNOWLEDGE BASE -->
+    <section class="mt-8 mb-5">
+      <div class="w-full">
+        <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">
+          Knowledge Base
+        </h2>
+
+        <!-- SEARCH -->
+        <div class="relative">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="🔎  Search policies, procedures, tips…"
+            class="w-full py-4 px-6 text-base md:text-lg rounded-2xl
+                   bg-white/70 dark:bg-white/10
+                   glass
+                   border border-white/20
+                   shadow-soft
+                   focus:outline-none focus:ring-2 focus:ring-blue-500
+                   transition"
+          />
+
+          <div
+            id="searchResults"
+            class="absolute z-50 mt-3 w-full hidden
+                   rounded-2xl
+                   bg-white/80 dark:bg-[#0b0d12]/95
+                   backdrop-blur-xl
+                   border border-white/20
+                   shadow-2xl
+                   overflow-hidden"
+          ></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- PRIMARY ACTIONS -->
+
+      <section class="mt-0">
+
+
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6">
 
 
+
+
+
           <!-- Petcare Procedures -->
+
           <a
+
             href="/kb/petcare-procedures"
 
+
+
             class="group rounded-3xl
+
                    bg-white/60 dark:bg-white/10
+
                    glass
+
                    border border-white/10
+
                    shadow-soft
+
                    hover:shadow-2xl
+
                    transition-all duration-300
+
                    active:scale-[0.98]
+
                    p-7
+
                    flex flex-col items-center text-center
+
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+
           >
 
+
+
             <div
+
               class="text-4xl mb-4 group-hover:scale-110 transition-transform"
+
             >
+
               🐶
+
             </div>
 
+
+
             <h3 class="font-semibold text-base sm:text-lg">
+
               Petcare Procedures
+
             </h3>
 
+
+
           </a>
+
+
+
 
 
           <!-- Activity Procedures -->
+
           <a
+
             href="/kb/activity-procedures"
 
+
+
             class="group rounded-3xl
+
                    bg-white/60 dark:bg-white/10
+
                    glass
+
                    border border-white/10
+
                    shadow-soft
+
                    hover:shadow-2xl
+
                    transition-all duration-300
+
                    active:scale-[0.98]
+
                    p-7
+
                    flex flex-col items-center text-center
+
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+
           >
 
+
+
             <div
+
               class="text-4xl mb-4 group-hover:scale-110 transition-transform"
+
             >
+
               🎾
+
             </div>
 
+
+
             <h3 class="font-semibold text-base sm:text-lg">
+
               Activity Procedures
+
             </h3>
 
+
+
           </a>
+
+
+
 
 
           <!-- Gingr Procedures -->
+
           <a
+
             href="/kb/gingr-procedures"
 
+
+
             class="group rounded-3xl
+
                    bg-white/60 dark:bg-white/10
+
                    glass
+
                    border border-white/10
+
                    shadow-soft
+
                    hover:shadow-2xl
+
                    transition-all duration-300
+
                    active:scale-[0.98]
+
                    p-7
+
                    flex flex-col items-center text-center
+
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+
           >
 
+
+
             <div
+
               class="text-4xl mb-4 group-hover:scale-110 transition-transform"
+
             >
+
               🧾
+
             </div>
 
+
+
             <h3 class="font-semibold text-base sm:text-lg">
+
               Gingr Procedures
+
             </h3>
 
+
+
           </a>
+
+
+
 
 
           <!-- Customer Service -->
+
           <a
+
             href="/kb/customer-service-procedures"
 
+
+
             class="group rounded-3xl
+
                    bg-white/60 dark:bg-white/10
+
                    glass
+
                    border border-white/10
+
                    shadow-soft
+
                    hover:shadow-2xl
+
                    transition-all duration-300
+
                    active:scale-[0.98]
+
                    p-7
+
                    flex flex-col items-center text-center
+
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+
           >
 
+
+
             <div
+
               class="text-4xl mb-4 group-hover:scale-110 transition-transform"
+
             >
+
               😀
+
             </div>
 
+
+
             <h3 class="font-semibold text-base sm:text-lg">
+
               Customer Service
+
             </h3>
 
+
+
           </a>
+
+
+
 
 
           <!-- Facility Maintenance -->
+
           <a
+
             href="/kb/facility-maintenance-procedures"
 
+
+
             class="group rounded-3xl
+
                    bg-white/60 dark:bg-white/10
+
                    glass
+
                    border border-white/10
+
                    shadow-soft
+
                    hover:shadow-2xl
+
                    transition-all duration-300
+
                    active:scale-[0.98]
+
                    p-7
+
                    flex flex-col items-center text-center
+
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+
           >
 
+
+
             <div
+
               class="text-4xl mb-4 group-hover:scale-110 transition-transform"
+
             >
+
               🏠
+
             </div>
 
+
+
             <h3 class="font-semibold text-base sm:text-lg">
+
               Facility Maintenance
+
             </h3>
 
+
+
           </a>
+
+
+
 
 
           <!-- Administrative -->
+
           <a
+
             href="/kb/administrative-procedures"
 
+
+
             class="group rounded-3xl
+
                    bg-white/60 dark:bg-white/10
+
                    glass
+
                    border border-white/10
+
                    shadow-soft
+
                    hover:shadow-2xl
+
                    transition-all duration-300
+
                    active:scale-[0.98]
+
                    p-7
+
                    flex flex-col items-center text-center
+
                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+
           >
 
+
+
             <div
+
               class="text-4xl mb-4 group-hover:scale-110 transition-transform"
+
             >
+
               📌
+
             </div>
 
+
+
             <h3 class="font-semibold text-base sm:text-lg">
+
               Administrative Procedures
+
             </h3>
+
+
 
           </a>
 
+
+
         </div>
+
+
 
       </section>
 
+
+
     </main>
+
+
 
   </div>
 
 
+
+
+
   <!-- FOOTER -->
+
   <div id="footer"></div>
 
 
 
+
+
+
+
   <!-- PARTIAL LOADERS -->
+
   <script>
 
+
+
     fetch('/partials/header.html')
+
       .then(r => r.text())
+
       .then(html => {
 
+
+
         document.getElementById(
+
           'header'
+
         ).innerHTML = html;
 
+
+
         document.dispatchEvent(
+
           new Event('header:ready')
+
         );
 
+
+
       });
+
+
+
 
 
     fetch('/partials/sidebar.html')
+
       .then(r => r.text())
+
       .then(html => {
 
+
+
         document.getElementById(
+
           'sideMenu'
+
         ).innerHTML = html;
 
+
+
       });
+
+
+
 
 
     fetch('/partials/footer.html')
+
       .then(r => r.text())
+
       .then(html => {
 
+
+
         document.getElementById(
+
           'footer'
+
         ).innerHTML = html;
 
+
+
       });
+
+
 
   </script>
 
 
 
+
+
+
+
   <!-- RUN CARDS -->
+
   <script>
 
+
+
     const RUN_CARDS_WEB_APP_URL =
+
       'https://script.google.com/macros/s/AKfycbweMX75_fwIwBlYhBqC1tK43xSksK8abrI5tRo3vVQgrlsC0jbvEBY4CwqayxIs4_FAAg/exec';
 
 
+
+
+
     const runCardsButton =
+
       document.getElementById(
+
         'runCardsButton'
+
       );
+
+
+
 
 
     const runCardsButtonText =
+
       document.getElementById(
+
         'runCardsButtonText'
+
       );
+
+
+
 
 
     const runCardsMenu =
+
       document.getElementById(
+
         'runCardsMenu'
+
       );
+
+
+
 
 
     const runCardsChevron =
+
       document.getElementById(
+
         'runCardsChevron'
+
       );
+
+
+
+
 
 
 
     /********************************************
+
      * OPEN / CLOSE DROPDOWN
+
      ********************************************/
 
+
+
     runCardsButton.addEventListener(
+
       'click',
+
       function(event) {
+
+
 
         event.stopPropagation();
 
+
+
         const isOpen =
+
           !runCardsMenu.classList.contains(
+
             'hidden'
+
           );
+
+
+
 
 
         if (isOpen) {
 
+
+
           closeRunCardsMenu();
+
+
 
         } else {
 
+
+
           openRunCardsMenu();
+
+
 
         }
 
+
+
       }
+
     );
+
+
+
 
 
     function openRunCardsMenu() {
 
+
+
+      if (typeof closePrintablesMenu === 'function') {
+        closePrintablesMenu();
+      }
+
+
+
       runCardsMenu
+
         .classList
+
         .remove('hidden');
 
 
+
+
+
       runCardsChevron
+
         .classList
+
         .add('rotate-180');
 
 
+
+
+
       runCardsButton
+
         .setAttribute(
+
           'aria-expanded',
+
           'true'
+
         );
 
+
+
     }
+
+
+
 
 
     function closeRunCardsMenu() {
 
+
+
       runCardsMenu
+
         .classList
+
         .add('hidden');
 
 
+
+
+
       runCardsChevron
+
         .classList
+
         .remove('rotate-180');
 
 
+
+
+
       runCardsButton
+
         .setAttribute(
+
           'aria-expanded',
+
           'false'
+
         );
+
+
 
     }
 
 
+
+
+
     document.addEventListener(
+
       'click',
+
       function() {
+
+
 
         closeRunCardsMenu();
 
+
+
       }
+
     );
+
+
+
 
 
     runCardsMenu.addEventListener(
+
       'click',
+
       function(event) {
+
+
 
         event.stopPropagation();
 
+
+
       }
+
     );
+
+
+
+
 
 
 
     /********************************************
+
      * TODAY / TOMORROW
+
      ********************************************/
 
+
+
     document
+
       .querySelectorAll(
+
         '.run-card-option'
+
       )
+
       .forEach(
+
         function(option) {
 
+
+
           option.addEventListener(
+
             'click',
+
             function() {
 
+
+
               const startMode =
+
                 option.dataset.start;
+
+
+
 
 
               closeRunCardsMenu();
 
 
+
+
+
               generateRunCards(
+
                 startMode
+
               );
 
+
+
             }
+
           );
 
+
+
         }
+
       );
+
+
+
+
 
 
 
     /********************************************
+
      * GENERATE RUN CARDS
+
      ********************************************/
 
+
+
     function generateRunCards(
+
       startMode
+
     ) {
 
+
+
       /*
+
        * Open cool Paws loading screen.
+
        */
+
       const reportWindow =
+
         window.open(
+
           '/report-loading.html',
+
           '_blank'
+
         );
+
+
+
 
 
       if (!reportWindow) {
 
+
+
         alert(
+
           'Please allow pop-ups for Paws HQ.'
+
         );
 
+
+
         return;
+
+
 
       }
 
 
+
+
+
       /*
+
        * Main button loading state.
+
        */
+
       runCardsButton.disabled =
+
         true;
 
 
+
+
+
       runCardsButtonText.textContent =
+
         'Preparing...';
 
 
 
+
+
+
+
       /*
+
        * Unique callback.
+
        */
+
       const callbackName =
+
         'runCardsCallback_' +
+
         Date.now();
 
 
+
+
+
       const requestScript =
+
         document.createElement(
+
           'script'
+
         );
 
 
 
+
+
+
+
       /*
+
        * Apps Script returns the
+
        * finished Supabase PDF URL.
+
        */
+
       window[callbackName] =
+
         function(pdfUrl) {
 
+
+
           /*
+
            * Replace loading screen
+
            * with native PDF viewer.
+
            */
+
           reportWindow.location.replace(
+
             pdfUrl
+
           );
 
 
+
+
+
           /*
+
            * Cleanup.
+
            */
+
           delete window[
+
             callbackName
+
           ];
+
+
+
 
 
           requestScript.remove();
 
 
+
+
+
           runCardsButton.disabled =
+
             false;
 
 
+
+
+
           runCardsButtonText.textContent =
+
             'Run Cards';
+
+
 
         };
 
 
 
+
+
+
+
       /********************************************
+
        * ERROR
+
        ********************************************/
 
+
+
       requestScript.onerror =
+
         function() {
+
+
 
           reportWindow.close();
 
 
+
+
+
           delete window[
+
             callbackName
+
           ];
+
+
+
 
 
           requestScript.remove();
 
 
+
+
+
           runCardsButton.disabled =
+
             false;
 
 
+
+
+
           runCardsButtonText.textContent =
+
             'Run Cards';
 
 
+
+
+
           alert(
+
             'Unable to generate Run Cards.'
+
           );
+
+
 
         };
 
 
 
+
+
+
+
       /********************************************
+
        * CALL APPS SCRIPT
+
        ********************************************/
 
+
+
       requestScript.src =
+
         RUN_CARDS_WEB_APP_URL +
 
+
+
         '?start=' +
+
         encodeURIComponent(
+
           startMode
+
         ) +
+
+
 
         '&callback=' +
+
         encodeURIComponent(
+
           callbackName
+
         ) +
 
+
+
         '&t=' +
+
         Date.now();
 
 
+
+
+
       document.head.appendChild(
+
         requestScript
+
       );
 
+
+
     }
+
+
 
   </script>
 
 
+  <!-- PRINTABLES -->
+  <script>
+    const printablesButton =
+      document.getElementById('printablesButton');
+
+    const printablesMenu =
+      document.getElementById('printablesMenu');
+
+    const printablesChevron =
+      document.getElementById('printablesChevron');
+
+    const printablesSearch =
+      document.getElementById('printablesSearch');
+
+    const printablesNoResults =
+      document.getElementById('printablesNoResults');
+
+    const printableOptions =
+      Array.from(document.querySelectorAll('.printable-option'));
+
+    printablesButton.addEventListener(
+      'click',
+      function(event) {
+        event.stopPropagation();
+
+        const isOpen =
+          !printablesMenu.classList.contains('hidden');
+
+        if (isOpen) {
+          closePrintablesMenu();
+        } else {
+          closeRunCardsMenu();
+          openPrintablesMenu();
+        }
+      }
+    );
+
+    function openPrintablesMenu() {
+      printablesMenu.classList.remove('hidden');
+      printablesChevron.classList.add('rotate-180');
+      printablesButton.setAttribute('aria-expanded', 'true');
+
+      requestAnimationFrame(function() {
+        printablesSearch.focus();
+      });
+    }
+
+    function closePrintablesMenu() {
+      printablesMenu.classList.add('hidden');
+      printablesChevron.classList.remove('rotate-180');
+      printablesButton.setAttribute('aria-expanded', 'false');
+
+      printablesSearch.value = '';
+      printableOptions.forEach(function(option) {
+        option.classList.remove('hidden');
+      });
+
+      document
+        .querySelectorAll('#printablesMenu .h-px')
+        .forEach(function(divider) {
+          divider.classList.remove('hidden');
+        });
+
+      printablesNoResults.classList.add('hidden');
+    }
+
+    printablesMenu.addEventListener(
+      'click',
+      function(event) {
+        event.stopPropagation();
+      }
+    );
+
+    printablesSearch.addEventListener(
+      'input',
+      function() {
+        const query =
+          printablesSearch.value.trim().toLowerCase();
+
+        const dividers =
+          Array.from(
+            document.querySelectorAll('#printablesMenu .h-px')
+          );
+
+        dividers.forEach(function(divider) {
+          divider.classList.add('hidden');
+        });
+
+        const visibleOptions =
+          printableOptions.filter(function(option) {
+            const matches =
+              option.textContent.toLowerCase().includes(query);
+
+            option.classList.toggle('hidden', !matches);
+            return matches;
+          });
+
+        visibleOptions.forEach(function(option, index) {
+          if (index === 0) return;
+
+          const previous = option.previousElementSibling;
+
+          if (
+            previous &&
+            previous.classList.contains('h-px')
+          ) {
+            previous.classList.remove('hidden');
+          }
+        });
+
+        printablesNoResults.classList.toggle(
+          'hidden',
+          visibleOptions.length !== 0
+        );
+      }
+    );
+
+    printableOptions.forEach(function(option) {
+        option.addEventListener(
+          'click',
+          function() {
+            closePrintablesMenu();
+          }
+        );
+      });
+
+    document.addEventListener(
+      'click',
+      function() {
+        closePrintablesMenu();
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+
+
 
   <dialog id="tourDialog" class="tour-dialog" aria-labelledby="tourDialogTitle" aria-describedby="formHint">
+
     <form id="tourForm" class="dialog-content">
+
       <div class="dialog-heading">
+
         <h2 id="tourDialogTitle">Schedule tour</h2>
+
         <p id="formHint">Add the details your team needs to welcome this customer.</p>
+
       </div>
+
       <input id="tourId" name="tourId" type="hidden" />
+
       <div class="form-grid">
+
         <div class="field field-wide">
+
           <label for="customerName">Customer name</label>
+
           <input id="customerName" name="customerName" type="text" maxlength="120" placeholder="First and last name" autocomplete="off" required />
+
         </div>
+
         <div class="field">
+
           <label for="tourDate">Tour date</label>
+
           <input id="tourDate" name="tourDate" type="date" required />
+
         </div>
+
         <div class="field">
+
           <label for="tourTime">Tour time</label>
+
           <input id="tourTime" name="tourTime" type="time" step="60" aria-describedby="timeHelp" required />
+
           <p id="timeHelp" class="field-help">Usual hours: 10:30 AM–3:00 PM</p>
+
         </div>
+
         <div id="outsideHoursField" class="outside-hours" hidden>
+
           <label for="outsideHoursConfirmed"><input id="outsideHoursConfirmed" name="outsideHoursConfirmed" type="checkbox" /><span>This is outside usual tour hours. I confirm that I will personally lead this tour.</span></label>
+
         </div>
+
         <div class="field">
+
           <label for="hasFile">Customer file</label>
+
           <select id="hasFile" name="hasFile"><option value="unknown">Not checked</option><option value="yes">Has a file</option><option value="no">No file yet</option></select>
+
         </div>
+
         <div class="field">
+
           <label for="bookingStatus">Booking status</label>
+
           <select id="bookingStatus" name="bookingStatus"><option value="unknown">Not checked</option><option value="confirmed">Confirmed booking</option><option value="none">No booking yet</option></select>
+
         </div>
+
         <div class="field field-wide">
+
           <label for="customerInfo">Customer notes <span class="optional">Optional</span></label>
+
           <textarea id="customerInfo" name="customerInfo" maxlength="1000" rows="3" placeholder="Pet names, services of interest, or anything helpful…"></textarea>
+
         </div>
+
         <div class="field">
+
           <label for="staffInitials">Your initials</label>
+
           <input id="staffInitials" name="staffInitials" type="text" maxlength="10" placeholder="e.g. JW" autocomplete="off" required />
+
         </div>
+
       </div>
+
       <p id="formError" class="form-error" role="alert"></p>
+
       <div class="dialog-actions">
+
         <button id="cancelTour" type="button" class="button button-secondary">Cancel</button>
+
         <button id="saveTour" type="submit" class="button button-primary">Save tour</button>
+
       </div>
+
     </form>
+
   </dialog>
 
+
+
   <dialog id="deleteDialog" class="tour-dialog" aria-labelledby="deleteTitle" aria-describedby="deleteDescription">
+
     <div class="dialog-content">
+
       <div class="delete-symbol"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></div>
+
       <div class="dialog-heading">
+
         <h2 id="deleteTitle">Delete this tour?</h2>
+
         <p id="deleteDescription">This tour will move to Deleted. You can restore it if you change your mind.</p>
+
       </div>
+
       <div class="dialog-actions">
+
         <button id="cancelDelete" type="button" class="button button-secondary" autofocus>Keep tour</button>
+
         <button id="confirmDelete" type="button" class="button button-danger">Delete tour</button>
+
       </div>
+
     </div>
+
   </dialog>
+
+
 
   <div id="toast" class="tour-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
 
 
+
+
+
   <!-- SUPABASE SDK -->
+
   <script
+
     src="https://unpkg.com/@supabase/supabase-js@2"
+
   ></script>
 
 
+
+
+
   <!-- APP LOGIC -->
+
   <script src="/script.js"></script>
+
   <script src="/assets/tour-editor.js?v=1" defer></script>
+
   <script src="/assets/home-tours.js?v=2" defer></script>
 
+
+
 </body>
+
 </html>
