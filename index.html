@@ -8,7 +8,8 @@
 
   <link rel="icon" href="/favicon.ico">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="/assets/home-tours.css?v=1">
+  <link rel="stylesheet" href="/assets/home-tours.css?v=2">
+  <link rel="stylesheet" href="/assets/tour-editor.css?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
   <!-- Inter -->
@@ -375,9 +376,12 @@
               <p id="homeToursDate" class="home-tours-date"></p>
             </div>
           </div>
-          <a href="/tours.html" class="home-tours-open" aria-label="Open the full tour schedule">View all tours<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3l-8 8M10 21H3v-7M3 21l8-8"/></svg></a>
+          <div class="home-tours-heading-actions">
+            <button id="homeToursAdd" class="home-tours-add" type="button" disabled><span aria-hidden="true">+</span> Schedule tour</button>
+            <a href="/tours.html" class="home-tours-open" aria-label="Open the full tour schedule">View all tours<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3l-8 8M10 21H3v-7M3 21l8-8"/></svg></a>
+          </div>
         </div>
-        <div class="home-tours-columns" aria-hidden="true"><span>Time</span><span>Customer</span><span>Customer details</span><span>Staff</span></div>
+        <div class="home-tours-columns" aria-hidden="true"><span>Time</span><span>Customer</span><span>Customer details</span><span>Staff</span><span class="home-tours-actions-label">Actions</span></div>
         <ul id="homeToursList" class="home-tours-list" aria-label="All tours scheduled for today"><li class="home-tours-empty">Loading today’s tours…</li></ul>
         <div class="home-tours-footer">
           <p id="homeToursStatus" role="status" aria-live="polite">Connecting…</p>
@@ -945,6 +949,72 @@
 
 
 
+  <dialog id="tourDialog" class="tour-dialog" aria-labelledby="tourDialogTitle" aria-describedby="formHint">
+    <form id="tourForm" class="dialog-content">
+      <div class="dialog-heading">
+        <h2 id="tourDialogTitle">Schedule tour</h2>
+        <p id="formHint">Add the details your team needs to welcome this customer.</p>
+      </div>
+      <input id="tourId" name="tourId" type="hidden" />
+      <div class="form-grid">
+        <div class="field field-wide">
+          <label for="customerName">Customer name</label>
+          <input id="customerName" name="customerName" type="text" maxlength="120" placeholder="First and last name" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="tourDate">Tour date</label>
+          <input id="tourDate" name="tourDate" type="date" required />
+        </div>
+        <div class="field">
+          <label for="tourTime">Tour time</label>
+          <input id="tourTime" name="tourTime" type="time" step="60" aria-describedby="timeHelp" required />
+          <p id="timeHelp" class="field-help">Usual hours: 10:30 AM–3:00 PM</p>
+        </div>
+        <div id="outsideHoursField" class="outside-hours" hidden>
+          <label for="outsideHoursConfirmed"><input id="outsideHoursConfirmed" name="outsideHoursConfirmed" type="checkbox" /><span>This is outside usual tour hours. I confirm that I will personally lead this tour.</span></label>
+        </div>
+        <div class="field">
+          <label for="hasFile">Customer file</label>
+          <select id="hasFile" name="hasFile"><option value="unknown">Not checked</option><option value="yes">Has a file</option><option value="no">No file yet</option></select>
+        </div>
+        <div class="field">
+          <label for="bookingStatus">Booking status</label>
+          <select id="bookingStatus" name="bookingStatus"><option value="unknown">Not checked</option><option value="confirmed">Confirmed booking</option><option value="none">No booking yet</option></select>
+        </div>
+        <div class="field field-wide">
+          <label for="customerInfo">Customer notes <span class="optional">Optional</span></label>
+          <textarea id="customerInfo" name="customerInfo" maxlength="1000" rows="3" placeholder="Pet names, services of interest, or anything helpful…"></textarea>
+        </div>
+        <div class="field">
+          <label for="staffInitials">Your initials</label>
+          <input id="staffInitials" name="staffInitials" type="text" maxlength="10" placeholder="e.g. CR" autocomplete="off" required />
+        </div>
+      </div>
+      <p id="formError" class="form-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="cancelTour" type="button" class="button button-secondary">Cancel</button>
+        <button id="saveTour" type="submit" class="button button-primary">Save tour</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="deleteDialog" class="tour-dialog" aria-labelledby="deleteTitle" aria-describedby="deleteDescription">
+    <div class="dialog-content">
+      <div class="delete-symbol"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></div>
+      <div class="dialog-heading">
+        <h2 id="deleteTitle">Delete this tour?</h2>
+        <p id="deleteDescription">This tour will move to Deleted. You can restore it if you change your mind.</p>
+      </div>
+      <div class="dialog-actions">
+        <button id="cancelDelete" type="button" class="button button-secondary" autofocus>Keep tour</button>
+        <button id="confirmDelete" type="button" class="button button-danger">Delete tour</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="tour-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+
+
   <!-- SUPABASE SDK -->
   <script
     src="https://unpkg.com/@supabase/supabase-js@2"
@@ -953,7 +1023,8 @@
 
   <!-- APP LOGIC -->
   <script src="/script.js"></script>
-  <script src="/assets/home-tours.js?v=1" defer></script>
+  <script src="/assets/tour-editor.js?v=1" defer></script>
+  <script src="/assets/home-tours.js?v=2" defer></script>
 
 </body>
 </html>

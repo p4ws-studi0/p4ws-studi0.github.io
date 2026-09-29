@@ -1,0 +1,88 @@
+/* Shared tour editor styles, scoped to its dialogs and toast. */
+:root {
+  --t-text: #172033;
+  --t-muted: #58677d;
+  --t-subtle: #68778c;
+  --t-line: rgba(43, 59, 85, .12);
+  --t-input: rgba(255, 255, 255, .78);
+  --t-soft: rgba(75, 101, 139, .065);
+  --t-dialog: #f7f9fc;
+  --t-blue: #2563eb;
+}
+html.dark {
+  --t-text: #f4f6fb;
+  --t-muted: #a6b1c3;
+  --t-subtle: #9ba8bb;
+  --t-line: rgba(255, 255, 255, .10);
+  --t-input: rgba(255, 255, 255, .055);
+  --t-soft: rgba(255, 255, 255, .04);
+  --t-dialog: #171e28;
+  --t-blue: #6fa8ff;
+}
+.tour-dialog, .tour-toast { color-scheme: light; font-family: 'Inter', sans-serif; }
+html.dark .tour-dialog, html.dark .tour-toast { color-scheme: dark; }
+.tour-dialog[hidden], .tour-dialog [hidden], .tour-toast[hidden], .tour-toast [hidden] { display: none !important; }
+.tour-dialog, .tour-dialog *, .tour-toast, .tour-toast * { box-sizing: border-box; }
+.tour-dialog button, .tour-toast button { font: inherit; cursor: pointer; }
+.tour-dialog button:disabled, .tour-toast button:disabled { cursor: wait; opacity: .5; }
+.tour-dialog :focus-visible, .tour-toast :focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+.tour-dialog svg, .tour-toast svg { flex-shrink: 0; }
+.tour-dialog .button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 17px; border: 1px solid var(--t-line); border-radius: 12px; font-size: 13px !important; line-height: 1.5; font-weight: 600 !important; white-space: nowrap; transition: background .15s, border-color .15s, box-shadow .15s; }
+.tour-dialog .button-primary { background: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 3px 10px rgba(37, 99, 235, .12); }
+.tour-dialog .button-primary:hover:not(:disabled) { background: #1d4ed8; border-color: #1d4ed8; box-shadow: 0 5px 15px rgba(37, 99, 235, .22); }
+.tour-dialog .button-secondary { background: var(--t-input); color: var(--t-text); }
+.tour-dialog .button-secondary:hover:not(:disabled) { background: var(--t-soft); border-color: var(--t-muted); }
+.tour-dialog .button-danger { color: white; background: #c93239; border-color: #c93239; }
+.tour-dialog .button-danger:hover:not(:disabled) { background: #ac252b; }
+.tour-dialog { width: calc(100% - 32px); max-width: 570px; max-height: calc(100dvh - 40px); margin: auto; padding: 0; border: 1px solid var(--t-line); border-radius: 22px; background: var(--t-dialog); color: var(--t-text); box-shadow: 0 32px 90px rgba(0,0,0,.28); overflow: auto; }
+.tour-dialog::backdrop { background: rgba(4, 10, 20, .60); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.tour-dialog .dialog-content { padding: 29px; }
+.tour-dialog .dialog-heading { margin-bottom: 25px; }
+.tour-dialog .dialog-heading h2 { margin: 0 0 8px; font-size: 24px; line-height: 1.3; font-weight: 700; letter-spacing: -.035em; }
+.tour-dialog .dialog-heading p { margin: 0; color: var(--t-muted); font-size: 12px; line-height: 1.65; }
+.tour-dialog .form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 19px 16px; }
+.tour-dialog .field { min-width: 0; }
+.tour-dialog .field-wide { grid-column: 1/-1; }
+.tour-dialog .field label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 600; }
+.tour-dialog .field label .optional { margin-left: 5px; color: var(--t-subtle); font-size: 11px; font-weight: 400; }
+.tour-dialog .field input, .tour-dialog .field select, .tour-dialog .field textarea { width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid var(--t-line); border-radius: 10px; background: var(--t-input); color: var(--t-text); font: inherit; font-size: 13px; line-height: 1.5; }
+.tour-dialog .field input::placeholder, .tour-dialog .field textarea::placeholder { color: var(--t-subtle); opacity: 1; }
+.tour-dialog .field textarea { min-height: 85px; resize: vertical; }
+.tour-dialog .field select { cursor: pointer; }
+.tour-dialog .field select option { background: var(--t-dialog); color: var(--t-text); }
+.tour-dialog .field-help { margin: 7px 0 0; color: var(--t-muted); font-size: 11px; line-height: 1.5; }
+.tour-dialog #staffInitials { text-transform: uppercase; }
+.tour-dialog .outside-hours { grid-column: 1/-1; border: 1px solid rgba(203,149,34,.25); border-radius: 11px; padding: 13px; color: var(--t-text); background: rgba(203,149,34,.065); }
+.tour-dialog .outside-hours label { min-height: 44px; display: flex; align-items: flex-start; gap: 11px; font-size: 12px; line-height: 1.65; cursor: pointer; }
+.tour-dialog .outside-hours input { width: 18px; height: 18px; margin-top: 2px; flex: 0 0 18px; accent-color: #2563eb; }
+.tour-dialog .form-error { margin: 18px 0 0; font-size: 12px; line-height: 1.65; color: #bf303b; }
+.tour-dialog .form-error:empty { display: none; }
+.dark .tour-dialog .form-error { color: #ffadb3; }
+.tour-dialog .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--t-line); }
+.tour-dialog#deleteDialog { max-width: 440px; }
+.tour-dialog .delete-symbol { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-bottom: 18px; color: #d94850; background: rgba(217,72,80,.08); border: 1px solid rgba(217,72,80,.18); border-radius: 13px; }
+.tour-dialog#deleteDialog .dialog-heading { margin-bottom: 0; }
+.tour-toast { position: fixed; left: 50%; bottom: 25px; z-index: 100; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; gap: 25px; width: max-content; max-width: calc(100% - 32px); min-height: 54px; padding: 10px 17px; border: 1px solid var(--t-line); border-radius: 13px; background: var(--t-dialog); color: var(--t-text); font-size: 12px; box-shadow: 0 8px 35px rgba(0,0,0,.18); }
+.tour-toast button { min-height: 44px; padding: 6px 8px; border: 0; background: transparent; color: var(--t-blue); font-weight: 600; }
+@media (max-width: 620px) {
+  .tour-dialog .dialog-content { padding: 23px 20px; }
+  .tour-dialog .form-grid { gap: 16px 12px; }
+  .tour-dialog .dialog-actions .button { flex: 1; }
+  .tour-dialog { border-radius: 18px; }
+}
+@media (max-width: 600px) {
+  .tour-dialog .field input, .tour-dialog .field select, .tour-dialog .field textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-dialog, .tour-dialog::before, .tour-dialog::after,
+  .tour-dialog *, .tour-dialog *::before, .tour-dialog *::after,
+  .tour-toast, .tour-toast::before, .tour-toast::after,
+  .tour-toast *, .tour-toast *::before, .tour-toast *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}
+@media print {
+  .tour-dialog, .tour-toast { display: none !important; }
+}

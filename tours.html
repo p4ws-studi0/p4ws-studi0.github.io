@@ -107,10 +107,10 @@
     .badge { display: inline-flex; align-items: center; gap: 5px; width: max-content; padding: 4px 8px; border-radius: 6px; color: var(--t-muted); background: var(--t-soft); font-size: 10px; line-height: 1.4; font-weight: 600; white-space: nowrap; }
     .badge-yes { color: #14745a; background: rgba(16, 145, 109, .09); }
     .badge-no, .badge-unknown { color: var(--t-muted); background: var(--t-soft); }
-    .badge-tentative { color: #8b6119; background: rgba(203, 149, 34, .10); }
+    .badge-warning { color: #8b6119; background: rgba(203, 149, 34, .10); }
     .badge-today, .badge-next { color: #2563eb; background: rgba(37, 99, 235, .10); }
     .dark .badge-yes { color: #6eddb6; background: rgba(43, 183, 138, .12); }
-    .dark .badge-tentative { color: #ebc575; background: rgba(231, 177, 71, .10); }
+    .dark .badge-warning { color: #ebc575; background: rgba(231, 177, 71, .10); }
     .dark .badge-today, .dark .badge-next { color: #9dc3ff; }
     .tour-actions { display: flex; align-items: center; gap: 7px; }
     .icon-button { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px; border: 1px solid var(--t-line); border-radius: 10px; background: transparent; color: var(--t-muted); font-size: 12px !important; font-weight: 500 !important; }
@@ -302,7 +302,7 @@
         </div>
         <div class="field">
           <label for="bookingStatus">Booking status</label>
-          <select id="bookingStatus" name="bookingStatus"><option value="unknown">Not checked</option><option value="confirmed">Confirmed booking</option><option value="tentative">Tentative booking</option><option value="none">No booking yet</option></select>
+          <select id="bookingStatus" name="bookingStatus"><option value="unknown">Not checked</option><option value="confirmed">Confirmed booking</option><option value="none">No booking yet</option></select>
         </div>
         <div class="field field-wide">
           <label for="customerInfo">Customer notes <span class="optional">Optional</span></label>
@@ -355,6 +355,7 @@
         .catch(error => console.warn(error.message))
     }
   </script>
-  <script src="/assets/tours.js?v=2" defer></script>
+  <script src="/assets/tour-editor.js?v=1" defer></script>
+  <script src="/assets/tours.js?v=3" defer></script>
 </body>
 </html>
