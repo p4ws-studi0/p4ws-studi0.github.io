@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Dog training · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { boxShadow: { soft: '0 10px 40px rgba(0,0,0,.08)' } } } }
+  </script>
+  <link rel="stylesheet" href="/assets/training.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="trainingPage" class="training-page">
+      <div class="tr-page-heading">
+        <div>
+          <p class="tr-eyebrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12c-3 0-6 3.1-6 5.4C6 20 9.2 20 12 19c2.8 1 6 1 6-1.6C18 15.1 15 12 12 12Z"/><ellipse cx="5" cy="9" rx="2" ry="3" transform="rotate(-24 5 9)"/><ellipse cx="19" cy="9" rx="2" ry="3" transform="rotate(24 19 9)"/><ellipse cx="10" cy="5" rx="2" ry="3"/><ellipse cx="15" cy="5" rx="2" ry="3"/></svg>Petcare</p>
+          <h1>Dog training</h1>
+          <p class="tr-subtitle">Keep every session and every small win in one place.</p>
+        </div>
+        <div class="tr-heading-actions">
+          <button id="addDog" disabled type="button" class="tr-button tr-button-secondary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add dog</button>
+          <button id="addSession" disabled type="button" class="tr-button tr-button-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4-1 12-12a2.1 2.1 0 0 0-3-3L5 16l-1 4Z"/></svg>Log session</button>
+        </div>
+      </div>
+
+      <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+      <section class="tr-dogs-section" aria-labelledby="trDogsHeading">
+        <div class="tr-section-caption"><h2 id="trDogsHeading">Training dogs</h2><span>Select a dog to view their log</span></div>
+        <div id="dogList" class="tr-dog-list" role="group" aria-label="Choose a training dog"><div class="tr-empty-state tr-empty-compact"><p>Loading training dogs…</p></div></div>
+      </section>
+
+      <section class="tr-log-panel glass" aria-labelledby="dogTitle">
+        <div class="tr-log-heading">
+          <div><p class="tr-small-label">Training log</p><h2 id="dogTitle">Session history</h2><p id="dogSummary" class="tr-dog-summary">Choose a dog to see their progress.</p></div>
+          <button id="renameDog" type="button" class="tr-icon-button" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 5 5 5M4 20l4-1 12-12a2.1 2.1 0 0 0-3-3L5 16l-1 4Z"/></svg>Rename</button>
+        </div>
+
+        <div class="tr-log-toolbar">
+          <div class="tr-view-switcher" role="group" aria-label="Filter active or deleted entries">
+            <button type="button" class="tr-view-button" data-log-view="active" aria-pressed="true">Active <span id="activeCount" class="tr-view-count">0</span></button>
+            <button type="button" class="tr-view-button" data-log-view="deleted" aria-pressed="false">Deleted <span id="deletedCount" class="tr-view-count">0</span></button>
+          </div>
+          <div class="tr-log-filters">
+            <div class="tr-search-box"><label for="logSearch" class="tr-sr-only">Search this dog’s training log</label><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="logSearch" type="search" placeholder="Search training log…" autocomplete="off" /></div>
+            <div class="tr-trainer-filter"><label for="trainerFilter" class="tr-sr-only">Filter by trainer</label><select id="trainerFilter"><option value="">All trainers</option></select></div>
+          </div>
+        </div>
+        <div id="logList" class="tr-log-list" aria-live="polite" aria-relevant="additions text"><div class="tr-empty-state"><p>The training log will appear here once connected.</p></div></div>
+        <div class="tr-sync-bar"><span id="lastSynced">Connecting…</span><button id="refreshLogs" type="button" class="tr-refresh"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button></div>
+      </section>
+      <noscript><p class="tr-page-message">Please enable JavaScript to view and update training logs.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+
+  <dialog id="sessionDialog" class="tr-dialog tr-session-dialog" aria-labelledby="sessionDialogTitle" aria-describedby="sessionFormHint">
+    <form id="sessionForm" class="tr-dialog-content">
+      <div class="tr-dialog-heading"><p class="tr-small-label">Training session</p><h2 id="sessionDialogTitle">Log a session</h2><p id="sessionFormHint">Choose a dog and fill in at least one session detail. Leave anything unknown blank.</p></div>
+      <input id="sessionId" name="sessionId" type="hidden" />
+      <div class="tr-form-grid">
+        <div class="tr-field tr-field-wide"><label for="sessionDog">Dog <span class="tr-required">Required</span></label><select id="sessionDog" name="sessionDog" required><option value="">Choose a dog</option></select></div>
+        <div class="tr-field"><label for="dayLabel">Day</label><input id="dayLabel" maxlength="40" name="dayLabel" type="text" placeholder="e.g. 1" autocomplete="off" /></div>
+        <div class="tr-field"><label for="dateLabel">Date</label><input id="dateLabel" maxlength="40" name="dateLabel" type="text" placeholder="e.g. 8/14/26" autocomplete="off" aria-describedby="dateLabelHint" /><p id="dateLabelHint" class="tr-field-help">Use the date as recorded, or leave blank.</p></div>
+        <div class="tr-field"><label for="sessionLabel">Session</label><input id="sessionLabel" maxlength="40" name="sessionLabel" type="text" placeholder="e.g. 1/3" autocomplete="off" /></div>
+        <div class="tr-field"><label for="timeLabel">Time</label><input id="timeLabel" maxlength="100" name="timeLabel" type="text" placeholder="e.g. 10:10–10:30" autocomplete="off" aria-describedby="timeLabelHint" /><p id="timeLabelHint" class="tr-field-help">A time or time range, as recorded.</p></div>
+        <div class="tr-field tr-field-wide"><label for="trainer">Trainer</label><input id="trainer" maxlength="120" name="trainer" type="text" list="trainerOptions" placeholder="Trainer name" autocomplete="off" /><datalist id="trainerOptions"></datalist></div>
+        <div class="tr-field tr-field-wide"><label for="workDetail">Detail of what was worked on</label><textarea id="workDetail" maxlength="6000" name="workDetail" rows="4" placeholder="Commands, exercises, and what you practiced…"></textarea></div>
+        <div class="tr-field tr-field-wide"><label for="sessionNotes">Notes</label><textarea id="sessionNotes" maxlength="10000" name="sessionNotes" rows="4" placeholder="Progress, distractions, useful rewards, or things to try next time…"></textarea></div>
+      </div>
+      <p id="sessionError" class="tr-form-error" role="alert"></p>
+      <div class="tr-dialog-actions"><button id="cancelSession" type="button" class="tr-button tr-button-secondary">Cancel</button><button id="saveSession" type="submit" class="tr-button tr-button-primary">Save session</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dogDialog" class="tr-dialog tr-small-dialog" aria-labelledby="dogDialogTitle">
+    <form id="dogForm" class="tr-dialog-content">
+      <div class="tr-dialog-heading"><h2 id="dogDialogTitle">Add a dog</h2><p>A separate training log keeps each dog’s progress easy to follow.</p></div>
+      <input id="dogId" name="dogId" type="hidden" />
+      <div class="tr-field"><label for="dogName">Dog name</label><input id="dogName" maxlength="120" name="dogName" type="text" placeholder="Dog’s name and family name" autocomplete="off" required /></div>
+      <p id="dogError" class="tr-form-error" role="alert"></p>
+      <div class="tr-dialog-actions"><button id="cancelDog" type="button" class="tr-button tr-button-secondary">Cancel</button><button id="saveDog" type="submit" class="tr-button tr-button-primary">Save dog</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="deleteDialog" class="tr-dialog tr-small-dialog" aria-labelledby="deleteTitle" aria-describedby="deleteDescription">
+    <div class="tr-dialog-content">
+      <div class="tr-delete-symbol"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></div>
+      <div class="tr-dialog-heading"><h2 id="deleteTitle">Delete this session?</h2><p id="deleteDescription">This entry will move to Deleted. You can restore it if you change your mind.</p></div>
+      <div class="tr-dialog-actions"><button id="cancelDelete" type="button" class="tr-button tr-button-secondary" autofocus>Keep session</button><button id="confirmDelete" type="button" class="tr-button tr-button-danger">Delete session</button></div>
+    </div>
+  </dialog>
+  <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id, file] of [['header', 'header'], ['sideMenu', 'sidebar'], ['footer', 'footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => { if (!response.ok) throw new Error(`Could not load ${file}`); return response.text() })
+        .then(html => {
+          document.getElementById(id).innerHTML = html
+          if (id === 'header') document.dispatchEvent(new Event('header:ready'))
+          if (id === 'footer') { const year = document.getElementById('year'); if (year) year.textContent = new Date().getFullYear() }
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/training.js?v=1" defer></script>
+</body>
+</html>
