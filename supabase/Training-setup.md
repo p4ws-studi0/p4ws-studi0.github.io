@@ -2,7 +2,7 @@
 
 `/training.html` is a separate, shared dog-training log linked from the sidebar. The homepage is unchanged. It reuses the site's Inter typography, glass panels, theme controls, header, footer, and Supabase sign-in.
 
-The live database has the three supplied CSVs: Bailey Fallon (22 entries), Buttons Kelly (17), and Rune (19). All 406 source cells were compared exactly after import, including blank values, whitespace, spelling, and yearless dates. The partial rows remain present. Source CSVs and private import payloads are deliberately excluded from the public website repository.
+The live database has all 58 entries from the three supplied CSVs (22, 17, and 19 entries). All 406 source cells were compared exactly after import, including blank values, whitespace, spelling, and yearless dates. The partial rows remain present. Source CSVs and private import payloads are deliberately excluded from the public website repository.
 
 ## Use
 
