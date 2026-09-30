@@ -74,6 +74,84 @@
 
   </script>
 
+
+  <style>
+    /* Quick Access: compact mobile layout */
+    #quickAccessTitle {
+      line-height: 1.15;
+    }
+
+    .quick-icon {
+      flex: 0 0 auto;
+    }
+
+    .quick-icon-run {
+      color: #2563eb;
+    }
+
+    .quick-icon-print {
+      color: #7c3aed;
+    }
+
+    .quick-icon-price {
+      color: #059669;
+    }
+
+    .quick-icon-info {
+      color: #d97706;
+    }
+
+    .dark .quick-icon-run {
+      color: #60a5fa;
+    }
+
+    .dark .quick-icon-print {
+      color: #c4b5fd;
+    }
+
+    .dark .quick-icon-price {
+      color: #6ee7b7;
+    }
+
+    .dark .quick-icon-info {
+      color: #fbbf24;
+    }
+
+    @media (max-width: 639px) {
+      html,
+      body {
+        overflow-x: hidden;
+      }
+
+      #quickAccessTitle {
+        font-size: 1rem;
+      }
+
+      #runCardsButton,
+      #printablesButton,
+      #priceSheetsButton,
+      #infoSheetsButton {
+        min-height: 44px;
+        font-size: 0.875rem;
+      }
+
+      /* Anchor large searchable menus to the Quick Access card,
+         not to whichever grid-cell button opened them. */
+      .searchable-quick-dropdown {
+        position: static;
+      }
+
+      .searchable-quick-menu {
+        left: 1rem !important;
+        right: 1rem !important;
+        top: calc(100% + 0.5rem) !important;
+        width: auto !important;
+        max-width: none !important;
+        max-height: min(26rem, 60vh) !important;
+      }
+    }
+  </style>
+
 </head>
 
 
@@ -161,7 +239,7 @@
 
     <!-- QUICK ACCESS -->
     <section
-      class="relative z-20 overflow-visible mb-6 rounded-3xl
+      class="relative z-20 overflow-visible mb-5 rounded-3xl
              bg-white/60 dark:bg-white/10
              glass
              border border-white/10
@@ -170,7 +248,7 @@
       style="overflow: visible;"
       aria-labelledby="quickAccessTitle"
     >
-      <div class="flex items-center justify-between gap-4 mb-3">
+      <div class="flex items-center justify-between gap-3 mb-3">
         <h2
           id="quickAccessTitle"
           class="text-lg md:text-xl font-bold tracking-tight"
@@ -180,7 +258,7 @@
       </div>
 
       <!-- Add future quick-access items inside this row -->
-      <div class="relative z-20 flex flex-wrap items-start gap-2.5">
+      <div class="relative z-20 grid grid-cols-2 sm:flex sm:flex-wrap items-start gap-2.5">
 <div class="relative inline-block">
 
 
@@ -654,7 +732,7 @@
         </div>
 
         <!-- PRINTABLES DROPDOWN -->
-        <div class="relative inline-block">
+        <div class="relative inline-block searchable-quick-dropdown">
           <button
             id="printablesButton"
             type="button"
@@ -662,9 +740,11 @@
             aria-expanded="false"
             class="
               inline-flex
+              w-full sm:w-auto
               items-center
-              gap-2.5
-              px-4
+              justify-between sm:justify-start
+              gap-2
+              px-3.5
               py-2.5
               rounded-xl
               bg-white
@@ -694,6 +774,7 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              class="quick-icon quick-icon-print"
               aria-hidden="true"
             >
               <polyline points="6 9 6 2 18 2 18 9"/>
@@ -723,7 +804,7 @@
 
           <div
             id="printablesMenu"
-            class="
+            class="searchable-quick-menu 
               hidden
               absolute
               left-0
@@ -1171,6 +1252,553 @@
                 <polyline points="14 2 14 8 20 8"/>
               </svg>
               <span>Employee Handbook</span>
+            </a>
+          </div>
+        </div>
+
+
+        <!-- PRICE SHEETS DROPDOWN -->
+        <div class="relative inline-block searchable-quick-dropdown">
+          <button
+            id="priceSheetsButton"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            class="
+              inline-flex
+              w-full sm:w-auto
+              items-center
+              justify-between sm:justify-start
+              gap-2
+              px-3.5
+              py-2.5
+              rounded-xl
+              bg-white
+              dark:bg-white/10
+              hover:bg-slate-50
+              dark:hover:bg-white/15
+              text-slate-900
+              dark:text-white
+              text-sm
+              font-semibold
+              border
+              border-black/10
+              dark:border-white/15
+              shadow-soft
+              active:scale-[0.98]
+              transition-all
+              duration-200
+            "
+          >
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="quick-icon quick-icon-price"
+              aria-hidden="true"
+            >
+              <path d="M20 7h-9"/>
+              <path d="M14 17H5"/>
+              <circle cx="17" cy="17" r="3"/>
+              <circle cx="7" cy="7" r="3"/>
+            </svg>
+
+            <span>Price Sheets</span>
+
+            <svg
+              id="priceSheetsChevron"
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="transition-transform duration-200"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <div
+            id="priceSheetsMenu"
+            class="searchable-quick-menu 
+              hidden
+              absolute
+              left-0
+              top-full
+              mt-2
+              w-72
+              max-w-[calc(100vw-3rem)]
+              max-h-[26rem]
+              overflow-y-auto
+              overscroll-contain
+              rounded-xl
+              bg-white
+              dark:bg-[#16191f]
+              text-slate-900
+              dark:text-white
+              border
+              border-black/10
+              dark:border-white/15
+              shadow-xl
+              z-50
+            "
+          >
+            <div
+              class="sticky top-0 z-10 p-3
+                     bg-white/95 dark:bg-[#16191f]/95
+                     backdrop-blur
+                     border-b border-black/5 dark:border-white/10"
+            >
+              <div class="relative">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+
+                <input
+                  id="priceSheetsSearch"
+                  type="text"
+                  placeholder="Search price sheets..."
+                  autocomplete="off"
+                  class="w-full rounded-lg
+                         bg-slate-100 dark:bg-white/10
+                         border border-black/5 dark:border-white/10
+                         py-2 pl-9 pr-3
+                         text-sm
+                         placeholder:text-slate-400 dark:placeholder:text-slate-500
+                         focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <p
+                id="priceSheetsNoResults"
+                class="hidden pt-3 pb-1 text-sm text-center opacity-60"
+              >
+                No price sheets found.
+              </p>
+            </div>
+
+            <a
+              href="https://drive.google.com/file/d/1cG5NAn6Iv7dsg32zrleyg7U9h6-5RgaB/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="priceSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Dog Boarding</span>
+            </a>
+            <div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1hb4-gVXSY5tIsZoLcDotMW7L63PJW_vB/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="priceSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Doggie Daycare</span>
+            </a>
+            <div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1bq-HBBHsXpC2W9-nDvlIt8t8P4NJGYOt/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="priceSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Dog Activities</span>
+            </a>
+            <div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1dyYd6AOP9LR145cmDIyrB0mJIHgqtJpU/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="priceSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Cat Boarding</span>
+            </a>
+            <div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1F7cf9fii9WgLfJ9KqoNdFzblJAdytPP9/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="priceSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Puppy</span>
+            </a>
+          </div>
+        </div>
+
+
+        <!-- INFO SHEETS DROPDOWN -->
+        <div class="relative inline-block searchable-quick-dropdown">
+          <button
+            id="infoSheetsButton"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            class="
+              inline-flex
+              w-full sm:w-auto
+              items-center
+              justify-between sm:justify-start
+              gap-2
+              px-3.5
+              py-2.5
+              rounded-xl
+              bg-white
+              dark:bg-white/10
+              hover:bg-slate-50
+              dark:hover:bg-white/15
+              text-slate-900
+              dark:text-white
+              text-sm
+              font-semibold
+              border
+              border-black/10
+              dark:border-white/15
+              shadow-soft
+              active:scale-[0.98]
+              transition-all
+              duration-200
+            "
+          >
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="quick-icon quick-icon-info"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+
+            <span>Info Sheets</span>
+
+            <svg
+              id="infoSheetsChevron"
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="transition-transform duration-200"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <div
+            id="infoSheetsMenu"
+            class="searchable-quick-menu 
+              hidden
+              absolute
+              left-0
+              top-full
+              mt-2
+              w-72
+              max-w-[calc(100vw-3rem)]
+              max-h-[26rem]
+              overflow-y-auto
+              overscroll-contain
+              rounded-xl
+              bg-white
+              dark:bg-[#16191f]
+              text-slate-900
+              dark:text-white
+              border
+              border-black/10
+              dark:border-white/15
+              shadow-xl
+              z-50
+            "
+          >
+            <div
+              class="sticky top-0 z-10 p-3
+                     bg-white/95 dark:bg-[#16191f]/95
+                     backdrop-blur
+                     border-b border-black/5 dark:border-white/10"
+            >
+              <div class="relative">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+
+                <input
+                  id="infoSheetsSearch"
+                  type="text"
+                  placeholder="Search info sheets..."
+                  autocomplete="off"
+                  class="w-full rounded-lg
+                         bg-slate-100 dark:bg-white/10
+                         border border-black/5 dark:border-white/10
+                         py-2 pl-9 pr-3
+                         text-sm
+                         placeholder:text-slate-400 dark:placeholder:text-slate-500
+                         focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <p
+                id="infoSheetsNoResults"
+                class="hidden pt-3 pb-1 text-sm text-center opacity-60"
+              >
+                No info sheets found.
+              </p>
+            </div>
+
+            <a
+              href="https://drive.google.com/file/d/1ZKL_YUcSqKzXYVnySPrFrYviVtVL8xpY/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="infoSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Fecal Parasite Guide</span>
+            </a>
+            <div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/1DAuAU67wSLoFOBymbfDqjyTVMvjPrfHE/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="infoSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>OPG Fecal Processing Guide</span>
+            </a>
+            <div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/15FqaC_bL0THnrLrFkS_mCSwPlgGyVo8C/view?pli=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="infoSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>Dog Space Requirements</span>
+            </a>
+            <div class="h-px bg-black/5 dark:bg-white/10"></div>
+            <a
+              href="https://drive.google.com/file/d/13ip0-osgZkXXvEECdElvpjKjHt90WReE/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="infoSheets-option flex items-center gap-3 px-4 py-3
+                     text-left text-sm font-medium
+                     hover:bg-slate-100 dark:hover:bg-white/10
+                     transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="shrink-0 opacity-70"
+                aria-hidden="true"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <span>2027 Peak Calendar</span>
             </a>
           </div>
         </div>
@@ -1878,6 +2506,14 @@
         closePrintablesMenu();
       }
 
+      if (typeof closePriceSheetsMenu === 'function') {
+        closePriceSheetsMenu();
+      }
+
+      if (typeof closeInfoSheetsMenu === 'function') {
+        closeInfoSheetsMenu();
+      }
+
 
 
       runCardsMenu
@@ -2415,6 +3051,12 @@
           closePrintablesMenu();
         } else {
           closeRunCardsMenu();
+          if (typeof closePriceSheetsMenu === 'function') {
+            closePriceSheetsMenu();
+          }
+          if (typeof closeInfoSheetsMenu === 'function') {
+            closeInfoSheetsMenu();
+          }
           openPrintablesMenu();
         }
       }
@@ -2516,6 +3158,291 @@
       }
     );
   </script>
+
+
+  <!-- priceSheets SEARCHABLE DROPDOWN -->
+  <script>
+    const priceSheetsButton =
+      document.getElementById('priceSheetsButton');
+
+    const priceSheetsMenu =
+      document.getElementById('priceSheetsMenu');
+
+    const priceSheetsChevron =
+      document.getElementById('priceSheetsChevron');
+
+    const priceSheetsSearch =
+      document.getElementById('priceSheetsSearch');
+
+    const priceSheetsNoResults =
+      document.getElementById('priceSheetsNoResults');
+
+    const priceSheetsOptions =
+      Array.from(document.querySelectorAll('.priceSheets-option'));
+
+    priceSheetsButton.addEventListener(
+      'click',
+      function(event) {
+        event.stopPropagation();
+
+        const isOpen =
+          !priceSheetsMenu.classList.contains('hidden');
+
+        if (isOpen) {
+          closePriceSheetsMenu();
+        } else {
+          closeRunCardsMenu();
+          if (typeof closePrintablesMenu === 'function') {
+            closePrintablesMenu();
+          }
+          if (typeof closeInfoSheetsMenu === 'function') {
+            closeInfoSheetsMenu();
+          }
+          openPriceSheetsMenu();
+        }
+      }
+    );
+
+    function openPriceSheetsMenu() {
+      priceSheetsMenu.classList.remove('hidden');
+      priceSheetsChevron.classList.add('rotate-180');
+      priceSheetsButton.setAttribute('aria-expanded', 'true');
+
+      requestAnimationFrame(function() {
+        priceSheetsSearch.focus();
+      });
+    }
+
+    function closePriceSheetsMenu() {
+      priceSheetsMenu.classList.add('hidden');
+      priceSheetsChevron.classList.remove('rotate-180');
+      priceSheetsButton.setAttribute('aria-expanded', 'false');
+
+      priceSheetsSearch.value = '';
+
+      priceSheetsOptions.forEach(function(option) {
+        option.classList.remove('hidden');
+      });
+
+      document
+        .querySelectorAll('#priceSheetsMenu .h-px')
+        .forEach(function(divider) {
+          divider.classList.remove('hidden');
+        });
+
+      priceSheetsNoResults.classList.add('hidden');
+    }
+
+    priceSheetsMenu.addEventListener(
+      'click',
+      function(event) {
+        event.stopPropagation();
+      }
+    );
+
+    priceSheetsSearch.addEventListener(
+      'input',
+      function() {
+        const query =
+          priceSheetsSearch.value.trim().toLowerCase();
+
+        const dividers =
+          Array.from(
+            document.querySelectorAll('#priceSheetsMenu .h-px')
+          );
+
+        dividers.forEach(function(divider) {
+          divider.classList.add('hidden');
+        });
+
+        const visibleOptions =
+          priceSheetsOptions.filter(function(option) {
+            const matches =
+              option.textContent.toLowerCase().includes(query);
+
+            option.classList.toggle('hidden', !matches);
+            return matches;
+          });
+
+        visibleOptions.forEach(function(option, index) {
+          if (index === 0) return;
+
+          const previous = option.previousElementSibling;
+
+          if (
+            previous &&
+            previous.classList.contains('h-px')
+          ) {
+            previous.classList.remove('hidden');
+          }
+        });
+
+        priceSheetsNoResults.classList.toggle(
+          'hidden',
+          visibleOptions.length !== 0
+        );
+      }
+    );
+
+    priceSheetsOptions.forEach(function(option) {
+      option.addEventListener(
+        'click',
+        function() {
+          closePriceSheetsMenu();
+        }
+      );
+    });
+
+    document.addEventListener(
+      'click',
+      function() {
+        closePriceSheetsMenu();
+      }
+    );
+  </script>
+
+
+  <!-- infoSheets SEARCHABLE DROPDOWN -->
+  <script>
+    const infoSheetsButton =
+      document.getElementById('infoSheetsButton');
+
+    const infoSheetsMenu =
+      document.getElementById('infoSheetsMenu');
+
+    const infoSheetsChevron =
+      document.getElementById('infoSheetsChevron');
+
+    const infoSheetsSearch =
+      document.getElementById('infoSheetsSearch');
+
+    const infoSheetsNoResults =
+      document.getElementById('infoSheetsNoResults');
+
+    const infoSheetsOptions =
+      Array.from(document.querySelectorAll('.infoSheets-option'));
+
+    infoSheetsButton.addEventListener(
+      'click',
+      function(event) {
+        event.stopPropagation();
+
+        const isOpen =
+          !infoSheetsMenu.classList.contains('hidden');
+
+        if (isOpen) {
+          closeInfoSheetsMenu();
+        } else {
+          closeRunCardsMenu();
+          if (typeof closePrintablesMenu === 'function') {
+            closePrintablesMenu();
+          }
+          if (typeof closePriceSheetsMenu === 'function') {
+            closePriceSheetsMenu();
+          }
+          openInfoSheetsMenu();
+        }
+      }
+    );
+
+    function openInfoSheetsMenu() {
+      infoSheetsMenu.classList.remove('hidden');
+      infoSheetsChevron.classList.add('rotate-180');
+      infoSheetsButton.setAttribute('aria-expanded', 'true');
+
+      requestAnimationFrame(function() {
+        infoSheetsSearch.focus();
+      });
+    }
+
+    function closeInfoSheetsMenu() {
+      infoSheetsMenu.classList.add('hidden');
+      infoSheetsChevron.classList.remove('rotate-180');
+      infoSheetsButton.setAttribute('aria-expanded', 'false');
+
+      infoSheetsSearch.value = '';
+
+      infoSheetsOptions.forEach(function(option) {
+        option.classList.remove('hidden');
+      });
+
+      document
+        .querySelectorAll('#infoSheetsMenu .h-px')
+        .forEach(function(divider) {
+          divider.classList.remove('hidden');
+        });
+
+      infoSheetsNoResults.classList.add('hidden');
+    }
+
+    infoSheetsMenu.addEventListener(
+      'click',
+      function(event) {
+        event.stopPropagation();
+      }
+    );
+
+    infoSheetsSearch.addEventListener(
+      'input',
+      function() {
+        const query =
+          infoSheetsSearch.value.trim().toLowerCase();
+
+        const dividers =
+          Array.from(
+            document.querySelectorAll('#infoSheetsMenu .h-px')
+          );
+
+        dividers.forEach(function(divider) {
+          divider.classList.add('hidden');
+        });
+
+        const visibleOptions =
+          infoSheetsOptions.filter(function(option) {
+            const matches =
+              option.textContent.toLowerCase().includes(query);
+
+            option.classList.toggle('hidden', !matches);
+            return matches;
+          });
+
+        visibleOptions.forEach(function(option, index) {
+          if (index === 0) return;
+
+          const previous = option.previousElementSibling;
+
+          if (
+            previous &&
+            previous.classList.contains('h-px')
+          ) {
+            previous.classList.remove('hidden');
+          }
+        });
+
+        infoSheetsNoResults.classList.toggle(
+          'hidden',
+          visibleOptions.length !== 0
+        );
+      }
+    );
+
+    infoSheetsOptions.forEach(function(option) {
+      option.addEventListener(
+        'click',
+        function() {
+          closeInfoSheetsMenu();
+        }
+      );
+    });
+
+    document.addEventListener(
+      'click',
+      function() {
+        closeInfoSheetsMenu();
+      }
+    );
+  </script>
+
 
 
 
