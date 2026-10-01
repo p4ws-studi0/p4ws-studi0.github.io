@@ -9,7 +9,7 @@
   ];
   const KEYS = FIELDS.map(([key]) => key);
   const state = {dogs:[],logs:[],editors:new Map(),selectedDog:null,ready:false,loading:false,
-    userId:null,epoch:0,request:0,dogSaving:false,dogDraftId:null,undo:null,undoSaving:false,toastTimer:null,newOrder:0};
+    userId:null,epoch:0,request:0,dogSaving:false,dogDraftId:null,editingDog:null,undo:null,undoSaving:false,toastTimer:null,newOrder:0};
   const text = value => String(value ?? '');
   const escape = value => text(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const nonblank = value => text(value).trim().length > 0;
@@ -19,6 +19,7 @@
   const same = (a,b) => Object.keys(a).every(key => a[key] === b[key]);
   const position = row => BigInt(row.position ?? 0);
   const sourceOrder = (a,b) => position(a)<position(b) ? -1 : position(a)>position(b) ? 1 : text(a.id).localeCompare(text(b.id));
+  const activeDogs = () => state.dogs.filter(dog=>!dog.deleted_at);
   function todayLabel() {
     const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
     return `${parts.month}/${parts.day}/${parts.year}`;
@@ -60,6 +61,7 @@
     if(error?.code==='AUTH') return 'Sign in again to save. Your changes are still here.';
     if(error?.code==='ACCESS'||error?.code==='42501') return 'This account does not have training access.';
     if(error?.code==='CONFLICT') return 'This row changed on another device. Your changes are still here. Copy them before reloading this row.';
+    if(error?.code==='55000') return 'This dog is in Deleted dogs. Restore the dog before changing its training rows.';
     if(['42P01','PGRST205'].includes(error?.code)) return 'Training records are unavailable. Please try again later.';
     return 'Could not save. Your changes are still here. Check your connection, then retry.';
   }
@@ -78,13 +80,19 @@
   function rowElement(id) {return document.querySelector(`[data-row-id="${id}"]`);}
   function controls() {
     const blocked=!state.ready||state.loading;
-    $('addRow').disabled=blocked||!state.selectedDog;
+    const selected=state.dogs.find(dog=>dog.id===state.selectedDog&&!dog.deleted_at);
+    $('addRow').disabled=blocked||state.dogSaving||!selected;
     $('addDog').disabled=blocked||state.dogSaving;
-    $('dogSelect').disabled=blocked||!state.dogs.length;
+    $('renameDog').disabled=blocked||state.dogSaving||!selected;
+    $('deleteDog').disabled=blocked||state.dogSaving||!selected||unfinished();
+    $('deleteDog').title=unfinished()?'Finish saving or remove unfinished rows first.':'Move this dog to Deleted dogs. Training rows are kept.';
+    $('dogSelect').disabled=blocked||state.dogSaving||!activeDogs().length||!$('dogForm').hidden;
     $('refreshLogs').disabled=state.loading||state.dogSaving;
     $('saveDog').disabled=blocked||state.dogSaving;
     $('cancelDog').disabled=state.dogSaving;
     $('dogName').disabled=state.dogSaving;
+    $('saveDog').textContent=state.dogSaving?'Saving…':state.editingDog?'Save name':'Add dog';
+    document.querySelectorAll('[data-restore-dog]').forEach(button=>{button.disabled=blocked||state.dogSaving||state.undoSaving;});
     const editors=[...state.editors.values()];
     $('saveStatus').textContent=state.loading?'Loading…':editors.some(e=>e.saving||e.deleting)||state.dogSaving||state.undoSaving?'Saving…':editors.some(e=>e.error)?'Some changes are not saved':editors.some(e=>dirty(e))?'Unsaved changes':state.ready?'All changes saved':'';
     for(const editor of editors) updateRowStatus(editor);
@@ -93,8 +101,8 @@
     const row=rowElement(editor.id);if(!row)return;
     row.classList.toggle('is-saving',Boolean(editor.saving||editor.deleting));
     row.classList.toggle('is-error',Boolean(editor.error));
-    row.querySelectorAll('textarea').forEach(input=>{input.disabled=!state.ready||state.loading||editor.deleting||Boolean(editor.deleteAttempt);});
-    const button=row.querySelector('[data-action="delete"]');if(button)button.disabled=!state.ready||state.undoSaving||Boolean(editor.saving||editor.deleting);
+    row.querySelectorAll('textarea').forEach(input=>{input.disabled=!state.ready||state.loading||state.dogSaving||editor.deleting||Boolean(editor.deleteAttempt);});
+    const button=row.querySelector('[data-action="delete"]');if(button)button.disabled=!state.ready||state.dogSaving||state.undoSaving||Boolean(editor.saving||editor.deleting);
     const errorRow=document.querySelector(`[data-error-id="${editor.id}"]`);
     if(errorRow) {
       errorRow.hidden=!editor.error;
@@ -109,8 +117,15 @@
     return `<tr class="tr-row" data-row-id="${editor.id}">${cells}<td class="tr-action-cell"><button type="button" class="tr-delete" data-action="delete" aria-label="Delete row">Delete</button></td></tr><tr class="tr-row-error" data-error-id="${editor.id}" hidden><td colspan="8"><span data-row-error role="alert"></span> <button type="button" data-action="retry" data-id="${editor.id}">Retry</button></td></tr>`;
   }
   function renderDogs() {
-    $('dogSelect').innerHTML=state.dogs.map(dog=>`<option value="${escape(dog.id)}">${escape(dog.name)}</option>`).join('');
+    const active=activeDogs();
+    $('dogSelect').innerHTML=active.length?active.map(dog=>`<option value="${escape(dog.id)}">${escape(dog.name)}</option>`).join(''):'<option value="">No active dogs</option>';
     $('dogSelect').value=state.selectedDog||'';
+    const deleted=state.dogs.filter(dog=>dog.deleted_at);
+    $('deletedDogCount').textContent=deleted.length;
+    $('deletedDogList').innerHTML=deleted.length?deleted.map(dog=>{
+      const count=state.logs.filter(row=>row.dog_id===dog.id&&!row.deleted_at).length;
+      return `<div class="tr-deleted-dog"><div><strong>${escape(dog.name)}</strong><span>${count} training ${count===1?'row':'rows'} kept</span></div><button type="button" class="tr-button tr-button-subtle" data-restore-dog="${escape(dog.id)}" aria-label="Restore ${escape(dog.name)}">Restore</button></div>`;
+    }).join(''):'<p>No deleted dogs.</p>';
   }
   function renderRows() {
     const rows=sortLogs(state.logs.filter(row=>row.dog_id===state.selectedDog&&!row.deleted_at)).map(editorFor);
@@ -119,7 +134,7 @@
     $('trainingRows').innerHTML=editors.map(renderRow).join('');
     $('rowCount').textContent=state.selectedDog?`${editors.length} ${editors.length===1?'row':'rows'} · Newest first`:'';
     $('emptyState').hidden=Boolean(editors.length)||!state.ready;
-    $('emptyState').textContent=state.dogs.length?'No entries yet. Add a row to get started.':'Add a dog to start a training log.';
+    $('emptyState').textContent=activeDogs().length?'No entries yet. Add a row to get started.':state.dogs.length?'No active dogs. Add a dog or restore one from Deleted dogs.':'Add a dog to start a training log.';
     controls();
   }
   function render() {renderDogs();renderRows();}
@@ -153,7 +168,7 @@
       await requireStaff(epoch);if(!valid())return;
       const [dogs,logs]=await Promise.all([fetchAll('hq_training_dogs',valid),fetchAll('hq_training_logs',valid)]);if(!valid())return;
       state.dogs=dogs.sort((a,b)=>a.name.localeCompare(b.name));state.logs=logs;state.editors.clear();state.ready=true;
-      if(!dogs.some(dog=>dog.id===state.selectedDog))state.selectedDog=dogs[0]?.id||null;
+      if(!activeDogs().some(dog=>dog.id===state.selectedDog))state.selectedDog=activeDogs()[0]?.id||null;
       message('');
     } catch(error) {
       if(!valid())return;
@@ -235,7 +250,7 @@
     editor.saving=task;controls();return task;
   }
   function addRow() {
-    if(!state.ready||state.loading||!state.selectedDog)return;
+    if(!state.ready||state.loading||state.dogSaving||!activeDogs().some(dog=>dog.id===state.selectedDog))return;
     const id=crypto.randomUUID(),values=valuesOf(null);values.date_label=todayLabel();
     state.editors.set(id,{id,dog_id:state.selectedDog,base:null,values,order:++state.newOrder,saving:null,deleting:false,error:'',conflict:false,attempt:null});
     renderRows();rowElement(id)?.querySelector('[data-field="day_label"]')?.focus();
@@ -281,35 +296,89 @@
       state.editors.delete(editor.id);renderRows();message('');
     }catch(error){if(current(epoch)){editor.error=errorText(error);controls();}}
   }
-  function selectDog(id) {if(!state.dogs.some(dog=>dog.id===id))return;state.selectedDog=id;renderRows();}
+  function selectDog(id) {if(!activeDogs().some(dog=>dog.id===id))return;state.selectedDog=id;renderRows();}
+  function rememberDog(dog) {
+    const index=state.dogs.findIndex(item=>item.id===dog.id);
+    if(index<0)state.dogs.push(dog);else state.dogs[index]=dog;
+    state.dogs.sort((a,b)=>a.name.localeCompare(b.name));
+  }
+  function dogErrorText(error) {
+    if(error?.code==='CONFLICT')return 'This dog changed elsewhere. Your entered name is kept. Cancel, refresh, and try again.';
+    return errorText(error);
+  }
+  function openDog(dog=null) {
+    if(!state.ready||state.loading||state.dogSaving)return;
+    state.editingDog=dog?{...dog}:null;state.dogDraftId=dog?.id||crypto.randomUUID();
+    $('dogName').value=dog?.name||'';$('dogNameLabel').textContent=dog?'Dog name':'New dog';
+    $('dogError').textContent='';$('dogForm').hidden=false;controls();$('dogName').focus();
+  }
+  async function updateDog(dog,patch,epoch) {
+    const result=await supabaseClient.from('hq_training_dogs').update(patch).eq('id',dog.id).eq('revision',dog.revision).select('*').maybeSingle();
+    if(!current(epoch))return null;
+    if(!result.error&&result.data)return result.data;
+    // Recover an already-applied request without overwriting a later name or deletion.
+    const fresh=await supabaseClient.from('hq_training_dogs').select('*').eq('id',dog.id).maybeSingle();
+    if(!current(epoch))return null;
+    const row=fresh.data;
+    if(!fresh.error&&row&&Object.keys(patch).every(key=>key==='deleted_at'?Boolean(row.deleted_at)===Boolean(patch.deleted_at):row[key]===patch[key])
+      &&('deleted_at' in patch||Boolean(row.deleted_at)===Boolean(dog.deleted_at)))return row;
+    if(result.error)throw result.error;throw {code:'CONFLICT'};
+  }
+  async function setDogDeleted(dog,deleted) {
+    if(!dog||!state.ready||state.loading||state.dogSaving||state.undoSaving)return;
+    if(deleted&&unfinished()){message('Finish saving or remove unfinished rows before deleting a dog.',true);return;}
+    const epoch=state.epoch;state.dogSaving=true;controls();
+    try {
+      await requireStaff(epoch);if(!current(epoch))return;
+      const saved=await updateDog(dog,{deleted_at:deleted?new Date().toISOString():null},epoch);if(!current(epoch))return;
+      rememberDog(saved);
+      if(deleted){
+        for(const [id,editor] of state.editors)if(editor.dog_id===dog.id)state.editors.delete(id);
+        if(state.selectedDog===dog.id)state.selectedDog=activeDogs()[0]?.id||null;
+        if(state.editingDog?.id===dog.id){$('dogForm').hidden=true;state.editingDog=null;}
+        $('deletedDogsSection').open=true;
+      }else state.selectedDog=saved.id;
+      render();message('');toast(deleted?'Dog moved to Deleted dogs. Training rows kept.':'Dog restored.');
+    }catch(error){if(current(epoch))message(error?.code==='CONFLICT'?'This dog changed elsewhere. Refresh before trying again.':errorText(error),true);}
+    finally{if(current(epoch)){state.dogSaving=false;controls();}}
+  }
   async function saveDog(event) {
     event.preventDefault();if(state.dogSaving||!state.ready)return;
     const name=$('dogName').value.trim();if(!name)return;
-    const epoch=state.epoch,id=state.dogDraftId;state.dogSaving=true;$('dogError').textContent='';controls();
+    const epoch=state.epoch,id=state.dogDraftId,editing=state.editingDog;state.dogSaving=true;$('dogError').textContent='';controls();
     try {
       await requireStaff(epoch);if(!current(epoch))return;
-      let result=await supabaseClient.from('hq_training_dogs').insert({id,name}).select('*').single();if(!current(epoch))return;
-      if(result.error?.code==='23505')result=await supabaseClient.from('hq_training_dogs').select('*').eq('id',id).single();
-      if(!current(epoch))return;if(result.error)throw result.error;
-      if(result.data.name!==name)throw {code:'CONFLICT'};
-      if(!state.dogs.some(dog=>dog.id===id))state.dogs.push(result.data);state.dogs.sort((a,b)=>a.name.localeCompare(b.name));
-      state.selectedDog=id;$('dogForm').hidden=true;render();toast('Dog added.');
-    }catch(error){if(current(epoch))$('dogError').textContent=errorText(error);}
+      let saved;
+      if(editing)saved=await updateDog(editing,{name},epoch);
+      else {
+        let result=await supabaseClient.from('hq_training_dogs').insert({id,name}).select('*').single();if(!current(epoch))return;
+        if(result.error?.code==='23505')result=await supabaseClient.from('hq_training_dogs').select('*').eq('id',id).single();
+        if(!current(epoch))return;if(result.error)throw result.error;
+        saved=result.data;
+        if(saved.name!==name){rememberDog(saved);state.editingDog={...saved};$('dogNameLabel').textContent='Dog name';$('dogError').textContent='Your earlier save succeeded. Review the name and choose Save name.';renderDogs();return;}
+      }
+      if(!current(epoch))return;
+      rememberDog(saved);state.selectedDog=saved.deleted_at?activeDogs()[0]?.id||null:id;
+      $('dogForm').hidden=true;state.editingDog=null;render();toast(editing?'Dog name updated.':'Dog added.');
+    }catch(error){if(current(epoch))$('dogError').textContent=dogErrorText(error);}
     finally{if(current(epoch)){state.dogSaving=false;controls();}}
   }
   function resetAuth(userId) {
     state.epoch++;state.request++;state.userId=userId;state.ready=false;state.loading=false;state.dogSaving=false;
     state.dogs=[];state.logs=[];state.editors.clear();state.selectedDog=null;state.undo=null;state.undoSaving=false;
     clearTimeout(state.toastTimer);$('toast').hidden=true;$('toastText').textContent='';$('undoDelete').disabled=false;
-    $('dogForm').hidden=true;$('dogName').value='';$('dogError').textContent='';state.dogDraftId=null;
+    $('dogForm').hidden=true;$('dogName').value='';$('dogError').textContent='';state.dogDraftId=null;state.editingDog=null;
     render();message(userId?'Loading training rows…':'Sign in to Paws HQ to view training rows.');
   }
   function init() {
     if(!$('trainingPage'))return;
     $('addRow').addEventListener('click',addRow);
     $('dogSelect').addEventListener('change',event=>selectDog(event.target.value));
-    $('addDog').addEventListener('click',()=>{state.dogDraftId=crypto.randomUUID();$('dogName').value='';$('dogError').textContent='';$('dogForm').hidden=false;$('dogName').focus();});
-    $('cancelDog').addEventListener('click',()=>{if(!state.dogSaving)$('dogForm').hidden=true;});
+    $('addDog').addEventListener('click',()=>openDog());
+    $('renameDog').addEventListener('click',()=>openDog(state.dogs.find(dog=>dog.id===state.selectedDog)));
+    $('deleteDog').addEventListener('click',()=>setDogDeleted(state.dogs.find(dog=>dog.id===state.selectedDog),true));
+    $('deletedDogList').addEventListener('click',event=>{const button=event.target.closest('[data-restore-dog]');if(button)setDogDeleted(state.dogs.find(dog=>dog.id===button.dataset.restoreDog),false);});
+    $('cancelDog').addEventListener('click',()=>{if(!state.dogSaving){$('dogForm').hidden=true;state.editingDog=null;controls();}});
     $('dogForm').addEventListener('submit',saveDog);
     $('refreshLogs').addEventListener('click',()=>refresh());$('undoDelete').addEventListener('click',undoDelete);
     $('trainingRows').addEventListener('input',event=>{if(event.target.matches('[data-field]'))takeInput(event.target);});

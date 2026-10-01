@@ -13,7 +13,7 @@ const decode=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"
 function environment({dogs=[dog()],logs=[log()],active=true,intercept=null}={}) {
  const api={dogs:clone(dogs),logs:clone(logs),active,session:{user:{id:uuid(900)}},calls:[],callbacks:[],intercept};
  const nodes=new Map(),rows=new Map(),errors=new Map(),timers=new Map();let timer=0,nextID=10000;
- const document={readyState:'loading',hidden:false,activeElement:null,getElementById:id=>nodes.get(id),addEventListener(){},querySelector(selector){const m=selector.match(/\[data-(row|error)-id="([^"]+)"\]/);return m?(m[1]==='row'?rows:errors).get(m[2])||null:null;}};
+ const document={readyState:'loading',hidden:false,activeElement:null,getElementById:id=>nodes.get(id),addEventListener(){},querySelectorAll(){return [];},querySelector(selector){const m=selector.match(/\[data-(row|error)-id="([^"]+)"\]/);return m?(m[1]==='row'?rows:errors).get(m[2])||null:null;}};
  function node(id=''){
   const n={id,dataset:{},style:{},events:{},disabled:false,hidden:false,textContent:'',value:'',scrollHeight:64,scrollTop:0,classes:new Set(),children:[],
    addEventListener(type,fn){(this.events[type]||=[]).push(fn);},async emit(type,event={}){for(const fn of this.events[type]||[])await fn(event);},
@@ -52,7 +52,7 @@ function environment({dogs=[dog()],logs=[log()],active=true,intercept=null}={}) 
  const context=vm.createContext({document,window,supabaseClient:client,Date:TestDate,Intl,console,crypto:{randomUUID:()=>uuid(nextID++)},setInterval(){},setTimeout(fn,delay){timers.set(++timer,{fn,delay});return timer;},clearTimeout(id){timers.delete(id);}});
  const marker="  if (document.readyState==='loading')";
  assert.equal(source.split(marker).length,2);
- vm.runInContext(source.replace(marker,`  window.hooks={state,init,refresh,parseDateLabel,sortLogs,renderRows,selectDog,addRow,takeInput,saveEditor,deleteRow,undoDelete,reloadRow,resetAuth,editorFor,dirty,saveDog};\n${marker}`),context);
+ vm.runInContext(source.replace(marker,`  window.hooks={state,init,refresh,parseDateLabel,sortLogs,renderRows,selectDog,addRow,takeInput,saveEditor,deleteRow,undoDelete,reloadRow,resetAuth,editorFor,dirty,saveDog,openDog,setDogDeleted};\n${marker}`),context);
  const app=window.hooks;
  return {app,api,nodes,rows,errors,document,timers,get:id=>nodes.get(id),
   async start(){app.init();await until(()=>!app.state.loading);},
@@ -126,4 +126,48 @@ test('leaving the sheet after an earlier save reorders dates without interruptin
 });
 test('inline dog creation uses a stable id and recovers a lost response',async()=>{
  let fail=true;const h=environment({intercept(c,api){if(c.table==='hq_training_dogs'&&c.op==='insert'&&fail){fail=false;api.dogs.push(dog(c.payload));return {data:null,error:{code:'NETWORK'}};}}});await h.start();await h.get('addDog').emit('click');h.get('dogName').value='New fixture dog';await h.app.saveDog({preventDefault(){}});assert.ok(h.get('dogError').textContent);await h.app.saveDog({preventDefault(){}});assert.equal(h.api.dogs.length,2);assert.equal(h.get('dogForm').hidden,true);
+});
+
+test('deleted dogs have their own escaped section and are excluded from the active selector',async()=>{
+ const h=environment({dogs:[dog(),dog({id:uuid(2),name:'<Deleted dog>',deleted_at:'2026-10-01T12:00:00Z'})],logs:[log(),log({id:uuid(12),dog_id:uuid(2)})]});await h.start();
+ assert.equal(h.get('deletedDogCount').textContent,1);assert.doesNotMatch(h.get('dogSelect').innerHTML,/Deleted dog/);assert.match(h.get('deletedDogList').innerHTML,/&lt;Deleted dog&gt;/);assert.match(h.get('deletedDogList').innerHTML,/1 training row kept/);
+ h.app.selectDog(uuid(2));assert.equal(h.app.state.selectedDog,uuid(1));
+});
+test('rename updates only the dog name with revision protection and keeps all rows',async()=>{
+ const h=environment();await h.start();const before=clone(h.api.logs);h.app.openDog(h.app.state.dogs[0]);h.get('dogName').value='Renamed fixture dog';await h.app.saveDog({preventDefault(){}});
+ assert.equal(h.api.dogs[0].name,'Renamed fixture dog');assert.equal(h.api.dogs[0].revision,2);assert.deepEqual(h.api.logs,before);assert.equal(h.get('dogForm').hidden,true);
+ const call=h.api.calls.find(c=>c.table==='hq_training_dogs'&&c.op==='update');assert.deepEqual(call.payload,{name:'Renamed fixture dog'});assert.ok(call.filters.some(([key,value])=>key==='revision'&&value===1));
+});
+test('a stale dog rename keeps the draft and does not overwrite another name',async()=>{
+ const h=environment();await h.start();h.app.openDog(h.app.state.dogs[0]);h.get('dogName').value='Local name';h.api.dogs[0]={...h.api.dogs[0],name:'Remote name',revision:2};await h.app.saveDog({preventDefault(){}});
+ assert.equal(h.api.dogs[0].name,'Remote name');assert.equal(h.get('dogName').value,'Local name');assert.equal(h.get('dogForm').hidden,false);assert.match(h.get('dogError').textContent,/changed elsewhere/);
+});
+test('a lost rename response recovers its applied name without a second update',async()=>{
+ let fail=true;const h=environment({intercept(call,api){if(call.table==='hq_training_dogs'&&call.op==='update'&&fail){fail=false;api.dogs[0]={...api.dogs[0],...call.payload,revision:2};return {data:null,error:{code:'NETWORK'}};}}});await h.start();h.app.openDog(h.app.state.dogs[0]);h.get('dogName').value='Recovered name';await h.app.saveDog({preventDefault(){}});
+ assert.equal(h.api.dogs[0].name,'Recovered name');assert.equal(h.app.state.dogs[0].name,'Recovered name');assert.equal(h.get('dogForm').hidden,true);assert.equal(h.api.calls.filter(c=>c.table==='hq_training_dogs'&&c.op==='update').length,1);
+});
+test('dog deletion and restoration preserve every training row including individually deleted rows',async()=>{
+ const h=environment({dogs:[dog(),dog({id:uuid(2),name:'Second dog'})],logs:[log(),log({id:uuid(12),deleted_at:'2026-09-30'})]});await h.start();const before=clone(h.api.logs);await h.app.setDogDeleted(h.app.state.dogs.find(d=>d.id===uuid(1)),true);
+ assert.ok(h.api.dogs[0].deleted_at);assert.equal(h.app.state.selectedDog,uuid(2));assert.equal(h.get('deletedDogsSection').open,true);assert.equal(h.get('deletedDogCount').textContent,1);assert.deepEqual(h.api.logs,before);
+ await h.app.setDogDeleted(h.app.state.dogs.find(d=>d.id===uuid(1)),false);assert.equal(h.api.dogs[0].deleted_at,null);assert.equal(h.app.state.selectedDog,uuid(1));assert.equal(h.rows.size,1);assert.deepEqual(h.api.logs,before);
+});
+test('deleting the last active dog shows a restore path and disables adding rows',async()=>{
+ const h=environment();await h.start();await h.app.setDogDeleted(h.app.state.dogs[0],true);assert.equal(h.app.state.selectedDog,null);assert.equal(h.rows.size,0);assert.equal(h.get('addRow').disabled,true);assert.match(h.get('emptyState').textContent,/restore/);
+ h.app.addRow();assert.equal(h.app.state.editors.size,0);
+});
+test('unsaved cells and in-flight saves block dog deletion without discarding anything',async()=>{
+ const gate=deferred();let held=false;const h=environment({intercept(c){if(c.table==='hq_training_logs'&&c.op==='update'){held=true;return gate.promise;}}});await h.start();h.input(uuid(11),'notes','Keep this draft');await h.app.setDogDeleted(h.app.state.dogs[0],true);assert.equal(h.api.dogs[0].deleted_at,undefined);assert.equal(h.get('deleteDog').disabled,true);
+ const save=h.save(uuid(11));await until(()=>held);await h.app.setDogDeleted(h.app.state.dogs[0],true);assert.equal(h.api.calls.filter(c=>c.table==='hq_training_dogs'&&c.op==='update').length,0);gate.resolve({data:log({notes:'Keep this draft',revision:2}),error:null});await save;
+});
+test('stale dog deletion fails safely while a lost successful deletion is recoverable',async()=>{
+ const h=environment();await h.start();h.api.dogs[0]={...h.api.dogs[0],name:'Teammate rename',revision:2};await h.app.setDogDeleted(h.app.state.dogs[0],true);assert.equal(h.api.dogs[0].deleted_at,undefined);assert.match(h.get('pageMessage').textContent,/changed elsewhere/);
+ const lost=environment({intercept(c,api){if(c.table==='hq_training_dogs'&&c.op==='update'){api.dogs[0]={...api.dogs[0],...c.payload,revision:2};return {data:null,error:{code:'NETWORK'}};}}});await lost.start();await lost.app.setDogDeleted(lost.app.state.dogs[0],true);assert.equal(lost.app.state.selectedDog,null);assert.equal(lost.get('deletedDogCount').textContent,1);
+});
+test('sign-out discards late dog rename and deletion responses',async()=>{
+ for(const mode of ['rename','delete']){
+  const gate=deferred();let held=false;const h=environment({intercept(c){if(c.table==='hq_training_dogs'&&c.op==='update'){held=true;return gate.promise;}}});await h.start();
+  let mutation;if(mode==='rename'){h.app.openDog(h.app.state.dogs[0]);h.get('dogName').value='Late name';mutation=h.app.saveDog({preventDefault(){}});}else mutation=h.app.setDogDeleted(h.app.state.dogs[0],true);
+  await until(()=>held);h.signOut();gate.resolve({data:dog({name:'Late name',deleted_at:mode==='delete'?'2026-10-01':null,revision:2}),error:null});await mutation;
+  assert.equal(h.app.state.dogs.length,0);assert.equal(h.rows.size,0);assert.equal(h.app.state.editingDog,null);assert.equal(h.get('dogName').value,'');assert.equal(h.get('deletedDogCount').textContent,0);
+ }
 });

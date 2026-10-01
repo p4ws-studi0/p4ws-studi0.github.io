@@ -142,3 +142,17 @@
 .tr-table thead th {position:sticky;top:0;z-index:2;background:var(--tr-menu);}
 @media (max-width:700px) {.tr-table-scroll {max-height:calc(100dvh - 325px);}}
 @media print {.tr-table-scroll {max-height:none;min-height:0;}.tr-table thead th {position:static;}}
+/* Dog management stays outside the compact entry rows. */
+.tr-dog-tools {flex-wrap:wrap;}
+.tr-delete-dog:hover:not(:disabled) {color:#c93239;border-color:rgba(217,72,80,.2);background:rgba(217,72,80,.07);}
+.tr-deleted-dogs {margin-top:16px;border:1px solid var(--tr-line);border-radius:12px;background:var(--tr-surface);font-size:12px;}
+.tr-deleted-dogs summary {cursor:pointer;padding:14px 17px;color:var(--tr-muted);font-weight:600;}
+.tr-deleted-dogs summary span {margin-left:7px;font-weight:400;}
+.tr-deleted-dog-list {padding:0 17px 9px;}
+.tr-deleted-dog-list > p {padding:7px 0 10px;color:var(--tr-muted);}
+.tr-deleted-dog {display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--tr-line);padding:8px 0;}
+.tr-deleted-dog strong {display:block;font-weight:600;overflow-wrap:anywhere;}
+.tr-deleted-dog span {display:block;margin-top:4px;font-size:10px;color:var(--tr-muted);}
+.tr-deleted-dog button {flex-shrink:0;}
+@media (max-width:700px) {.tr-dog-select {flex-basis:100%;}.tr-dog-tools {gap:4px;}.tr-dog-tools .tr-button {min-height:36px;}}
+@media print {.tr-deleted-dogs {display:none!important;}}
