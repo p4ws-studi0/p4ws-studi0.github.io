@@ -6,7 +6,15 @@ The live database has all 58 entries from the three supplied CSVs (22, 17, and 1
 
 ## Use
 
-Choose a dog, search its log or filter by trainer, and use **Log session**, **Edit**, or **Delete**. Add and rename dogs from the page. Deleted entries can be restored from **Deleted**, or immediately with **Undo**. Notices disappear after five seconds. Records keep the original session order; new sessions append. Day labels carry forward for grouping only, without filling blank stored cells. All seven original columns remain editable text so date/year and time assumptions are never imposed on old records.
+Select a dog and type directly into the seven-column training sheet. **Tab** moves between cells; changes save when leaving a cell. **Add row** inserts a new row at the top with an editable date default. **Delete** removes a row immediately; the five-second notice offers **Undo**. **Add dog** opens a small inline name field. There are no session dialogs, cards, search controls, or trainer filters.
+
+All seven fields accept ordinary text. Partial entries are allowed; dates, time ranges, trainer names, and session labels have no rigid input format. A completely empty persisted row must be filled or deleted. Long cells expand while focused; other rows remain compact. The table scrolls horizontally on small screens and keeps its column headings visible while scrolling through many rows.
+
+Rows sort by session date, newest first, with original position descending as the tie-breaker. The date parser recognizes common month/day, ISO, and named-month dates for display sorting only. Yearless dates use each row's immutable creation year as a stable sort anchor; the stored date text is never changed. Blank or unrecognized dates stay adjacent to the nearest preceding dated row in source order (leading blanks use the first dated row); all-undated logs use reverse source order. New rows stay at the top while being entered, then sort when leaving the sheet or refreshing.
+
+## Automatic saves
+
+Updates contain only changed cells and use the loaded revision. Edits typed during a pending save queue behind its returned revision without replacing focused inputs. A lost response recovers the same record before retrying. Changes to different cells can merge with a teammate's work; competing edits to the same cell keep the local draft and show a reload action. Failed saves stay visible with Retry. Background refresh pauses while the sheet is focused or any unsaved work remains, and sign-out clears loaded records and invalidates pending responses.
 
 ## Database
 
@@ -20,6 +28,6 @@ The original seven cells are retained in immutable `source_values` for imported 
 
 ## Verification
 
-Run `node --test tests/*.test.cjs` for the 38 application regression checks (18 training and 20 Tours). Training tests use synthetic data and cover exact text preservation, partial entries, grouping/filtering, pagination, editing conflicts, lost save responses, reversible deletion, authorization, and logout races.
+Run `node --test tests/*.test.cjs` for the 38 application regression checks (18 training and 20 Tours). Training tests use synthetic data and cover exact text preservation, compact inline entry, flexible input, date sorting, queued autosaves, pagination, editing conflicts, lost responses, reversible deletion, authorization, and logout races.
 
 `training-rls-check.sql` verifies approved CRUD, exact text, audit/revision rules, source provenance, restoration, and anonymous/nonstaff isolation. It runs in a transaction and rolls back all fixture data and membership changes. It passed locally and against the live Supabase project before import. If interrupted on an error, run `rollback;` before another query.
