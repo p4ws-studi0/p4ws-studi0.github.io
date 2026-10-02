@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Dog licenses · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/dog-licenses.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="licensesPage" class="tr-page">
+      <div class="tr-page-heading">
+        <div class="dl-title"><h1>Dog licenses</h1><span>Cheshire only · for now</span></div>
+        <p>Type in any cell. Tab to the next. Changes save when you leave a cell.</p>
+      </div>
+
+      <section class="tr-sheet glass" aria-label="Dog licenses log">
+        <div class="tr-toolbar">
+          <span class="dl-toolbar-label">License tracker</span>
+          <button id="addRow" disabled type="button" class="tr-button tr-button-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add row</button>
+        </div>
+
+        <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+        <div class="tr-sheet-caption"><span id="rowCount">Loading rows…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
+
+        <div id="tableScroll" class="tr-table-scroll" role="region" aria-label="Editable dog license tracker; scroll horizontally to see all columns" tabindex="0">
+          <table class="tr-table">
+            <caption class="tr-sr-only">Dog license tracker. Newest entries first. Edit any cell to update it.</caption>
+            <colgroup><col class="dl-col-pet" /><col class="dl-col-type" /><col class="dl-col-initials" /><col class="tr-col-action" /></colgroup>
+            <thead><tr><th scope="col">Pet name</th><th scope="col">Renewal or registration?</th><th scope="col">Initials</th><th scope="col"><span class="tr-sr-only">Delete</span></th></tr></thead>
+            <tbody id="licenseRows"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="tr-empty-state" hidden><p>No license entries yet.</p><span>Add a row to get started.</span></div>
+        <div class="tr-sheet-footer"><span class="tr-order-hint">Newest entries first</span><button id="refreshLogs" type="button" class="tr-refresh"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button></div>
+      </section>
+      <details id="deletedSection" class="tr-deleted-dogs">
+        <summary>Deleted entries <span id="deletedCount">0</span></summary>
+        <div id="deletedList" class="tr-deleted-dog-list"><p>No deleted entries.</p></div>
+      </details>
+      <details class="dl-guide">
+        <summary>Information needed <span>Renewals &amp; registrations</span></summary>
+        <p class="dl-guide-note">Check what’s already on file before asking the client for information.</p>
+        <div class="dl-guide-grid">
+          <section><h2>Renewals</h2><ul><li>Rabies certificate</li><li>Dog tag number <small>Found on the upper right of the dog license.</small></li></ul></section>
+          <section><h2>Registrations</h2><ul><li>Owner’s name</li><li><strong>Address — confirm with the client</strong></li><li>Phone number</li><li>Email address</li><li>Dog’s name and age</li><li>Breed and color</li><li>Sex (male/female)</li><li>Spayed/neutered status</li><li>Rabies certificate</li><li>Spay/neuter certificate</li></ul><p class="dl-address-note">The license will be mailed to the client’s address. Confirm it before registering.</p></section>
+        </div>
+      </details>
+      <noscript><p class="tr-page-message">Please enable JavaScript to view and update license entries.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+  <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {
+          document.getElementById(id).innerHTML=html
+          if (id==='header') document.dispatchEvent(new Event('header:ready'))
+          if (id==='footer') {const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear()}
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/dog-licenses.js?v=1" defer></script>
+</body>
+</html>
