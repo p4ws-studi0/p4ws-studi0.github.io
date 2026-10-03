@@ -20,6 +20,8 @@
 
   <link rel="stylesheet" href="/assets/home-tours.css?v=2">
 
+  <link rel="stylesheet" href="/assets/home-slack.css?v=1">
+
   <link rel="stylesheet" href="/assets/tour-editor.css?v=1">
 
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -1853,6 +1855,30 @@
 
 
 
+      <!-- LATEST SLACK UPDATE -->
+<section id="homeSlackWidget" class="home-slack glass relative z-0 is-empty" aria-labelledby="homeSlackTitle" aria-busy="true">
+  <div class="home-slack-heading">
+    <div class="home-slack-heading-main">
+      <span class="home-slack-symbol" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 3 8 21M16 3l-2 18M4 9h17M3 15h17"/></svg></span>
+      <div><h2 id="homeSlackTitle">Latest in #general</h2><p class="home-slack-subtitle">From your Paws Slack workspace</p></div>
+    </div>
+    <a id="homeSlackOpen" class="home-slack-open" target="_blank" rel="noopener noreferrer" hidden>Open in Slack<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3l-8 8M10 3H3v18h18v-7"/></svg></a>
+  </div>
+  <article id="homeSlackMessage" class="home-slack-message" aria-label="Latest message in general" hidden>
+    <div class="home-slack-author-line"><span id="homeSlackInitials" class="home-slack-avatar" aria-hidden="true"></span><div><span id="homeSlackAuthor" class="home-slack-author"></span><time id="homeSlackTime" class="home-slack-time"></time></div></div>
+    <div id="homeSlackBody" class="home-slack-body" tabindex="0" aria-label="Message text"></div>
+    <div id="homeSlackImages" class="home-slack-images" aria-label="Attached images" hidden></div>
+    <div id="homeSlackFiles" class="home-slack-files" aria-label="Other attachments" hidden></div>
+  </article>
+  <p id="homeSlackEmpty" class="home-slack-empty">Loading the latest Slack update…</p>
+  <div class="home-slack-footer"><p id="homeSlackStatus" role="status" aria-live="polite">Checking #general…</p><button id="homeSlackRefresh" class="home-slack-refresh" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button></div>
+</section>
+<dialog id="homeSlackImageDialog" class="home-slack-dialog" aria-labelledby="homeSlackImageTitle">
+  <div class="home-slack-dialog-heading"><h3 id="homeSlackImageTitle">Attached image</h3><button id="homeSlackImageClose" type="button" autofocus>Close</button></div>
+  <img id="homeSlackLargeImage" class="home-slack-dialog-image" alt="">
+</dialog>
+
+
       <!-- KNOWLEDGE BASE -->
     <section class="mt-8 mb-5">
       <div class="w-full">
@@ -3604,6 +3630,8 @@
   <script src="/assets/tour-editor.js?v=1" defer></script>
 
   <script src="/assets/home-tours.js?v=2" defer></script>
+
+  <script src="/assets/home-slack.js?v=1" defer></script>
 
 
 

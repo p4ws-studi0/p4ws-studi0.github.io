@@ -1,0 +1,3 @@
+[functions.hq-slack-general]
+verify_jwt = true
+entrypoint = "./functions/hq-slack-general/index.ts"
