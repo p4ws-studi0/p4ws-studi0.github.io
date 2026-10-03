@@ -37,4 +37,6 @@ The homepage displays the newest post in the workspace's public `#general` chann
 
 `CONNECTION_REQUIRED` means missing secrets, a revoked token, missing scopes, wrong workspace/channel, or a bot that has not joined the channel. `ACCESS_DENIED` means the viewer lacks HQ approval or the required Slack identity/membership. Neither error exposes Slack credentials or raw provider responses.
 
+Supabase **Edge Functions → hq-slack-general → Logs** records fixed setup reason tags. For example, `SLACK_API_ERROR` with method `conversations.info` and error `missing_scope` means the installed token lacks the channel-read permission. Check **Bot Token Scopes** and reinstall the app after changing scopes; update `SLACK_BOT_TOKEN` if Slack issues a new token. Diagnostics never include secret values, user/channel IDs, message content, or raw provider responses. Surrounding whitespace in the three Slack secret values is ignored.
+
 References: [Slack channel history](https://docs.slack.dev/reference/methods/conversations.history/), [Slack file metadata](https://docs.slack.dev/reference/methods/files.info/), [Supabase function secrets](https://supabase.com/docs/guides/functions/secrets).

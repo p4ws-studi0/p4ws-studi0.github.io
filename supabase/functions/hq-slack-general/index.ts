@@ -1,8 +1,9 @@
 /* Latest #general post for approved HQ members. No Slack secrets or private URLs leave this function. */
-export function createHandler({env, fetch:request=fetch, now=Date.now}) {
+export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_entry)=>{}}) {
   const origin=env.HQ_ORIGIN||'https://hq.pawspet.com';
   const project=env.SUPABASE_URL, apiKey=env.SUPABASE_ANON_KEY;
-  const token=env.SLACK_BOT_TOKEN, team=env.SLACK_TEAM_ID, channel=env.SLACK_GENERAL_CHANNEL_ID;
+  const trimmed=value=>typeof value==='string'?value.trim():value;
+  const token=trimmed(env.SLACK_BOT_TOKEN), team=trimmed(env.SLACK_TEAM_ID), channel=trimmed(env.SLACK_GENERAL_CHANNEL_ID);
   const cache=new Map(),pending=new Map();let cooldown=0;
   const MAX_IMAGE=8*1024*1024;
   const imageTypes=new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif']);
@@ -12,6 +13,15 @@ export function createHandler({env, fetch:request=fetch, now=Date.now}) {
   const json=(body,status=200,extra={})=>new Response(JSON.stringify(body),{status,headers:{...headers,'Content-Type':'application/json',...extra}});
   const safeLink=value=>{try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&(u.hostname==='slack.com'||u.hostname.endsWith('.slack.com'))?u.href:null;}catch{return null;}};
   const string=value=>typeof value==='string'?value:'';
+  const diagnosticReasons=new Set(['MISSING_SUPABASE_URL','MALFORMED_SUPABASE_URL','MISSING_SUPABASE_ANON_KEY','MALFORMED_SUPABASE_ANON_KEY','MISSING_SLACK_BOT_TOKEN','MALFORMED_SLACK_BOT_TOKEN','MISSING_SLACK_TEAM_ID','MALFORMED_SLACK_TEAM_ID','MISSING_SLACK_GENERAL_CHANNEL_ID','MALFORMED_SLACK_GENERAL_CHANNEL_ID','BOT_TEAM_MISMATCH','CHANNEL_ID_MISMATCH','CHANNEL_NOT_GENERAL','CHANNEL_PRIVATE','BOT_NOT_CHANNEL_MEMBER','SLACK_API_ERROR','SLACK_HTTP_ERROR','SLACK_RATE_LIMITED']);
+  const diagnosticMethods=new Set(['auth.test','conversations.info','users.info','conversations.members','conversations.history','chat.getPermalink','files.info']);
+  const diagnosticErrors=new Set(['missing_scope','not_in_channel','invalid_auth','token_revoked','account_inactive','channel_not_found','access_denied','file_not_found','file_deleted','user_not_found','ekm_access_denied','ratelimited']);
+  function diagnose(reason,method,slackError) {
+    if(!diagnosticReasons.has(reason))return;
+    const entry={reason,...(diagnosticMethods.has(method)?{method}:{}),...(diagnosticErrors.has(slackError)?{slack_error:slackError}:{})};
+    // Never log values, IDs, raw errors, provider payloads, or requested/actual scopes.
+    try{log(entry);}catch{/* Diagnostics must not change authorization or response behavior. */}
+  }
   async function cached(key,ttl,read) {
     const hit=cache.get(key);if(hit&&hit.until>now())return hit.value;
     if(pending.has(key))return pending.get(key);
@@ -21,10 +31,11 @@ export function createHandler({env, fetch:request=fetch, now=Date.now}) {
   async function slack(method,params={}) {
     if(cooldown>now())fail(429,'RATE_LIMITED');
     const res=await request(`https://slack.com/api/${method}`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(params),signal:AbortSignal.timeout(10000),redirect:'error'});
-    if(res.status===429){cooldown=now()+Math.max(1,Math.min(300,Number(res.headers.get('Retry-After'))||60))*1000;fail(429,'RATE_LIMITED');}
-    if(!res.ok)fail(502,'SLACK_UNAVAILABLE');
+    if(res.status===429){diagnose('SLACK_RATE_LIMITED',method);cooldown=now()+Math.max(1,Math.min(300,Number(res.headers.get('Retry-After'))||60))*1000;fail(429,'RATE_LIMITED');}
+    if(!res.ok){diagnose('SLACK_HTTP_ERROR',method);fail(502,'SLACK_UNAVAILABLE');}
     const data=await res.json();
     if(!data.ok) {
+      diagnose('SLACK_API_ERROR',method,data.error);
       if(['missing_scope','not_in_channel','invalid_auth','token_revoked','account_inactive'].includes(data.error)){cache.clear();fail(503,'CONNECTION_REQUIRED');}
       fail(502,'SLACK_UNAVAILABLE');
     }
@@ -33,7 +44,11 @@ export function createHandler({env, fetch:request=fetch, now=Date.now}) {
   async function userInfo(id) {return cached(`user:${id}`,30000,async()=>{const data=await slack('users.info',{user:id});return data.user;});}
   async function authorize(req) {
     const bearer=req.headers.get('Authorization');if(!/^Bearer\s+\S+$/i.test(bearer||''))fail(401,'AUTH_REQUIRED');
-    if(!project||!apiKey)fail(503,'CONNECTION_REQUIRED');
+    if(!project){diagnose('MISSING_SUPABASE_URL');fail(503,'CONNECTION_REQUIRED');}
+    try{const parsed=new URL(project);if(!['https:','http:'].includes(parsed.protocol)||parsed.username||parsed.password||parsed.search||parsed.hash||!['','/'].includes(parsed.pathname))throw new Error();}
+    catch{diagnose('MALFORMED_SUPABASE_URL');fail(503,'CONNECTION_REQUIRED');}
+    if(!apiKey){diagnose('MISSING_SUPABASE_ANON_KEY');fail(503,'CONNECTION_REQUIRED');}
+    if(typeof apiKey!=='string'||/\s/.test(apiKey)){diagnose('MALFORMED_SUPABASE_ANON_KEY');fail(503,'CONNECTION_REQUIRED');}
     const authHeaders={apikey:apiKey,Authorization:bearer};
     const res=await request(`${project}/auth/v1/user`,{headers:authHeaders,signal:AbortSignal.timeout(10000),redirect:'error'});
     if(res.status===401||res.status===403)fail(401,'AUTH_REQUIRED');if(!res.ok)fail(502,'AUTH_UNAVAILABLE');
@@ -41,7 +56,12 @@ export function createHandler({env, fetch:request=fetch, now=Date.now}) {
     const staff=await request(`${project}/rest/v1/hq_tour_staff?select=user_id&user_id=eq.${user.id}&active=eq.true&limit=1`,{headers:authHeaders,signal:AbortSignal.timeout(10000),redirect:'error'});
     if(staff.status===401||staff.status===403)fail(403,'ACCESS_DENIED');if(!staff.ok)fail(502,'AUTH_UNAVAILABLE');
     const approvals=await staff.json();if(!Array.isArray(approvals)||!approvals.some(row=>row.user_id===user.id))fail(403,'ACCESS_DENIED');
-    if(!token||!/^T[A-Z0-9]+$/.test(team||'')||!/^C[A-Z0-9]+$/.test(channel||''))fail(503,'CONNECTION_REQUIRED');
+    if(!token){diagnose('MISSING_SLACK_BOT_TOKEN');fail(503,'CONNECTION_REQUIRED');}
+    if(typeof token!=='string'||/\s/.test(token)){diagnose('MALFORMED_SLACK_BOT_TOKEN');fail(503,'CONNECTION_REQUIRED');}
+    if(!team){diagnose('MISSING_SLACK_TEAM_ID');fail(503,'CONNECTION_REQUIRED');}
+    if(typeof team!=='string'||!/^T[A-Z0-9]+$/.test(team)){diagnose('MALFORMED_SLACK_TEAM_ID');fail(503,'CONNECTION_REQUIRED');}
+    if(!channel){diagnose('MISSING_SLACK_GENERAL_CHANNEL_ID');fail(503,'CONNECTION_REQUIRED');}
+    if(typeof channel!=='string'||!/^C[A-Z0-9]+$/.test(channel)){diagnose('MALFORMED_SLACK_GENERAL_CHANNEL_ID');fail(503,'CONNECTION_REQUIRED');}
     // identity_data is provider-owned. user_metadata is editable and must never authorize Slack access.
     const identities=(user.identities||[]).filter(i=>i.provider==='slack_oidc');
     const identity=identities.find(i=>{
@@ -50,9 +70,12 @@ export function createHandler({env, fetch:request=fetch, now=Date.now}) {
     const data=identity?.identity_data||{};
     const slackUser=string(data.sub||data.provider_id);if(!/^[UW][A-Z0-9]+$/.test(slackUser))fail(403,'ACCESS_DENIED');
     await cached('configuration',300000,async()=>{
-      const auth=await slack('auth.test');if(auth.team_id!==team)fail(503,'CONNECTION_REQUIRED');
+      const auth=await slack('auth.test');if(auth.team_id!==team){diagnose('BOT_TEAM_MISMATCH','auth.test');fail(503,'CONNECTION_REQUIRED');}
       const result=await slack('conversations.info',{channel});
-      if(result.channel?.id!==channel||!result.channel?.is_general||!result.channel?.is_member||result.channel?.is_private)fail(503,'CONNECTION_REQUIRED');
+      if(result.channel?.id!==channel){diagnose('CHANNEL_ID_MISMATCH','conversations.info');fail(503,'CONNECTION_REQUIRED');}
+      if(!result.channel?.is_general){diagnose('CHANNEL_NOT_GENERAL','conversations.info');fail(503,'CONNECTION_REQUIRED');}
+      if(result.channel?.is_private){diagnose('CHANNEL_PRIVATE','conversations.info');fail(503,'CONNECTION_REQUIRED');}
+      if(!result.channel?.is_member){diagnose('BOT_NOT_CHANNEL_MEMBER','conversations.info');fail(503,'CONNECTION_REQUIRED');}
       return true;
     });
     const viewer=await userInfo(slackUser);
@@ -189,5 +212,5 @@ export function createHandler({env, fetch:request=fetch, now=Date.now}) {
 }
 if(typeof Deno!=='undefined') {
   const keys=['HQ_ORIGIN','SUPABASE_URL','SUPABASE_ANON_KEY','SLACK_BOT_TOKEN','SLACK_TEAM_ID','SLACK_GENERAL_CHANNEL_ID'];
-  Deno.serve(createHandler({env:Object.fromEntries(keys.map(key=>[key,Deno.env.get(key)]))}));
+  Deno.serve(createHandler({env:Object.fromEntries(keys.map(key=>[key,Deno.env.get(key)])),log:entry=>console.warn('hq-slack-general',JSON.stringify(entry))}));
 }

@@ -16,7 +16,7 @@ const message=(extra={})=>({type:'message',user:AUTHOR,text:'A synthetic team up
 const file=(extra={})=>({id:FILE,title:'Fixture image',mimetype:'image/png',is_external:false,url_private:'https://files.slack.com/files-pri/TTEST-FIMAGE/fixture.png',...extra});
 async function environment(options={}){
  const {createHandler}=await loaded;
- const state={clock:Date.parse('2026-10-02T15:00:00Z'),user:account(),approved:true,members:[VIEWER],messages:[message()],files:{[FILE]:file()},users:{},calls:[],intercept:null,...options};
+ const state={clock:Date.parse('2026-10-02T15:00:00Z'),user:account(),approved:true,members:[VIEWER],messages:[message()],files:{[FILE]:file()},users:{},calls:[],diagnostics:[],intercept:null,...options};
  const env={SUPABASE_URL:PROJECT,SUPABASE_ANON_KEY:'fixture-public-key',SLACK_BOT_TOKEN:'fixture-private-token',SLACK_TEAM_ID:TEAM,SLACK_GENERAL_CHANNEL_ID:CHANNEL,...options.env};
  const mock=async(input,init={})=>{
   const url=new URL(input),headers=new Headers(init.headers),params=init.body instanceof URLSearchParams?Object.fromEntries(init.body):{};
@@ -37,7 +37,7 @@ async function environment(options={}){
    default:assert.fail(`Unexpected Slack API ${call.api}`);
   }
  };
- const handler=createHandler({env,fetch:mock,now:()=>state.clock});
+ const handler=createHandler({env,fetch:mock,now:()=>state.clock,log:options.log||((entry)=>state.diagnostics.push(entry))});
  return {state,env,handler,
   async request(body={action:'message'},init={}){
    const headers={Origin:ORIGIN,Authorization:'Bearer fixture-user-jwt','Content-Type':'application/json',...init.headers};
@@ -49,6 +49,47 @@ async function environment(options={}){
  };
 }
 async function errorIs(response,status,code){assert.equal(response.status,status);assert.deepEqual(await response.json(),{error:{code}});}
+
+test('setup diagnostics distinguish each missing or malformed environment key without logging values',async()=>{
+ for(const [key,value,reason] of [
+  ['SUPABASE_URL','','MISSING_SUPABASE_URL'],['SUPABASE_URL','not a URL secret','MALFORMED_SUPABASE_URL'],
+  ['SUPABASE_ANON_KEY','','MISSING_SUPABASE_ANON_KEY'],['SUPABASE_ANON_KEY','key with spaces','MALFORMED_SUPABASE_ANON_KEY'],
+  ['SLACK_BOT_TOKEN','','MISSING_SLACK_BOT_TOKEN'],['SLACK_BOT_TOKEN','token with spaces','MALFORMED_SLACK_BOT_TOKEN'],
+  ['SLACK_TEAM_ID','','MISSING_SLACK_TEAM_ID'],['SLACK_TEAM_ID','https://fixture.slack.com','MALFORMED_SLACK_TEAM_ID'],
+  ['SLACK_GENERAL_CHANNEL_ID','','MISSING_SLACK_GENERAL_CHANNEL_ID'],['SLACK_GENERAL_CHANNEL_ID','#general','MALFORMED_SLACK_GENERAL_CHANNEL_ID']
+ ]){
+  const h=await environment({env:{[key]:value}});await errorIs(await h.request(),503,'CONNECTION_REQUIRED');
+  assert.deepEqual(h.state.diagnostics,[{reason}]);assert.equal(h.state.calls.filter(call=>call.api).length,0);
+ }
+});
+test('surrounding whitespace in Slack secrets is trimmed without interpreting URLs or changing IDs',async()=>{
+ const h=await environment({env:{SLACK_BOT_TOKEN:' \nfixture-private-token\t',SLACK_TEAM_ID:' TTEST\n',SLACK_GENERAL_CHANNEL_ID:'\tCGENERAL '}});
+ assert.equal((await h.request()).status,200);assert.deepEqual(h.state.diagnostics,[]);
+ assert.ok(h.state.calls.filter(call=>call.api).every(call=>call.headers.get('Authorization')==='Bearer fixture-private-token'));
+ assert.equal(h.calls('conversations.info')[0].params.channel,CHANNEL);
+});
+test('configuration diagnostics distinguish workspace and channel setup failures',async()=>{
+ for(const [patch,reason] of [[{id:'COTHER'},'CHANNEL_ID_MISMATCH'],[{is_general:false},'CHANNEL_NOT_GENERAL'],[{is_private:true},'CHANNEL_PRIVATE'],[{is_member:false},'BOT_NOT_CHANNEL_MEMBER']]){
+  const h=await environment({intercept:call=>call.api==='conversations.info'?json({ok:true,channel:{id:CHANNEL,is_general:true,is_member:true,is_private:false,...patch}}):undefined});
+  await errorIs(await h.request(),503,'CONNECTION_REQUIRED');assert.deepEqual(h.state.diagnostics,[{reason,method:'conversations.info'}]);
+ }
+ const h=await environment({intercept:call=>call.api==='auth.test'?json({ok:true,team_id:'TOPAQUESECRET'}):undefined});
+ await errorIs(await h.request(),503,'CONNECTION_REQUIRED');assert.deepEqual(h.state.diagnostics,[{reason:'BOT_TEAM_MISMATCH',method:'auth.test'}]);
+});
+test('Slack diagnostics allowlist error codes and never include raw provider data or thrown details',async()=>{
+ for(const error of ['missing_scope','not_in_channel','invalid_auth','token_revoked','account_inactive']){
+  const h=await environment({intercept:call=>call.api==='auth.test'?json({ok:false,error,needed:'secret needed scopes',provided:'secret supplied scopes',token:'secret token'}):undefined});
+  await errorIs(await h.request(),503,'CONNECTION_REQUIRED');assert.deepEqual(h.state.diagnostics,[{reason:'SLACK_API_ERROR',method:'auth.test',slack_error:error}]);
+ }
+ const unknown=await environment({intercept:call=>call.api==='auth.test'?json({ok:false,error:'secret raw error payload'}):undefined});
+ await errorIs(await unknown.request(),502,'SLACK_UNAVAILABLE');assert.deepEqual(unknown.state.diagnostics,[{reason:'SLACK_API_ERROR',method:'auth.test'}]);
+ const thrown=await environment({intercept:call=>{if(call.api==='auth.test')throw new Error('secret transport error');}});
+ await errorIs(await thrown.request(),502,'UNAVAILABLE');assert.deepEqual(thrown.state.diagnostics,[]);
+});
+test('diagnostic sink errors cannot change access checks or expose log details',async()=>{
+ const h=await environment({env:{SLACK_BOT_TOKEN:''},log:()=>{throw new Error('secret diagnostic failure');}});
+ await errorIs(await h.request(),503,'CONNECTION_REQUIRED');assert.equal(h.state.calls.filter(call=>call.api).length,0);
+});
 
 test('Slack endpoint handles CORS and rejects unsupported methods without fetching records',async()=>{
  const h=await environment();
