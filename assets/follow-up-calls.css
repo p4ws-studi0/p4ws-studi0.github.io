@@ -1,0 +1,17 @@
+/* Follow-up-specific layout; HQ sheet typography and controls come from training.css. */
+.fc-toolbar-label {font-size:12px;font-weight:600;color:var(--tr-muted);}
+#followUpPage .tr-table {min-width:1320px;}
+.fc-col-owner,.fc-col-pet {width:145px;}
+.fc-col-date {width:126px;}
+.fc-col-call {width:138px;}
+.fc-col-made-on {width:135px;}
+.fc-col-initials {width:80px;}
+.fc-col-notes {width:auto;}
+#followUpPage .tr-table-scroll {min-height:0;max-height:65dvh;}
+#followUpPage .tr-table td,#followUpPage .tr-cell textarea {height:44px;min-height:44px;}
+#followUpPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#followUpPage .tr-delete {margin:0;}
+#followUpPage .tr-sheet-footer {align-items:flex-start;}
+#followUpPage .tr-order-hint {padding-block:13px;}
+@media (max-width:700px) {#followUpPage .tr-cell textarea {font-size:16px;}}
+@media print {#followUpPage .tr-table-scroll {max-height:none;}}
