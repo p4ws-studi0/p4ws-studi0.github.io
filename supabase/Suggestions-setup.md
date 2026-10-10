@@ -10,7 +10,7 @@ Run `suggestions-setup.sql` in the existing Supabase project after Tours members
 
 The server controls audit timestamps, actor IDs, revisions, and deletion timestamps. Updates filter by the last loaded revision. IDs, creation details, insertion order, and source metadata are immutable. Browser-created rows cannot claim imported source metadata. Field limits are 20,000 characters for suggestion, 120 for date, and 20,000 for outcome.
 
-Import the CSV privately with stable UUIDs. Filter out existing IDs before inserting and retain `ON CONFLICT DO NOTHING` as a final duplicate guard. Preserve all three cells exactly in `source_values`, along with the source filename and actual CSV row number. A repeated import must neither duplicate entries, revive deleted records, nor overwrite later edits. All 119 data rows are retained, including the survey marker and date-only record. Do not commit source records, private import scripts, credentials, or fixture databases to the public website repository.
+Import the CSV privately with stable UUIDs. Filter out existing IDs before inserting, order incoming rows by their original CSV row number, and retain `ON CONFLICT DO NOTHING` as a final duplicate guard. Original CSV row numbers determine order within the same imported file; insertion positions determine order for new entries. Preserve all three cells exactly in `source_values`, along with the source filename and actual CSV row number. A repeated import must neither duplicate entries, revive deleted records, nor overwrite later edits. All 119 data rows are retained, including the survey marker and date-only record. Do not commit source records, private import scripts, credentials, or fixture databases to the public website repository.
 
 ## Validation
 

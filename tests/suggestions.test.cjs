@@ -281,3 +281,9 @@ test('yearless and invalid dates remain unknown across calendar changes and keep
   assert.deepEqual([...h.rows.keys()],[uuid(12),uuid(11),uuid(13),uuid(14)]);assert.equal(h.app.suggestionDate('8/19'),null);assert.equal(h.api.logs[0].suggestion_date,'8/19');
  }
 });
+
+test('same-date and unknown imported rows follow original CSV rows even if inserted out of order',async()=>{
+ const logs=[log({id:uuid(11),position:'40',source_file:'Fixture.csv',source_row:2,suggestion_date:'9/14/26'}),log({id:uuid(12),position:'12',source_file:'Fixture.csv',source_row:3,suggestion_date:'9/14/26'}),log({id:uuid(13),position:'18',source_file:'Fixture.csv',source_row:4,suggestion_date:''}),log({id:uuid(14),position:'11',source_file:'Fixture.csv',source_row:5,suggestion_date:'unknown'}),log({id:uuid(15),position:'15',suggestion_date:''})];
+ const h=environment({logs});await h.start();assert.deepEqual([...h.rows.keys()],[uuid(11),uuid(12),uuid(13),uuid(14),uuid(15)]);
+ h.input(uuid(13),'outcome','Follow up');await h.save(uuid(13));h.document.activeElement=null;h.app.renderRows();assert.deepEqual([...h.rows.keys()],[uuid(11),uuid(12),uuid(13),uuid(14),uuid(15)]);assert.equal(h.api.logs[2].source_row,4);
+});

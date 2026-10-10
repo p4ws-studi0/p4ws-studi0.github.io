@@ -13,7 +13,18 @@
   const valuesOf = row => Object.fromEntries(KEYS.map(key => [key,text(row?.[key])]));
   const same = (a,b) => Object.keys(a).every(key => a[key] === b[key]);
   const position = row => BigInt(row.position ?? 0);
-  const sourceOrder = (a,b) => position(a)<position(b) ? -1 : position(a)>position(b) ? 1 : text(a.id).localeCompare(text(b.id));
+  const sourceOrder = (a,b) => {
+    // The original CSV row is authoritative even when an import query inserts out of order.
+    const aImported=Boolean(a.source_file&&a.source_row!=null),bImported=Boolean(b.source_file&&b.source_row!=null);
+    if(aImported!==bImported)return aImported?-1:1;
+    if(aImported&&bImported) {
+      const fileDifference=text(a.source_file).localeCompare(text(b.source_file));
+      if(fileDifference)return fileDifference;
+      const sourceDifference=Number(a.source_row)-Number(b.source_row);
+      if(sourceDifference)return sourceDifference;
+    }
+    return position(a)<position(b) ? -1 : position(a)>position(b) ? 1 : text(a.id).localeCompare(text(b.id));
+  };
   function suggestionDate(value) {
     // Keep the displayed text literal; sort a valid leading US or ISO date.
     const iso=text(value).match(/^\s*(\d{4})-(\d{2})-(\d{2})(?=$|[^\d/.\-])/);
