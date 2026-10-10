@@ -1,0 +1,25 @@
+/* Suggestions-specific layout; HQ sheet typography and controls come from training.css. */
+#suggestionsPage {min-width:0;}
+.sg-filters {display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.sg-search {display:flex;align-items:center;gap:8px;flex:1;max-width:420px;color:var(--tr-muted);}
+.sg-search input,.sg-outcome-filter select {min-width:0;border:1px solid var(--tr-border);border-radius:9px;background:var(--tr-input);color:var(--tr-text);padding:9px 11px;font-family:inherit;font-size:12px;}
+.sg-search input {width:100%;}
+.sg-search input::placeholder {color:var(--tr-muted);}
+.sg-search input:focus,.sg-outcome-filter select:focus {outline:2px solid var(--tr-accent);outline-offset:1px;}
+.sg-search input:disabled,.sg-outcome-filter select:disabled {opacity:.5;}
+.sg-outcome-filter select {max-width:170px;}
+@media (max-width:700px) {.sg-filters {flex-basis:100%;flex-wrap:wrap;}.sg-search {max-width:none;min-width:170px;}.sg-search input,.sg-outcome-filter select {font-size:16px;}}
+#suggestionsPage .tr-table {min-width:760px;}
+.sg-col-suggestion {width:46%;}
+.sg-col-date {width:145px;}
+.sg-col-outcome {width:auto;}
+#suggestionsPage .tr-table-scroll {min-height:0;max-height:65dvh;}
+#suggestionsPage .tr-table td,#suggestionsPage .tr-cell textarea {height:44px;min-height:44px;}
+#suggestionsPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#suggestionsPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#suggestionsPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#suggestionsPage .tr-delete {margin:0;}
+#suggestionsPage .tr-sheet-footer {align-items:flex-start;}
+#suggestionsPage .tr-order-hint {padding-block:13px;}
+@media (max-width:700px) {#suggestionsPage .tr-cell textarea {font-size:16px;}}
+@media print {#suggestionsPage .tr-table-scroll {max-height:none;}}
