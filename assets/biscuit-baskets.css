@@ -1,0 +1,40 @@
+/* Location directory and compact visit history share the Paws HQ sheet styles. */
+#basketsPage {min-width:0;}
+.bb-toolbar {align-items:flex-start;}
+.bb-filters {display:flex;gap:8px;flex-wrap:wrap;flex:1;}
+.bb-filters input,.bb-filters select {min-height:44px;padding:10px 12px;border:1px solid var(--tr-line);border-radius:9px;color:var(--tr-text);background:var(--tr-input);font:inherit;font-size:12px;}
+.bb-filters input {width:260px;max-width:100%;}.bb-filters select {min-width:140px;}
+.bb-filters option {background:var(--tr-menu);color:var(--tr-text);}
+#basketsPage .tr-table-scroll {min-height:0;max-height:70dvh;}
+#basketsPage .bb-directory {min-width:1050px;}
+.bb-col-name {width:auto;}.bb-col-town {width:130px;}.bb-col-last {width:145px;}.bb-col-count {width:58px;}.bb-col-status {width:120px;}.bb-col-actions {width:242px;}
+#basketsPage .bb-location td {height:54px;padding:7px 12px;vertical-align:middle;font-size:12px;}
+.bb-location-name {font-weight:600;}.bb-location-name,.bb-location-town {overflow-wrap:anywhere;}
+.bb-status {display:inline-block;padding:4px 8px;border-radius:16px;background:var(--tr-soft);border:1px solid var(--tr-line);font-size:10px;white-space:nowrap;}
+.bb-status-closed,.bb-status-do_not_visit {color:#98680b;background:rgba(216,154,29,.08);border-color:rgba(216,154,29,.25);}
+.dark .bb-status-closed,.dark .bb-status-do_not_visit {color:#edc675;}
+.bb-actions {display:flex;gap:3px;align-items:center;justify-content:flex-end;}.bb-actions .tr-button {min-height:36px;padding:6px 8px;}
+#basketsPage .bb-history-cell {padding:16px 19px 18px!important;height:auto!important;background:var(--tr-soft);}
+.bb-history-header {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.bb-history-header h2 {margin:0;font-size:14px;font-weight:600;}.bb-history-header p {margin:4px 0 0;font-size:11px;color:var(--tr-muted);}
+.bb-history-tools {display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+.bb-location-note {margin:0 0 12px;font-size:12px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--tr-muted);}
+.bb-visit-scroll {overflow:auto;border:1px solid var(--tr-line);border-radius:9px;scrollbar-width:thin;}
+#basketsPage .bb-visits {min-width:1000px;}
+.bb-visit-date {width:125px;}.bb-visit-items {width:25%;}.bb-visit-contact {width:135px;}.bb-visit-town {width:115px;}.bb-visit-notes {width:auto;}
+#basketsPage .bb-visits td,#basketsPage .tr-cell textarea {height:44px;min-height:44px;}
+#basketsPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#basketsPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#basketsPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#basketsPage .tr-delete {margin:0;}
+.bb-history-caption {margin:9px 0 0;font-size:10px;color:var(--tr-muted);line-height:1.6;}
+.bb-deleted-visits {margin-top:13px;}.bb-deleted-visits summary {font-size:11px;color:var(--tr-muted);cursor:pointer;padding:7px 0;}
+.bb-deleted-visits .tr-deleted-dog-list {padding:0;}
+.bb-no-visits {margin:0;padding:18px;text-align:center;color:var(--tr-muted);font-size:12px;}
+.bb-dialog {--tr-text:#172033;--tr-muted:#5b6a7e;--tr-line:rgba(43,59,85,.12);--tr-input:#fff;--tr-menu:#f7f9fc;max-width:560px;width:calc(100% - 28px);max-height:90dvh;padding:0;border:1px solid var(--tr-line);border-radius:16px;background:var(--tr-menu);color:var(--tr-text);font-family:'Inter',sans-serif;box-shadow:0 20px 80px rgba(0,0,0,.3);}
+.dark .bb-dialog {--tr-text:#f3f6fb;--tr-muted:#a6b1c3;--tr-line:rgba(255,255,255,.1);--tr-input:#202836;--tr-menu:#171e28;}
+.bb-dialog::backdrop {background:rgba(7,14,24,.62);backdrop-filter:blur(4px);}
+.bb-form {padding:22px;}.bb-form-heading {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px;}.bb-form h2 {font-size:20px;font-weight:650;letter-spacing:-.02em;}
+.bb-form label {display:block;margin:13px 0 6px;font-size:12px;font-weight:600;}.bb-form input,.bb-form select,.bb-form textarea {width:100%;padding:11px 12px;min-height:44px;border:1px solid var(--tr-line);border-radius:8px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:13px;}.bb-form textarea {resize:vertical;min-height:90px;}.bb-form-actions {display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}.bb-form .tr-form-error {margin-top:12px;}.bb-form button:disabled {opacity:.45;}
+@media(max-width:700px) {.bb-filters {flex-basis:100%;}.bb-filters input {width:100%;}.bb-filters select {flex:1;min-width:0;}#basketsPage .tr-cell textarea,.bb-filters input,.bb-filters select,.bb-form input,.bb-form select,.bb-form textarea {font-size:16px;}#basketsPage .bb-history-cell {padding:13px!important;}.bb-history-header {align-items:flex-start;}.bb-history-tools {max-width:170px;}}
+@media print {.bb-actions,.bb-history-tools,.bb-filters,.bb-dialog,.bb-deleted-visits {display:none!important;}#basketsPage .tr-table-scroll {max-height:none;}.bb-directory,.bb-visits {min-width:0!important;}}

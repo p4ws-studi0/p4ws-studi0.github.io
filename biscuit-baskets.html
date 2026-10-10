@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Biscuit baskets · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/biscuit-baskets.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="basketsPage" class="tr-page">
+      <div class="tr-page-heading">
+        <h1>Biscuit baskets</h1>
+        <p>Find a location, open its history, and log a visit. Visit cells save when you leave them.</p>
+      </div>
+      <section class="tr-sheet glass" aria-label="Biscuit basket locations">
+        <div class="tr-toolbar bb-toolbar">
+          <div class="bb-filters">
+            <label class="tr-sr-only" for="searchLocations">Search locations and towns</label><input id="searchLocations" type="search" placeholder="Search locations or towns" />
+            <label class="tr-sr-only" for="townFilter">Filter by town</label><select id="townFilter"><option value="">All towns</option></select>
+            <label class="tr-sr-only" for="statusFilter">Filter by status</label><select id="statusFilter"><option value="">All statuses</option><option value="active">Active</option><option value="closed">Closed</option><option value="do_not_visit">Not returning</option></select>
+          </div>
+          <button id="addLocation" disabled type="button" class="tr-button tr-button-primary">Add location</button>
+        </div>
+        <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+        <div class="tr-sheet-caption"><span id="rowCount">Loading locations…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
+        <div id="directoryScroll" class="tr-table-scroll" role="region" aria-label="Biscuit basket location directory" tabindex="0">
+          <table class="tr-table bb-directory">
+            <caption class="tr-sr-only">Biscuit basket locations, alphabetical by name. Open a location to edit its visit history.</caption>
+            <colgroup><col class="bb-col-name" /><col class="bb-col-town" /><col class="bb-col-last" /><col class="bb-col-count" /><col class="bb-col-status" /><col class="bb-col-actions" /></colgroup>
+            <thead><tr><th scope="col">Location</th><th scope="col">Town</th><th scope="col">Last recorded visit</th><th scope="col">Visits</th><th scope="col">Status</th><th scope="col"><span class="tr-sr-only">Actions</span></th></tr></thead>
+            <tbody id="locationRows"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="tr-empty-state" hidden>No locations found.</div>
+        <div class="tr-sheet-footer"><span>Locations A–Z</span><button id="refreshLogs" type="button" class="tr-refresh">Refresh</button></div>
+      </section>
+      <details id="deletedSection" class="tr-deleted-dogs">
+        <summary>Deleted locations <span id="deletedCount">0</span></summary>
+        <div id="deletedList" class="tr-deleted-dog-list"><p>No deleted locations.</p></div>
+      </details>
+      <noscript><p class="tr-page-message">Please enable JavaScript to view and update biscuit baskets.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+  <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+  <dialog id="locationDialog" class="bb-dialog" aria-labelledby="locationDialogTitle">
+    <form id="locationForm" class="bb-form">
+      <div class="bb-form-heading"><h2 id="locationDialogTitle">Add location</h2><button id="closeLocationDialog" type="button" class="tr-button tr-button-subtle" aria-label="Close location form">Close</button></div>
+      <label for="locationName">Location name</label><input id="locationName" data-location-field="location_name" maxlength="500" required />
+      <label for="locationTown">Town</label><input id="locationTown" data-location-field="town" maxlength="200" />
+      <label for="locationStatus">Status</label><select id="locationStatus" data-location-field="status"><option value="active">Active</option><option value="closed">Closed</option><option value="do_not_visit">Not returning</option></select>
+      <label for="locationStatusNotes">Status notes</label><textarea id="locationStatusNotes" data-location-field="status_notes" maxlength="20000" rows="3"></textarea>
+      <p id="locationFormError" class="tr-form-error" role="alert"></p>
+      <div class="bb-form-actions"><button id="reloadLocation" type="button" class="tr-button tr-button-subtle" hidden>Reload location</button><button id="saveLocation" type="submit" class="tr-button tr-button-primary">Save location</button></div>
+    </form>
+  </dialog>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {
+          document.getElementById(id).innerHTML=html
+          if (id==='header') document.dispatchEvent(new Event('header:ready'))
+          if (id==='footer') {const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear()}
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/biscuit-baskets.js?v=1" defer></script>
+</body>
+</html>
