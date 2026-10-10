@@ -1,4 +1,5 @@
 /* Follow-up-specific layout; HQ sheet typography and controls come from training.css. */
+#followUpPage {min-width:0;}
 .fc-toolbar-label {font-size:12px;font-weight:600;color:var(--tr-muted);}
 #followUpPage .tr-table {min-width:1320px;}
 .fc-col-owner,.fc-col-pet {width:145px;}
