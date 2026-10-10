@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grooming Price List | Paws HQ</title>
+
+  <link rel="icon" href="/favicon.ico">
+  
+  <!-- Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+
+  <link rel="stylesheet" href="/styles.css">
+
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          typography: {
+            DEFAULT: {
+              css: {
+                maxWidth: '100%',
+                color: 'inherit',
+                fontFamily: 'inherit',
+                h1: { fontWeight: '700' },
+                h2: { fontWeight: '600' },
+                h3: { fontWeight: '600' },
+                p: { marginTop: '0.75em', marginBottom: '0.75em' },
+                ul: { marginTop: '0.75em', marginBottom: '0.75em' },
+                li: { marginTop: '0.25em', marginBottom: '0.25em' },
+                span: { color: 'inherit' },
+                font: { color: 'inherit' }
+              }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  
+  <style>
+    html, body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* One centered content rail: notes, search and prices all share one exact width. */
+    .pricing-page {
+      width: min(100%, 72rem);
+      margin-inline: auto;
+    }
+
+    .price-card,
+    .price-table-scroll {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    .price-card {
+      overflow: visible !important;
+    }
+
+    .price-table-scroll {
+      overflow: visible !important;
+    }
+
+    /*
+      Screen layout uses one shared CSS grid for both the sticky header and every row.
+      This prevents global table styles from shrinking the price columns or knocking
+      the header out of alignment, while preserving real table markup for printing.
+    */
+    #priceTable {
+      display: block !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      border: 0 !important;
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      table-layout: fixed !important;
+      box-sizing: border-box !important;
+    }
+
+    #priceTable colgroup {
+      display: none !important;
+    }
+
+    /* Search filtering must override the screen grid display rules. */
+    #priceTable tr[hidden] {
+      display: none !important;
+    }
+
+    #priceTable.search-empty {
+      display: none !important;
+    }
+
+    #priceTable thead,
+    #priceTable tbody {
+      display: block !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+
+    #priceTable thead {
+      position: sticky !important;
+      top: 4rem;
+      z-index: 24;
+    }
+
+    #priceTable tr {
+      display: grid !important;
+      grid-template-columns: minmax(0, 43fr) repeat(3, minmax(0, 19fr));
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    #priceTable th,
+    #priceTable td {
+      display: block !important;
+      width: auto !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      box-sizing: border-box !important;
+      vertical-align: middle;
+    }
+
+    #priceTable thead th {
+      background: rgb(241 245 249 / 0.98) !important;
+      box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.38);
+    }
+
+    .dark #priceTable thead th {
+      background: rgb(23 28 35 / 0.98) !important;
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    #priceTable th:first-child,
+    #priceTable td:first-child {
+      text-align: left !important;
+    }
+
+    #priceTable th:not(:first-child),
+    #priceTable td:not(:first-child) {
+      text-align: center !important;
+    }
+
+    @media (max-width: 639px) {
+      .pricing-page {
+        width: 100%;
+      }
+
+      .price-card {
+        border-radius: 1rem;
+      }
+
+      #priceTable tr {
+        grid-template-columns: minmax(0, 40fr) repeat(3, minmax(0, 20fr));
+      }
+
+      #priceTable thead th {
+        padding: 0.68rem 0.28rem !important;
+        font-size: 0.64rem !important;
+        line-height: 1.12 !important;
+        letter-spacing: 0.01em !important;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+      }
+
+      #priceTable thead th:first-child {
+        padding-left: 0.75rem !important;
+      }
+
+      #priceTable td {
+        padding: 0.72rem 0.25rem !important;
+        font-size: 0.76rem !important;
+        line-height: 1.25 !important;
+      }
+
+      #priceTable td:first-child {
+        padding-left: 0.75rem !important;
+        padding-right: 0.45rem !important;
+        font-size: 0.82rem !important;
+        line-height: 1.2 !important;
+        overflow-wrap: anywhere;
+      }
+
+      #priceTable td:not(:first-child) {
+        white-space: nowrap !important;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .screen-only .result-meta {
+        gap: 0.75rem;
+        font-size: 0.7rem;
+      }
+    }
+
+    @media print {
+      @page {
+        size: letter portrait;
+        margin: 0.42in;
+      }
+
+      html,
+      body {
+        background: #fff !important;
+        color: #111827 !important;
+        font-family: 'Inter', Arial, sans-serif !important;
+        font-size: 10pt;
+      }
+
+      body {
+        opacity: 1 !important;
+        min-height: auto !important;
+      }
+
+      #header,
+      #sideMenu,
+      #footer,
+      .screen-only,
+      #noResults {
+        display: none !important;
+      }
+
+      .pt-16 {
+        padding-top: 0 !important;
+      }
+
+      main {
+        max-width: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      article,
+      section {
+        max-width: none !important;
+        width: 100% !important;
+      }
+
+      .print-title-block {
+        margin-bottom: 12px !important;
+        text-align: left !important;
+      }
+
+      .print-title-block h1 {
+        color: #0f172a !important;
+        font-size: 20pt !important;
+        line-height: 1.15 !important;
+        margin: 0 !important;
+      }
+
+      .print-title-block p {
+        color: #475569 !important;
+      }
+
+      .pricing-notes {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        margin: 0 0 14px !important;
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        break-inside: avoid !important;
+      }
+
+      .pricing-note {
+        min-height: 0 !important;
+        padding: 8px 10px !important;
+        color: #334155 !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-right: 1px solid #e2e8f0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        font-size: 8.5pt !important;
+        line-height: 1.35 !important;
+      }
+
+      .pricing-note:last-child {
+        border-right: 0 !important;
+      }
+
+      .pricing-note svg {
+        display: none !important;
+      }
+
+      .price-card {
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+      }
+
+      .price-table-scroll {
+        overflow: visible !important;
+      }
+
+      #priceTable {
+        display: table !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        font-size: 8.5pt !important;
+      }
+
+      #priceTable colgroup {
+        display: table-column-group !important;
+      }
+
+      #priceTable thead {
+        display: table-header-group !important;
+        position: static !important;
+      }
+
+      #priceTable tbody {
+        display: table-row-group !important;
+      }
+
+      #priceTable tr {
+        display: table-row !important;
+      }
+
+      #priceTable th,
+      #priceTable td {
+        display: table-cell !important;
+      }
+
+      #priceTable thead th {
+        position: static !important;
+        background: #e2e8f0 !important;
+        color: #0f172a !important;
+        box-shadow: none !important;
+        border: 1px solid #94a3b8 !important;
+        padding: 6px 7px !important;
+        font-size: 7.5pt !important;
+        letter-spacing: 0.02em !important;
+      }
+
+      #priceTable tbody tr {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      #priceTable td {
+        color: #1e293b !important;
+        background: #fff !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 5px 7px !important;
+      }
+
+      #priceTable th:first-child,
+      #priceTable td:first-child {
+        width: 43% !important;
+      }
+
+      #priceTable th:not(:first-child),
+      #priceTable td:not(:first-child) {
+        width: 19% !important;
+      }
+
+      #priceTable .hidden {
+        display: none !important;
+      }
+
+      #priceTable span {
+        color: #94a3b8 !important;
+      }
+    }
+  </style>
+</head>
+
+<body
+  class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126]
+         text-slate-900 dark:text-white min-h-screen opacity-0 transition-opacity duration-200"
+>
+
+  <div id="header"></div>
+
+  <div class="pt-16 flex">
+
+<aside
+  id="sideMenu"
+  class="fixed z-30 w-64 h-screen
+         bg-white/10 dark:bg-white/10 glass
+         border-r border-white/10
+         -translate-x-full
+         pt-6 px-5"
+></aside>
+
+    <main class="flex-1 w-full min-w-0 px-3 py-10 sm:px-6 sm:py-14 max-w-6xl mx-auto">
+
+      <!-- 🔽 PASTE OLD KB BODY CONTENT BELOW 🔽 -->
+    <article class="prose dark:prose-invert max-w-none">
+      
+      <section class="pricing-page not-prose space-y-6" aria-labelledby="page-title">
+        <div class="space-y-5">
+          <div class="print-title-block text-left">
+            <p class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Grooming</p>
+            <h1 id="page-title" class="text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Grooming Price List</h1>
+            <p class="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">Updated 1/16/2024</p>
+          </div>
+
+          <div class="pricing-notes grid gap-2 rounded-2xl border border-slate-200/80 bg-white/70 p-2 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.045] sm:grid-cols-3">
+            <div class="pricing-note flex min-h-[92px] items-center gap-3 rounded-xl border border-slate-200/70 bg-white/65 px-4 py-3 text-sm leading-5 text-slate-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-slate-300">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-white/[0.07] dark:text-slate-300" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="M12 8v4m0 4h.01"/><circle cx="12" cy="12" r="9"/></svg>
+              </span>
+              <p class="m-0">If breed is not listed, please choose the breed most similar.</p>
+            </div>
+            <div class="pricing-note flex min-h-[92px] items-center gap-3 rounded-xl border border-slate-200/70 bg-white/65 px-4 py-3 text-sm leading-5 text-slate-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-slate-300">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-white/[0.07] dark:text-slate-300" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="M4 12h16M12 4v16"/></svg>
+              </span>
+              <p class="m-0">All prices can be +/- $5 for small, +/- $10 for big.</p>
+            </div>
+            <div class="pricing-note flex min-h-[92px] items-center gap-3 rounded-xl border border-slate-200/70 bg-white/65 px-4 py-3 text-sm leading-5 text-slate-600 dark:border-white/10 dark:bg-white/[0.035] dark:text-slate-300">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-white/[0.07] dark:text-slate-300" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4"><path d="M5 12.5 9.2 17 19 7"/></svg>
+              </span>
+              <p class="m-0">Basic baths must be ≥ $44.95, premium baths must be ≥ $59.95.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="price-card rounded-2xl border border-slate-200/80 bg-white/80 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.045]">
+          <div class="screen-only border-b border-slate-200/80 p-4 dark:border-white/10 sm:p-5">
+            <label for="breedSearch" class="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200">Search breeds</label>
+            <div class="relative">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-3.5-3.5"></path>
+              </svg>
+              <input
+                id="breedSearch"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="Search by breed..."
+                class="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-12 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-white/15 dark:bg-[#11161d] dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/10"
+              />
+              <button
+                id="clearSearch"
+                type="button"
+                class="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+                aria-label="Clear search"
+              >Clear</button>
+            </div>
+            <div class="result-meta mt-2 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <span id="resultCount" aria-live="polite">115 breeds</span>
+              <span>Prices may vary by size.</span>
+            </div>
+          </div>
+
+          <div class="price-table-scroll">
+            <table class="w-full text-sm" id="priceTable">
+              <colgroup>
+                <col>
+                <col>
+                <col>
+                <col>
+              </colgroup>
+              <thead class="bg-slate-100/95 text-xs font-semibold uppercase tracking-wide text-slate-600 backdrop-blur dark:bg-[#171c23]/95 dark:text-slate-300">
+                <tr>
+                  <th scope="col" class="bg-slate-100/95 px-4 py-3 text-center backdrop-blur dark:bg-[#171c23]/95">Breed Name</th>
+                  <th scope="col" class="bg-slate-100/95 px-4 py-3 text-center whitespace-nowrap backdrop-blur dark:bg-[#171c23]/95">Basic Bath</th>
+                  <th scope="col" class="bg-slate-100/95 px-4 py-3 text-center whitespace-nowrap backdrop-blur dark:bg-[#171c23]/95">Premium Bath</th>
+                  <th scope="col" class="bg-slate-100/95 px-4 py-3 text-center whitespace-nowrap backdrop-blur dark:bg-[#171c23]/95">Groom Haircut</th>
+                </tr>
+              </thead>
+              <tbody id="priceTableBody">
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="airedale">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Airedale</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="akita">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Akita</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$164.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$179.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="american eskimo dog">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">American Eskimo Dog</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="australian cattle dog">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Australian Cattle Dog</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="australian shepherd">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Australian Shepherd</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="basset hound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Basset Hound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="beagle">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Beagle</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="bearded collie">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Bearded Collie</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="belgian malinois">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Belgian Malinois</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="bernese mt. dog">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Bernese Mt. Dog</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$114.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="bichon frises">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Bichon Frises</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="bloodhound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Bloodhound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="border collie">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Border Collie</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="boston terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Boston Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="boxer">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Boxer</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="brittany spaniel">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Brittany Spaniel</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="brussels griffon">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Brussels Griffon</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="bulldog (american/english)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Bulldog (American/English)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="bullmastiff">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Bullmastiff</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="cairn terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Cairn Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="cane corso">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Cane Corso</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="cavachon (or cavapoo)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Cavachon (or Cavapoo)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="chesapeake">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Chesapeake</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="chihuahua">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Chihuahua</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="chow chow">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Chow Chow</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$184.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="clumber spaniel">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Clumber Spaniel</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$119.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="cock-a-poo">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Cock-a-poo</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="cocker spaniel">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Cocker Spaniel</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="collie">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Collie</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$94.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="coonhound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Coonhound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="dachshund">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Dachshund</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="dachshund, lng,wire">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Dachshund, Lng,wire</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="dalmatian">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Dalmatian</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="doberman">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Doberman</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="doodle – giant (80lbs +)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Doodle – Giant (80lbs +)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$114.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$179.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="doodle- large (50lb- 79lbs)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Doodle- Large (50lb- 79lbs)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$94.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$149.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="doodle- med (26-49lb)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Doodle- Med (26-49lb)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="doodle- sml/mini (25lb or less)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Doodle- Sml/Mini (25lb or less)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="english setter">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">English Setter</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="eng. cocker spaniel">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Eng. Cocker Spaniel</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="eng. spring. spaniel">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Eng. Spring. Spaniel</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$119.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="eskimo spitz">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Eskimo Spitz</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="flat coated retriever">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Flat Coated Retriever</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="foxhound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Foxhound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="fox terrier, smooth">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Fox Terrier, Smooth</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="fox terrier, wire">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Fox Terrier, Wire</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="french bulldog">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">French Bulldog</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="german shepherd (depends on size/coat conditio">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">German Shepherd (depends on size/coat conditio</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$104.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$119.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="german shorthaired pointer">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">German Shorthaired Pointer</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="golden retriever">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Golden Retriever</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="gordon setter">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Gordon Setter</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="great dane">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Great Dane</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="great pyrenees">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Great Pyrenees</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$164.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$179.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$220.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="greyhound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Greyhound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="havanese">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Havanese</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="havachon">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Havachon</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="irish setter">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Irish Setter</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="irish terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Irish Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="irish wolfhound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Irish Wolfhound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$124.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="italian greyhound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Italian Greyhound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="italian spinone">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Italian Spinone</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="jack russell">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Jack Russell</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="japanese chin">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Japanese Chin</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="keeshond">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Keeshond</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$94.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="king charles sp.">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">King Charles Sp.</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="labrador">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Labrador</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="lagotto">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Lagotto</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$142.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="leonberger">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Leonberger</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$184.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$220.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="lhasa apso">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Lhasa Apso</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="malamute">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Malamute</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$184.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="maltese">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Maltese</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="maltipoo">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Maltipoo</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="mastiff">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Mastiff</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="miniature pinscher">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Miniature Pinscher</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="newfoundland">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Newfoundland</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$184.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="norfolk terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Norfolk Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="norwegian elkhound">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Norwegian Elkhound</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$114.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="norwich terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Norwich Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="duck tolling retriever">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Duck Tolling Retriever</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="old eng. sheepdog">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Old Eng. Sheepdog</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$184.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$220.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="papillon">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Papillon</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="pekingese">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Pekingese</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="pitbull (staffordshire bull terrier, etc)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Pitbull (Staffordshire Bull Terrier, etc)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="pomeranian">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Pomeranian</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="poodle – giant (80lbs +)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Poodle – Giant (80lbs +)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$114.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$179.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="poodle- large (50lb- 79lbs)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Poodle- Large (50lb- 79lbs)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$94.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$149.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="poodle- med (26-49lb)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Poodle- Med (26-49lb)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$119.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="poodle- sml/mini (25lb or less)">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Poodle- Sml/Mini (25lb or less)</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="port. water dog">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Port. Water Dog</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="pug">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Pug</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="puggle">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Puggle</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="rhod. ridgeback">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Rhod. Ridgeback</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="rottweiler">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Rottweiler</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$84.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="saint bernard">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Saint Bernard</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$184.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$220.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="samoyed">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Samoyed</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$184.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$220.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="schnauzer, giant">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Schnauzer, Giant</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$104.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$119.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$159.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="schnauzer, mini">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Schnauzer, Mini</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="schnauzer, stand.">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Schnauzer, Stand.</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$119.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="scottish terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Scottish Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="shar pei">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Shar Pei</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="shetland shpdog">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Shetland Shpdog</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$94.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$109.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="shiba inu">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Shiba Inu</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="shih tzu">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Shih Tzu</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="siberian husky">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Siberian Husky</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$104.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$119.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$139.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="silky terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Silky Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="swiss mountain">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Swiss Mountain</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$114.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$199.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="tibetan terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Tibetan Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="viszla">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Viszla</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="weimaraner">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Weimaraner</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$79.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="welsh corgi">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Welsh Corgi</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="welsh terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Welsh Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="west highland terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">West Highland Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$49.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$64.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="wheaton terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Wheaton Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$74.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$89.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$129.95</td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="whippet">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Whippet</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$54.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$69.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300"><span class="text-slate-400 dark:text-slate-600">—</span></td>
+        </tr>
+        <tr class="price-row border-b border-slate-200/80 dark:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition-colors" data-breed="yorkshire terrier">
+          <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">Yorkshire Terrier</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$44.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$59.95</td>
+          <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">$99.95</td>
+        </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="noResults" class="hidden px-6 py-12 text-center">
+            <p class="font-semibold text-slate-800 dark:text-slate-200">No breeds found</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Try a shorter or different search.</p>
+          </div>
+        </div>
+      </section>
+
+    </article>
+
+      <!-- 🔼 END PASTE ZONE 🔼 -->
+
+    </main>
+  </div>
+
+  <div id="footer"></div>
+
+  <script>
+    fetch('/partials/header.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html
+        document.body.classList.remove('opacity-0')
+      })
+      .catch(() => document.body.classList.remove('opacity-0'))
+
+    fetch('/partials/sidebar.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('sideMenu').innerHTML = html
+      })
+
+    fetch('/partials/footer.html')
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('footer').innerHTML = html
+      })
+  </script>
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('breedSearch')
+      const clearButton = document.getElementById('clearSearch')
+      const rows = Array.from(document.querySelectorAll('.price-row'))
+      const count = document.getElementById('resultCount')
+      const table = document.getElementById('priceTable')
+      const noResults = document.getElementById('noResults')
+
+      const filterRows = () => {
+        const query = input.value.trim().toLowerCase()
+        let visible = 0
+
+        rows.forEach(row => {
+          const breed = (row.dataset.breed || row.cells[0]?.textContent || '').toLowerCase()
+          const match = breed.includes(query)
+          row.hidden = !match
+          if (match) visible++
+        })
+
+        count.textContent = `${visible} ${visible === 1 ? 'breed' : 'breeds'}`
+        clearButton.classList.toggle('hidden', query.length === 0)
+        table.classList.toggle('search-empty', visible === 0)
+        noResults.classList.toggle('hidden', visible !== 0)
+      }
+
+      input.addEventListener('input', filterRows)
+      clearButton.addEventListener('click', () => {
+        input.value = ''
+        filterRows()
+        input.focus()
+      })
+    })
+  </script>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+
+</body>
+</html>
