@@ -281,7 +281,7 @@
     });
     $('followUpRows').addEventListener('focusout',event=>{
       const input=event.target;if(!input.matches('[data-field]'))return;
-      const editor=state.editors.get(input.closest('[data-row-id]')?.dataset.rowId);input.style.height='';
+      const editor=state.editors.get(input.closest('[data-row-id]')?.dataset.rowId);input.style.height='';input.scrollTop=0;input.scrollLeft=0;
       if(editor?.skipBlurSave){editor.skipBlurSave=false;return;}
       // Pointer clicks can delete directly; keyboard Tab still saves the last cell.
       const epoch=state.epoch;

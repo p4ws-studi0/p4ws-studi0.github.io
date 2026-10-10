@@ -10,6 +10,8 @@
 #followUpPage .tr-table-scroll {min-height:0;max-height:65dvh;}
 #followUpPage .tr-table td,#followUpPage .tr-cell textarea {height:44px;min-height:44px;}
 #followUpPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#followUpPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#followUpPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
 #followUpPage .tr-delete {margin:0;}
 #followUpPage .tr-sheet-footer {align-items:flex-start;}
 #followUpPage .tr-order-hint {padding-block:13px;}
