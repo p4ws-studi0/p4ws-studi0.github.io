@@ -1,0 +1,17 @@
+/* Marketing-specific layout; HQ sheet typography and controls come from training.css. */
+#marketingPage {min-width:0;}
+.mi-toolbar-label {font-size:12px;font-weight:600;color:var(--tr-muted);}
+#marketingPage .tr-table {min-width:760px;}
+.mi-col-location {width:34%;}
+.mi-col-date {width:145px;}
+.mi-col-notes {width:auto;}
+#marketingPage .tr-table-scroll {min-height:0;max-height:65dvh;}
+#marketingPage .tr-table td,#marketingPage .tr-cell textarea {height:44px;min-height:44px;}
+#marketingPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#marketingPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#marketingPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#marketingPage .tr-delete {margin:0;}
+#marketingPage .tr-sheet-footer {align-items:flex-start;}
+#marketingPage .tr-order-hint {padding-block:13px;}
+@media (max-width:700px) {#marketingPage .tr-cell textarea {font-size:16px;}}
+@media print {#marketingPage .tr-table-scroll {max-height:none;}}
