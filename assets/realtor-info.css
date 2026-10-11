@@ -1,0 +1,47 @@
+/* Realtor directory and compact contact history share the Paws HQ sheet styles. */
+#realtorsPage {min-width:0;}
+.ri-toolbar {align-items:flex-start;}
+.ri-filters {display:flex;gap:8px;flex-wrap:wrap;flex:1;}
+.ri-filters input,.ri-filters select {min-height:44px;padding:10px 12px;border:1px solid var(--tr-line);border-radius:9px;color:var(--tr-text);background:var(--tr-input);font:inherit;font-size:12px;}
+.ri-filters input {width:260px;max-width:100%;}.ri-filters select {min-width:140px;}
+.ri-filters option {background:var(--tr-menu);color:var(--tr-text);}
+#realtorsPage .tr-table-scroll {min-height:0;max-height:70dvh;}
+#realtorsPage .ri-directory {min-width:1050px;}
+.ri-col-name {width:auto;}.ri-col-contact {width:235px;}.ri-col-location {width:210px;}.ri-col-last {width:235px;}.ri-col-actions {width:220px;}
+#realtorsPage .ri-realtor td {height:48px;padding:6px 12px;vertical-align:middle;font-size:12px;line-height:16px;}
+.ri-realtor-name {font-weight:600;}
+.ri-preview {display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
+.ri-secondary {color:var(--tr-muted);font-size:11px;}
+.ri-actions {display:flex;gap:3px;align-items:center;justify-content:flex-end;}.ri-actions .tr-button {min-height:36px;padding:6px 8px;}
+#realtorsPage .ri-history-cell {padding:16px 19px 18px!important;height:auto!important;background:var(--tr-soft);}
+.ri-history-header {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.ri-history-header h2 {margin:0;font-size:14px;font-weight:600;}.ri-history-header p {margin:4px 0 0;font-size:11px;color:var(--tr-muted);}
+.ri-history-tools {display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+.ri-realtor-note {margin:0 0 12px;font-size:12px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--tr-muted);}
+.ri-contact-scroll {overflow:auto;border:1px solid var(--tr-line);border-radius:9px;scrollbar-width:thin;}
+#realtorsPage .ri-contacts {min-width:620px;}
+.ri-contact-date {width:230px;}.ri-contact-notes {width:auto;}.ri-contact-actions {width:110px;}
+.ri-row-actions {display:flex;align-items:center;justify-content:center;gap:3px;}
+.ri-draft-save {height:44px;padding:7px;border:0;background:transparent;color:var(--tr-focus);font-size:10px!important;}
+#realtorsPage .ri-contacts td,#realtorsPage .tr-cell textarea {height:44px;min-height:44px;}
+#realtorsPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#realtorsPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#realtorsPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#realtorsPage .tr-delete {margin:0;}
+.ri-history-caption {margin:9px 0 0;font-size:10px;color:var(--tr-muted);line-height:1.6;}
+.ri-deleted-contacts {margin-top:13px;}.ri-deleted-contacts summary {font-size:11px;color:var(--tr-muted);cursor:pointer;padding:7px 0;}
+.ri-deleted-contacts .tr-deleted-dog-list {padding:0;}
+.ri-no-contacts {margin:0;padding:18px;text-align:center;color:var(--tr-muted);font-size:12px;}
+.ri-dialog {--tr-text:#172033;--tr-muted:#5b6a7e;--tr-line:rgba(43,59,85,.12);--tr-input:#fff;--tr-menu:#f7f9fc;max-width:560px;width:calc(100% - 28px);max-height:90dvh;padding:0;border:1px solid var(--tr-line);border-radius:16px;background:var(--tr-menu);color:var(--tr-text);font-family:'Inter',sans-serif;box-shadow:0 20px 80px rgba(0,0,0,.3);}
+.dark .ri-dialog {--tr-text:#f3f6fb;--tr-muted:#a6b1c3;--tr-line:rgba(255,255,255,.1);--tr-input:#202836;--tr-menu:#171e28;}
+.ri-dialog::backdrop {background:rgba(7,14,24,.62);backdrop-filter:blur(4px);}
+.ri-form {padding:22px;}.ri-form-heading {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px;}.ri-form h2 {font-size:20px;font-weight:650;letter-spacing:-.02em;}
+.ri-form label {display:block;margin:13px 0 6px;font-size:12px;font-weight:600;}.ri-form input,.ri-form select,.ri-form textarea {width:100%;padding:11px 12px;min-height:44px;border:1px solid var(--tr-line);border-radius:8px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:13px;}.ri-form textarea {resize:vertical;min-height:90px;}.ri-form-actions {display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}.ri-form .tr-form-error {margin-top:12px;}.ri-form button:disabled {opacity:.45;}
+@media(max-width:700px) {.ri-filters {flex-basis:100%;}.ri-filters input {width:100%;}.ri-filters select {flex:1;min-width:0;}#realtorsPage .tr-cell textarea,.ri-filters input,.ri-filters select,.ri-form input,.ri-form select,.ri-form textarea {font-size:16px;}#realtorsPage .ri-history-cell {padding:13px!important;}.ri-history-header {align-items:flex-start;}.ri-history-tools {max-width:170px;}}
+@media print {.ri-actions,.ri-history-tools,.ri-filters,.ri-dialog,.ri-deleted-contacts {display:none!important;}#realtorsPage .tr-table-scroll {max-height:none;}.ri-directory,.ri-contacts {min-width:0!important;}}
+
+.ri-form-hint {margin:0;color:var(--tr-muted);font-size:12px;line-height:1.6;}
+.ri-form button {font-family:inherit;cursor:pointer;}
+
+.ri-edit-name {display:block;width:100%;min-height:36px;border:0;padding:0;background:transparent;color:var(--tr-text);font:inherit!important;font-weight:600!important;text-align:left;}
+.ri-edit-name:hover:not(:disabled) {color:var(--tr-focus);}

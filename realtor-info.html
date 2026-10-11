@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Realtor info · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/realtor-info.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="realtorsPage" class="tr-page">
+      <div class="tr-page-heading">
+        <h1>Realtor info</h1>
+        <p>Find a realtor, open its history, and log a contact. History cells save when you leave them.</p>
+      </div>
+      <section class="tr-sheet glass" aria-label="Realtor directory">
+        <div class="tr-toolbar ri-toolbar">
+          <div class="ri-filters">
+            <label class="tr-sr-only" for="searchRealtors">Search realtors and contact history</label><input id="searchRealtors" type="search" placeholder="Search realtors or history" autocomplete="off" />
+          </div>
+          <button id="addRealtor" disabled type="button" class="tr-button tr-button-primary">Add realtor</button>
+        </div>
+        <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+        <div class="tr-sheet-caption"><span id="rowCount">Loading realtors…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
+        <div id="directoryScroll" class="tr-table-scroll" role="region" aria-label="Realtor directory" tabindex="0">
+          <table class="tr-table ri-directory">
+            <caption class="tr-sr-only">Realtor directory, alphabetical by name. Open a realtor to edit its contact history.</caption>
+            <colgroup><col class="ri-col-name" /><col class="ri-col-contact" /><col class="ri-col-location" /><col class="ri-col-last" /><col class="ri-col-actions" /></colgroup>
+            <thead><tr><th scope="col">Realtor</th><th scope="col">Phone / email</th><th scope="col">Location</th><th scope="col">Last recorded contact</th><th scope="col"><span class="tr-sr-only">Actions</span></th></tr></thead>
+            <tbody id="realtorRows"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="tr-empty-state" hidden>No realtors found.</div>
+        <div class="tr-sheet-footer"><span>Realtors A–Z</span><button id="refreshLogs" type="button" class="tr-refresh">Refresh</button></div>
+      </section>
+      <details id="deletedSection" class="tr-deleted-dogs">
+        <summary>Deleted realtors <span id="deletedCount">0</span></summary>
+        <div id="deletedList" class="tr-deleted-dog-list"><p>No deleted realtors.</p></div>
+      </details>
+      <noscript><p class="tr-page-message">Please enable JavaScript to view and update realtor info.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+  <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+  <dialog id="realtorDialog" class="ri-dialog" aria-labelledby="realtorDialogTitle">
+    <form id="realtorForm" class="ri-form">
+      <div class="ri-form-heading"><h2 id="realtorDialogTitle">Add realtor</h2><button id="closeRealtorDialog" type="button" class="tr-button tr-button-subtle" aria-label="Close realtor form">Close</button></div>
+      <p class="ri-form-hint">Enter any detail. You can fill in the rest later.</p>
+      <label for="realtorName">Realtor name</label><input id="realtorName" data-realtor-field="realtor_name" maxlength="500" />
+      <label for="realtorPhone">Phone</label><input id="realtorPhone" type="text" data-realtor-field="phone" maxlength="200" />
+      <label for="realtorEmail">Email</label><input id="realtorEmail" type="text" data-realtor-field="email" maxlength="500" />
+      <label for="realtorLocation">Location</label><input id="realtorLocation" type="text" data-realtor-field="location" maxlength="2000" />
+      <p id="realtorFormError" class="tr-form-error" role="alert"></p>
+      <div class="ri-form-actions"><button id="reloadRealtor" type="button" class="tr-button tr-button-subtle" hidden>Reload realtor</button><button id="saveRealtor" type="submit" class="tr-button tr-button-primary">Save realtor</button></div>
+    </form>
+  </dialog>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {
+          document.getElementById(id).innerHTML=html
+          if (id==='header') document.dispatchEvent(new Event('header:ready'))
+          if (id==='footer') {const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear()}
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/realtor-info.js?v=1" defer></script>
+</body>
+</html>
