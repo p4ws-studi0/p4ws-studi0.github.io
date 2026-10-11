@@ -1,0 +1,40 @@
+/* Gift-card-specific layout; HQ sheet typography and controls come from training.css. */
+#giftCardsPage {min-width:0;}
+.gc-search-hint {margin:0 20px 8px;color:var(--tr-muted);font-size:10px;}
+.gc-filters {display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.gc-search {display:flex;align-items:center;gap:8px;flex:1;max-width:420px;color:var(--tr-muted);}
+.gc-search input,.gc-card-filter select {min-width:0;border:1px solid var(--tr-line);border-radius:9px;background:var(--tr-input);color:var(--tr-text);padding:9px 11px;font-family:inherit;font-size:12px;}
+.gc-search input {width:100%;}
+.gc-search input::placeholder {color:var(--tr-muted);}
+.gc-search input:focus,.gc-card-filter select:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
+.gc-search input:disabled,.gc-card-filter select:disabled {opacity:.5;}
+.gc-card-filter select {max-width:170px;}
+@media (max-width:700px) {.gc-filters {flex-basis:100%;flex-wrap:wrap;}.gc-search {max-width:none;min-width:170px;}.gc-search input,.gc-card-filter select {font-size:16px;}}
+#giftCardsPage .tr-table {min-width:1060px;}
+.gc-col-number {width:90px;}
+.gc-col-amount {width:105px;}
+.gc-col-date {width:110px;}
+.gc-col-redeemed-date {width:145px;}
+.gc-col-name {width:auto;}
+.gc-col-initials {width:75px;}
+#giftCardsPage .gc-header-groups th {height:31px;top:0;font-size:10px;}
+#giftCardsPage .gc-header-fields th {top:31px;}
+#giftCardsPage .gc-redemption-start {border-left:2px solid var(--tr-line);}
+.gc-guide {margin:0 0 18px;border:1px solid var(--tr-line);border-radius:12px;background:var(--tr-surface);font-size:12px;}
+.gc-guide summary {padding:13px 17px;cursor:pointer;color:var(--tr-muted);font-weight:600;}
+.gc-guide ol {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;list-style:decimal;margin:0;padding:4px 29px 18px 37px;}
+.gc-guide li {padding-left:3px;color:var(--tr-muted);font-size:11px;line-height:1.65;}
+.gc-guide strong {color:var(--tr-text);font-size:12px;font-weight:600;}
+.gc-guide p {margin:6px 0 0;}
+@media (max-width:900px) {.gc-guide ol {grid-template-columns:1fr;gap:14px;}}
+@media print {.gc-guide {display:none;}}
+#giftCardsPage .tr-table-scroll {min-height:0;max-height:65dvh;}
+#giftCardsPage .tr-table td,#giftCardsPage .tr-cell textarea {height:44px;min-height:44px;}
+#giftCardsPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#giftCardsPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#giftCardsPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#giftCardsPage .tr-delete {margin:0;}
+#giftCardsPage .tr-sheet-footer {align-items:flex-start;}
+#giftCardsPage .tr-order-hint {padding-block:13px;}
+@media (max-width:700px) {#giftCardsPage .tr-cell textarea {font-size:16px;}}
+@media print {#giftCardsPage .tr-table-scroll {max-height:none;}}

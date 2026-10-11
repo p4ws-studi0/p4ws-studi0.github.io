@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Gift cards · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/gift-cards.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="giftCardsPage" class="tr-page">
+      <div class="tr-page-heading">
+        <h1>Gift cards</h1>
+        <p>Type in any cell. Tab to the next. Changes save when you leave a cell.</p>
+      </div>
+
+      <details class="gc-guide">
+        <summary>How to issue or redeem a card</summary>
+        <ol>
+          <li><strong>Take payment</strong><p>In the cart, select the owner and open the Gift Certificate line item. Enter the amount and collect payment.</p></li>
+          <li><strong>Prepare and record the card</strong><p>Write the amount and sign the card with a Sharpie. Log the certificate number and purchase information below. Put the card in an envelope for the customer.</p></li>
+          <li><strong>Record redemption</strong><p>Verify the certificate number and amount here, including any partial-use notes. Choose Gift Certificate as the payment method at checkout and fill in the redemption information below. Discard the physical card only once it is fully used.</p></li>
+        </ol>
+      </details>
+
+      <section class="tr-sheet glass" aria-label="Gift card tracking">
+        <div class="tr-toolbar">
+          <div class="gc-filters">
+            <label class="gc-search"><span class="tr-sr-only">Search all gift card fields</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="searchGiftCards" type="search" placeholder="Search gift cards…" autocomplete="off" disabled /></label>
+            <label class="gc-card-filter"><span class="tr-sr-only">Filter gift cards</span><select id="cardFilter" disabled><option value="details">With details</option><option value="all">All cards</option><option value="number">Number only</option><option value="redemption">Redemption details</option></select></label>
+          </div>
+          <button id="addRow" disabled type="button" class="tr-button tr-button-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add card</button>
+        </div>
+
+        <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+        <p class="gc-search-hint">Search finds all certificate numbers.</p>
+        <div class="tr-sheet-caption"><span id="rowCount">Loading rows…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
+
+        <div id="tableScroll" class="tr-table-scroll" role="region" aria-label="Editable gift card tracking; scroll horizontally to see all columns" tabindex="0">
+          <table class="tr-table">
+            <caption class="tr-sr-only">Gift cards. Newest full purchase dates first. Edit any cell to update it.</caption>
+            <colgroup><col class="gc-col-number" /><col class="gc-col-amount" /><col class="gc-col-date" /><col class="gc-col-name" /><col class="gc-col-initials" /><col class="gc-col-redeemed-date" /><col class="gc-col-name" /><col class="gc-col-initials" /><col class="tr-col-action" /></colgroup>
+            <thead>
+              <tr class="gc-header-groups"><th scope="col" rowspan="2">Certificate #</th><th scope="colgroup" colspan="4">Purchase</th><th scope="colgroup" colspan="3" class="gc-redemption-start">Redemption</th><th scope="col" rowspan="2"><span class="tr-sr-only">Delete</span></th></tr>
+              <tr class="gc-header-fields"><th scope="col">Amount</th><th scope="col">Purchased date</th><th scope="col">Purchased by</th><th scope="col">Initials</th><th scope="col" class="gc-redemption-start">Redeemed date</th><th scope="col">Redeemed by</th><th scope="col">Initials</th></tr>
+            </thead>
+            <tbody id="giftCardRows"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="tr-empty-state" hidden><p>No gift cards yet.</p><span>Add a card to get started.</span></div>
+        <div class="tr-sheet-footer"><span class="tr-order-hint">Newest purchase dates first · cards without a full date keep their original order</span><button id="refreshLogs" type="button" class="tr-refresh"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button></div>
+      </section>
+      <details id="deletedSection" class="tr-deleted-dogs">
+        <summary>Deleted entries <span id="deletedCount">0</span></summary>
+        <div id="deletedList" class="tr-deleted-dog-list"><p>No deleted entries.</p></div>
+      </details>
+      <noscript><p class="tr-page-message">Please enable JavaScript to view and update gift cards.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+  <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {
+          document.getElementById(id).innerHTML=html
+          if (id==='header') document.dispatchEvent(new Event('header:ready'))
+          if (id==='footer') {const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear()}
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/gift-cards.js?v=1" defer></script>
+</body>
+</html>
