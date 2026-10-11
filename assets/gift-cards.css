@@ -26,6 +26,10 @@
 .gc-guide li {padding-left:3px;color:var(--tr-muted);font-size:11px;line-height:1.65;}
 .gc-guide strong {color:var(--tr-text);font-size:12px;font-weight:600;}
 .gc-guide p {margin:6px 0 0;}
+.gc-step-two-image {margin:14px 0 0;max-width:516px;}
+.gc-step-two-image a {display:block;cursor:zoom-in;}
+.gc-step-two-image svg {display:block;width:100%;height:auto;overflow:hidden;border-radius:10px;}
+.gc-step-two-image figcaption {margin-top:6px;font-size:10px;color:var(--tr-muted);}
 @media (max-width:900px) {.gc-guide ol {grid-template-columns:1fr;gap:14px;}}
 @media print {.gc-guide {display:none;}}
 #giftCardsPage .tr-table-scroll {min-height:0;max-height:65dvh;}
