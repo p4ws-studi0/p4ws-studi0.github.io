@@ -9,6 +9,14 @@
 .gc-search input:focus,.gc-card-filter select:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
 .gc-search input:disabled,.gc-card-filter select:disabled {opacity:.5;}
 .gc-card-filter select {max-width:170px;}
+.gc-card-picker {display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0 20px 14px;padding:12px;border:1px solid var(--tr-line);border-radius:10px;background:var(--tr-surface);font-size:12px;}
+.gc-card-picker[hidden] {display:none;}
+.gc-card-picker label {font-weight:600;}
+.gc-card-picker select {min-width:220px;max-width:100%;padding:9px 11px;border:1px solid var(--tr-line);border-radius:9px;background:var(--tr-input);color:var(--tr-text);font:inherit;}
+.gc-card-picker select:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
+.gc-card-picker p {flex-basis:100%;margin:0;color:var(--tr-muted);}
+.gc-card-picker p:empty {display:none;}
+#giftCardsPage .tr-cell textarea[readonly] {font-weight:600;color:var(--tr-muted);background:transparent;cursor:default;}
 @media (max-width:700px) {.gc-filters {flex-basis:100%;flex-wrap:wrap;}.gc-search {max-width:none;min-width:170px;}.gc-search input,.gc-card-filter select {font-size:16px;}}
 #giftCardsPage .tr-table {min-width:1060px;}
 .gc-col-number {width:90px;}

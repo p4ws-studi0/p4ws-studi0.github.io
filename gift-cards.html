@@ -14,7 +14,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
   <link rel="stylesheet" href="/assets/training.css?v=3" />
-  <link rel="stylesheet" href="/assets/gift-cards.css?v=2" />
+  <link rel="stylesheet" href="/assets/gift-cards.css?v=3" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
@@ -23,7 +23,7 @@
     <main id="giftCardsPage" class="tr-page">
       <div class="tr-page-heading">
         <h1>Gift cards</h1>
-        <p>Type in any cell. Tab to the next. Changes save when you leave a cell.</p>
+        <p>Choose an empty card or edit its details. Tab to the next cell. Changes save when you leave a cell.</p>
       </div>
 
       <details class="gc-guide">
@@ -48,9 +48,17 @@
         <div class="tr-toolbar">
           <div class="gc-filters">
             <label class="gc-search"><span class="tr-sr-only">Search all gift card fields</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="searchGiftCards" type="search" placeholder="Search gift cards…" autocomplete="off" disabled /></label>
-            <label class="gc-card-filter"><span class="tr-sr-only">Filter gift cards</span><select id="cardFilter" disabled><option value="details">With details</option><option value="all">All cards</option><option value="number">Number only</option><option value="redemption">Redemption details</option></select></label>
+            <label class="gc-card-filter"><span class="tr-sr-only">Filter gift cards</span><select id="cardFilter" disabled><option value="all" selected>All cards</option><option value="details">With details</option><option value="number">Number only</option><option value="redemption">Redemption details</option></select></label>
           </div>
           <button id="addRow" disabled type="button" class="tr-button tr-button-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add card</button>
+        </div>
+
+        <div id="cardPicker" class="gc-card-picker" hidden>
+          <label for="emptyCardNumber">Empty certificate number</label>
+          <select id="emptyCardNumber" aria-describedby="pickerMessage"></select>
+          <button id="chooseCard" type="button" class="tr-button tr-button-primary" disabled>Enter details</button>
+          <button id="cancelCard" type="button" class="tr-button tr-button-subtle">Cancel</button>
+          <p id="pickerMessage" role="status" aria-live="polite"></p>
         </div>
 
         <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
@@ -59,7 +67,7 @@
 
         <div id="tableScroll" class="tr-table-scroll" role="region" aria-label="Editable gift card tracking; scroll horizontally to see all columns" tabindex="0">
           <table class="tr-table">
-            <caption class="tr-sr-only">Gift cards. Newest full purchase dates first. Edit any cell to update it.</caption>
+            <caption class="tr-sr-only">Gift cards in descending certificate order, starting with the most recently purchased card. Certificate numbers are fixed; edit the other cells to update details.</caption>
             <colgroup><col class="gc-col-number" /><col class="gc-col-amount" /><col class="gc-col-date" /><col class="gc-col-name" /><col class="gc-col-initials" /><col class="gc-col-redeemed-date" /><col class="gc-col-name" /><col class="gc-col-initials" /><col class="tr-col-action" /></colgroup>
             <thead>
               <tr class="gc-header-groups"><th scope="col" rowspan="2">Certificate #</th><th scope="colgroup" colspan="4">Purchase</th><th scope="colgroup" colspan="3" class="gc-redemption-start">Redemption</th><th scope="col" rowspan="2"><span class="tr-sr-only">Delete</span></th></tr>
@@ -69,7 +77,7 @@
           </table>
         </div>
         <div id="emptyState" class="tr-empty-state" hidden><p>No gift cards yet.</p><span>Add a card to get started.</span></div>
-        <div class="tr-sheet-footer"><span class="tr-order-hint">Newest purchase dates first · cards without a full date keep their original order</span><button id="refreshLogs" type="button" class="tr-refresh"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button></div>
+        <div class="tr-sheet-footer"><span class="tr-order-hint">Certificate numbers descend from the latest purchase · higher unused numbers follow below</span><button id="refreshLogs" type="button" class="tr-refresh"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button></div>
       </section>
       <details id="deletedSection" class="tr-deleted-dogs">
         <summary>Deleted entries <span id="deletedCount">0</span></summary>
@@ -94,6 +102,6 @@
         .catch(error => console.warn(error.message))
     }
   </script>
-  <script src="/assets/gift-cards.js?v=1" defer></script>
+  <script src="/assets/gift-cards.js?v=2" defer></script>
 </body>
 </html>

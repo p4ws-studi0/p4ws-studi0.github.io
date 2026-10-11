@@ -4,7 +4,8 @@
   const $ = id => document.getElementById(id);
   const FIELDS = [['certificate_number','Certificate number',120],['amount','Amount',120],['purchased_date','Purchased date',120],['purchaser_name','Purchased by',20000],['purchase_initials','Purchase initials',120],['redeemed_date','Redeemed date',120],['redeemer_name','Redeemed by',20000],['redemption_initials','Redemption initials',120]];
   const KEYS = FIELDS.map(([key]) => key);
-  const state = {logs:[],editors:new Map(),ready:false,loading:false,userId:null,epoch:0,request:0,undo:null,undoSaving:false,toastTimer:null,newOrder:0,query:'',cardFilter:'details'};
+  const EDITABLE_KEYS = KEYS.slice(1);
+  const state = {logs:[],editors:new Map(),ready:false,loading:false,userId:null,epoch:0,request:0,undo:null,undoSaving:false,toastTimer:null,query:'',cardFilter:'all',picking:false};
   const text = value => String(value ?? '');
   const escape = value => text(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const nonblank = value => text(value).trim().length > 0;
@@ -37,21 +38,32 @@
     return date.getUTCFullYear()===year&&date.getUTCMonth()===month-1&&date.getUTCDate()===day?stamp:null;
   }
   const rowDate = row => purchaseDate(row.purchased_date);
-  function sortLogs(rows) {
-    return [...rows].sort((a,b)=>{
-      const aDate=rowDate(a),bDate=rowDate(b);
-      if(aDate!==null&&bDate!==null)return bDate-aDate||sourceOrder(a,b);
-      if(aDate!==null)return -1;if(bDate!==null)return 1;
-      return sourceOrder(a,b);
-    });
+  const hasDetails = row => EDITABLE_KEYS.some(key=>nonblank(row[key]));
+  function compareNumbers(a,b) {
+    const aParts=text(a.certificate_number).trim().match(/\d+|\D+/g)||[],bParts=text(b.certificate_number).trim().match(/\d+|\D+/g)||[];
+    for(let i=0;i<Math.max(aParts.length,bParts.length);i++) {
+      if(aParts[i]===undefined)return -1;if(bParts[i]===undefined)return 1;
+      const aPart=aParts[i],bPart=bParts[i];
+      if(/^\d+$/.test(aPart)&&/^\d+$/.test(bPart)) {const aNum=BigInt(aPart),bNum=BigInt(bPart);if(aNum!==bNum)return aNum>bNum?1:-1;}
+      else {const difference=aPart.localeCompare(bPart);if(difference)return difference;}
+    }
+    return 0;
   }
-  function dirty(editor) {return !editor.base || !same(editor.values,valuesOf(editor.base));}
+  function sortLogs(rows) {
+    const dated=rows.filter(row=>rowDate(row)!==null).sort((a,b)=>rowDate(b)-rowDate(a)||compareNumbers(b,a)||sourceOrder(a,b));
+    const pivot=dated[0];
+    // Start at the latest purchased number, then descend. Higher numbers follow at the end.
+    const group=row=>pivot&&compareNumbers(row,pivot)>0?1:0;
+    return [...rows].sort((a,b)=>group(a)-group(b)||compareNumbers(b,a)||sourceOrder(a,b));
+  }
+  function dirty(editor) {return !editor.base || EDITABLE_KEYS.some(key=>editor.values[key]!==text(editor.base[key]));}
   const unfinished = () => state.undoSaving||[...state.editors.values()].some(editor=>dirty(editor)||editor.saving||editor.deleting||editor.error);
   const tableFocused = () => Boolean(document.activeElement?.closest?.('#giftCardRows'));
   function errorText(error) {
     if(error?.code==='AUTH') return 'Sign in again to save. Your changes are still here.';
     if(error?.code==='ACCESS'||error?.code==='42501') return 'This account does not have gift cards access.';
     if(error?.code==='CONFLICT') return 'This row changed on another device. Your changes are still here. Copy them before reloading this row.';
+    if(error?.code==='23505') return 'This certificate number already has an active entry. Your changes are still here. Refresh before choosing another empty card.';
     if(['42P01','PGRST205'].includes(error?.code)) return 'Gift card records are unavailable. Please try again later.';
     return 'Could not save. Your changes are still here. Check your connection, then retry.';
   }
@@ -69,11 +81,14 @@
   }
   function rowElement(id) {return document.querySelector(`[data-row-id="${id}"]`);}
   function controls() {
-    const blocked=!state.ready||state.loading;
-    $('addRow').disabled=blocked||state.undoSaving;
+    const blocked=!state.ready||state.loading||state.picking;
+    $('addRow').disabled=blocked||state.undoSaving||state.picking;
+    $('chooseCard').disabled=blocked||state.undoSaving||state.picking||!$('emptyCardNumber').value;
+    $('emptyCardNumber').disabled=blocked||state.picking;
+    $('cancelCard').disabled=state.picking;
     $('searchGiftCards').disabled=blocked||state.undoSaving;
     $('cardFilter').disabled=blocked||state.undoSaving;
-    $('refreshLogs').disabled=state.loading||state.undoSaving;
+    $('refreshLogs').disabled=state.loading||state.undoSaving||state.picking;
     document.querySelectorAll('[data-restore-row]').forEach(button=>{button.disabled=blocked||state.undoSaving;});
     const editors=[...state.editors.values()];
     $('saveStatus').textContent=state.loading?'Loading…':editors.some(e=>e.saving||e.deleting)||state.undoSaving?'Saving…':editors.some(e=>e.error)?'Some changes are not saved':editors.some(e=>dirty(e))?'Unsaved changes':state.ready?'All changes saved':'';
@@ -83,8 +98,8 @@
     const row=rowElement(editor.id);if(!row)return;
     row.classList.toggle('is-saving',Boolean(editor.saving||editor.deleting));
     row.classList.toggle('is-error',Boolean(editor.error));
-    row.querySelectorAll('[data-field]').forEach(input=>{input.disabled=!state.ready||state.loading||editor.deleting||Boolean(editor.deleteAttempt);});
-    const button=row.querySelector('[data-action="delete"]');if(button)button.disabled=!state.ready||state.loading||state.undoSaving||Boolean(editor.saving||editor.deleting);
+    row.querySelectorAll('[data-field]').forEach(input=>{input.disabled=!state.ready||state.loading||state.picking||editor.deleting||Boolean(editor.deleteAttempt);});
+    const button=row.querySelector('[data-action="delete"]');if(button)button.disabled=!state.ready||state.loading||state.undoSaving||state.picking||Boolean(editor.saving||editor.deleting);
     const errorRow=document.querySelector(`[data-error-id="${editor.id}"]`);
     if(errorRow) {
       errorRow.hidden=!editor.error;
@@ -96,7 +111,7 @@
   }
   function renderRow(editor) {
     const cells=FIELDS.map(([key,label,limit])=>{
-      return `<td class="tr-cell${key==='redeemed_date'?' gc-redemption-start':''}"><textarea class="tr-cell-input" data-field="${key}" rows="1" maxlength="${limit}" aria-label="${label}" spellcheck="false">${escape(editor.values[key])}</textarea></td>`;
+      return `<td class="tr-cell${key==='redeemed_date'?' gc-redemption-start':''}"><textarea class="tr-cell-input" data-field="${key}"${key==='certificate_number'?' readonly tabindex="-1"':''} rows="1" maxlength="${limit}" aria-label="${label}" spellcheck="false">${escape(editor.values[key])}</textarea></td>`;
     }).join('');
     return `<tr class="tr-row" data-row-id="${editor.id}">${cells}<td class="tr-action-cell"><button type="button" class="tr-delete" data-action="delete" aria-label="Delete row">Delete</button></td></tr><tr class="tr-row-error" data-error-id="${editor.id}" hidden><td colspan="9"><span data-row-error role="alert"></span> <button type="button" data-action="retry" data-id="${editor.id}">Retry</button></td></tr>`;
   }
@@ -118,23 +133,22 @@
   const needsAttention = editor => dirty(editor)||editor.saving||editor.deleting||editor.error;
   function renderRows() {
     const rows=sortLogs(state.logs.filter(row=>!row.deleted_at)).map(editorFor);
-    const fresh=[...state.editors.values()].filter(e=>!e.base).sort((a,b)=>b.order-a.order);
-    // Keep drafts and unsuccessful saves accessible even when their values do not match a filter.
+    // Keep unsuccessful saves accessible even when their values do not match a filter.
     const shown=rows.filter(editor=>needsAttention(editor)||matchesFilters(editor.values));
-    const editors=[...fresh,...shown],total=fresh.length+rows.length;
+    const editors=shown,total=rows.length;
     $('giftCardRows').innerHTML=editors.map(renderRow).join('');
     const filtered=state.query.trim()||state.cardFilter!=='all';
     const attentionOutsideFilter=editors.some(editor=>needsAttention(editor)&&!matchesFilters(editor.values));
     $('rowCount').textContent=`${editors.length}${filtered?` of ${total}`:''} ${total===1?'entry':'entries'}${attentionOutsideFilter?' · unsaved rows stay visible':''}`;
     $('emptyState').hidden=Boolean(editors.length)||!state.ready;
-    $('emptyState').textContent=total?'No gift cards match these filters.':'No gift cards yet. Add a card to get started.';
+    $('emptyState').textContent=total?'No gift cards match these filters.':'No active gift cards. Restore an existing entry below.';
     renderDeleted();
     controls();
   }
   function setFilters(searching=false) {
     state.query=$('searchGiftCards').value;
     const value=$('cardFilter').value;
-    state.cardFilter=['details','all','number','redemption'].includes(value)?value:'details';
+    state.cardFilter=['details','all','number','redemption'].includes(value)?value:'all';
     if(searching&&state.query.trim()&&state.cardFilter==='details'){state.cardFilter='all';$('cardFilter').value='all';}
     renderRows();
   }
@@ -161,7 +175,7 @@
     }
   }
   async function refresh({silent=false}={}) {
-    if(state.loading||state.undoSaving)return;
+    if(state.loading||state.undoSaving||state.picking)return;
     if(unfinished()||tableFocused()) {if(!silent)message('Your current edits are kept. Finish editing or retry any unsaved rows before refreshing.');return;}
     const epoch=state.epoch,request=++state.request,valid=()=>current(epoch)&&request===state.request;
     state.loading=true;controls();if(!silent)message('Loading gift cards…');
@@ -179,7 +193,7 @@
   }
   function takeInput(input) {
     const row=input.closest('[data-row-id]'),key=input.dataset.field;
-    const editor=state.editors.get(row?.dataset.rowId);if(!editor||!KEYS.includes(key)||editor.deleting)return;
+    const editor=state.editors.get(row?.dataset.rowId);if(!editor||!EDITABLE_KEYS.includes(key)||editor.deleting)return;
     const original=editor.base ? text(editor.base[key]) : '';
     editor.values[key]=input.value===normalized(original)?original:input.value;
     if(!editor.conflict)editor.error='';
@@ -194,7 +208,7 @@
     if(result.error)throw result.error;return result.data;
   }
   function changedPatch(editor) {
-    return Object.fromEntries(KEYS.filter(key=>!editor.base||editor.values[key]!==text(editor.base[key])).map(key=>[key,editor.values[key]]));
+    return Object.fromEntries(EDITABLE_KEYS.filter(key=>editor.values[key]!==text(editor.base?.[key])).map(key=>[key,editor.values[key]]));
   }
   function accept(editor,saved) {editor.base={...saved};editor.attempt=null;editor.error='';editor.conflict=false;remember(saved);}
   async function reconcile(editor,epoch) {
@@ -206,6 +220,8 @@
       if(attempt.base)for(const key of KEYS)if(!(key in attempt.patch)&&editor.values[key]===text(attempt.base[key]))editor.values[key]=text(fresh[key]);
       accept(editor,fresh);syncUntouchedCells(editor);return;
     }
+    // A blank slot is one card allocation. Never merge two customers into it.
+    if(attempt.base&&!hasDetails(attempt.base)&&hasDetails(fresh))throw {code:'CONFLICT'};
     if(attempt.base && Object.keys(attempt.patch).every(key=>text(fresh[key])===text(attempt.base[key]))) {
       // A teammate changed other cells. Keep them while retaining this row's local edits.
       for(const key of KEYS)if(editor.values[key]===text(attempt.base[key]))editor.values[key]=text(fresh[key]);
@@ -218,7 +234,7 @@
     row.querySelectorAll('[data-field]').forEach(input=>{if(document.activeElement!==input)input.value=editor.values[input.dataset.field];});
   }
   function saveEditor(editor) {
-    if(!editor||editor.deleting||editor.deleteAttempt||editor.conflict||!state.ready)return Promise.resolve();
+    if(!editor?.base||editor.deleting||editor.deleteAttempt||editor.conflict||!state.ready)return Promise.resolve();
     if(editor.saving)return editor.saving;
     if(!dirty(editor))return Promise.resolve();
     if(!KEYS.some(key=>nonblank(editor.values[key]))) {
@@ -233,11 +249,9 @@
         while(dirty(editor)&&KEYS.some(key=>nonblank(editor.values[key]))) {
           const patch=changedPatch(editor),base=editor.base?{...editor.base}:null;
           editor.attempt={base,patch};
-          let result;
-          if(base)result=await supabaseClient.from('hq_gift_cards').update(patch).eq('id',editor.id).eq('revision',base.revision).select('*').maybeSingle();
-          else result=await supabaseClient.from('hq_gift_cards').insert({id:editor.id,...patch}).select('*').single();
+          const result=await supabaseClient.from('hq_gift_cards').update(patch).eq('id',editor.id).eq('revision',base.revision).select('*').maybeSingle();
           if(!current(epoch))return;
-          if(result.error?.code==='23505'||!result.error&&!result.data){await reconcile(editor,epoch);if(!current(epoch))return;continue;}
+          if(!result.error&&!result.data){await reconcile(editor,epoch);if(!current(epoch))return;continue;}
           if(result.error)throw result.error;
           accept(editor,result.data);
           // Do not replace cells or move a focused row when another save completes.
@@ -250,14 +264,37 @@
     editor.saving=task;controls();return task;
   }
   function addRow() {
-    if(!state.ready||state.loading||state.undoSaving)return;
-    const id=crypto.randomUUID(),values=valuesOf(null);
-    state.editors.set(id,{id,base:null,values,order:++state.newOrder,saving:null,deleting:false,error:'',conflict:false,attempt:null});
-    renderRows();rowElement(id)?.querySelector('[data-field="certificate_number"]')?.focus();
-    $('tableScroll').scrollTop=0;
+    if(!state.ready||state.loading||state.undoSaving||state.picking)return;
+    const active=state.logs.filter(row=>!row.deleted_at),occupied=new Set(active.filter(hasDetails).map(row=>text(row.certificate_number).trim()));
+    const candidates=new Map();
+    for(const row of [...active].sort(sourceOrder)) {
+      const number=text(row.certificate_number).trim(),editor=state.editors.get(row.id);
+      if(number&&!hasDetails(row)&&!occupied.has(number)&&!candidates.has(number)&&(!editor||!needsAttention(editor)))candidates.set(number,row);
+    }
+    const empty=[...candidates.values()].sort((a,b)=>compareNumbers(a,b)||sourceOrder(a,b));
+    $('emptyCardNumber').innerHTML='<option value="">Choose an empty certificate number</option>'+empty.map(row=>`<option value="${escape(row.id)}">${escape(row.certificate_number)}</option>`).join('');
+    $('emptyCardNumber').value='';$('pickerMessage').textContent=empty.length?'':'No empty certificate numbers are available.';
+    $('cardPicker').hidden=false;controls();$('emptyCardNumber').focus();
+  }
+  async function chooseCard() {
+    const id=$('emptyCardNumber').value;
+    if(!id||!state.ready||state.loading||state.undoSaving||state.picking)return;
+    if(unfinished()){ $('pickerMessage').textContent='Finish saving your current edits before selecting a card.';return; }
+    const epoch=state.epoch;state.picking=true;controls();
+    try {
+      await requireStaff(epoch);if(!current(epoch))return;
+      const rows=await fetchAll('hq_gift_cards',()=>current(epoch));if(!current(epoch))return;
+      const row=rows.find(item=>item.id===id),number=text(row?.certificate_number).trim();
+      if(!row||row.deleted_at||hasDetails(row)||rows.some(other=>other.id!==id&&!other.deleted_at&&text(other.certificate_number).trim()===number&&hasDetails(other))) {
+        state.logs=rows;state.editors.clear();state.picking=false;renderRows();addRow();$('pickerMessage').textContent='That number is no longer empty. Choose another card.';return;
+      }
+      state.logs=rows;state.editors.clear();state.query='';state.cardFilter='all';$('searchGiftCards').value='';$('cardFilter').value='all';
+      state.picking=false;$('cardPicker').hidden=true;renderRows();rowElement(id)?.querySelector('[data-field="amount"]')?.focus();
+    } catch(error) {if(current(epoch))$('pickerMessage').textContent=errorText(error);}
+    finally {if(current(epoch)){state.picking=false;controls();}}
   }
   async function deleteRow(editor) {
-    if(!editor||!state.ready||state.loading||state.undoSaving||editor.saving||editor.deleting)return;
+    if(!editor||!state.ready||state.loading||state.undoSaving||state.picking||editor.saving||editor.deleting)return;
     if(!editor.base&&!editor.attempt){state.editors.delete(editor.id);renderRows();toast('Row removed.');return;}
     const epoch=state.epoch;editor.deleting=true;controls();
     try {
@@ -277,7 +314,7 @@
     finally {if(current(epoch)){editor.deleting=false;controls();}}
   }
   async function undoDelete(row=state.undo) {
-    if(!row||!state.ready||state.loading||state.undoSaving)return;
+    if(!row||!state.ready||state.loading||state.undoSaving||state.picking)return;
     const epoch=state.epoch;state.undoSaving=true;$('undoDelete').disabled=true;controls();
     try {
       await requireStaff(epoch);if(!current(epoch))return;
@@ -300,13 +337,17 @@
   }
   function resetAuth(userId) {
     state.epoch++;state.request++;state.userId=userId;state.ready=false;state.loading=false;
-    state.logs=[];state.editors.clear();state.undo=null;state.undoSaving=false;
+    state.logs=[];state.editors.clear();state.undo=null;state.undoSaving=false;state.picking=false;
+    $('cardPicker').hidden=true;$('emptyCardNumber').innerHTML='';$('pickerMessage').textContent='';
     clearTimeout(state.toastTimer);$('toast').hidden=true;$('toastText').textContent='';$('undoDelete').disabled=false;
     render();message(userId?'Loading gift cards…':'Sign in to Paws HQ to view gift cards.');
   }
   function init() {
     if(!$('giftCardsPage'))return;
     $('addRow').addEventListener('click',addRow);
+    $('emptyCardNumber').addEventListener('change',()=>controls());
+    $('chooseCard').addEventListener('click',chooseCard);
+    $('cancelCard').addEventListener('click',()=>{$('cardPicker').hidden=true;$('addRow').focus();});
     $('searchGiftCards').addEventListener('input',()=>setFilters(true));
     $('cardFilter').addEventListener('change',()=>setFilters());
     $('deletedList').addEventListener('click',event=>{const button=event.target.closest('[data-restore-row]');if(button)undoDelete(state.logs.find(row=>row.id===button.dataset.restoreRow));});
