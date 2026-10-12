@@ -1,5 +1,6 @@
+
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -7,7 +8,7 @@
 
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  
+
   <!-- Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,29 +19,6 @@
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          animation: {
-            float: 'float 6s ease-in-out infinite',
-            fadeUp: 'fadeUp .7s ease-out forwards'
-          },
-          keyframes: {
-            float: {
-              '0%,100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-10px)' }
-            },
-            fadeUp: {
-              '0%': { opacity: 0, transform: 'translateY(16px)' },
-              '100%': { opacity: 1, transform: 'translateY(0)' }
-            }
-          }
-        }
-      }
-    }
-  </script>
 
   <style>
     * {
@@ -48,118 +26,1044 @@
     }
 
     html {
-      height: 100%;
+      min-height: 100%;
+      background: #f7f8fb;
     }
 
     body {
       margin: 0;
-      height: 100%;
-      font-family: 'Inter', sans-serif;
-      background: #050507;
-      color: white;
-
-      /* 🔑 allows rubber band */
+      min-height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", sans-serif;
+      color: #1d1d1f;
+      background:
+        radial-gradient(
+          ellipse 70% 45% at 50% 0%,
+          rgba(215, 226, 255, 0.48),
+          transparent 80%
+        ),
+        linear-gradient(
+          180deg,
+          #fafbff 0%,
+          #f5f6fa 100%
+        );
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .glass {
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
+    /* Cursor pawprint canvas */
+    #cursor-trail {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Layout */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+    }
+
+    /* Ultra-transparent liquid glass panel */
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 38px 28px;
+      text-align: center;
+
+      background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.18),
+        rgba(255, 255, 255, 0.10)
+      );
+
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      border-radius: 28px;
+
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        0 24px 70px -25px rgba(38, 54, 100, 0.13),
+        0 5px 20px -8px rgba(38, 54, 100, 0.05);
+
+      animation: cardAppear 0.55s ease-out both;
+    }
+
+    /* Crown logo */
+    .logo-container {
+      width: 104px;
+      height: 104px;
+      margin: 0 auto 12px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+
+      user-select: none;
+      -webkit-user-select: none;
+
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .logo-container:active {
+      cursor: grabbing;
+    }
+
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+
+      transform-origin: center bottom;
+      animation: crownBounce 4.5s infinite;
+      will-change: transform;
+
+      -webkit-user-drag: none;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* Interactive crown */
+    .logo-container.is-interacting {
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo-container.is-interacting img {
+      animation: none;
+      filter: drop-shadow(
+        0 10px 12px rgba(65, 105, 225, 0.16)
+      );
+    }
+
+    .logo-container.is-dragging img {
+      filter: drop-shadow(
+        0 18px 20px rgba(65, 105, 225, 0.22)
+      );
+    }
+
+    /* Pixar-inspired crown bounce */
+    @keyframes crownBounce {
+      0%, 8%, 75%, 100% {
+        transform: translateY(0) scale(1) rotate(0deg);
+      }
+
+      13% {
+        transform: translateY(4px)
+                   scale(1.12, 0.86)
+                   rotate(-5deg);
+      }
+
+      21% {
+        transform: translateY(-28px)
+                   scale(0.90, 1.13)
+                   rotate(7deg);
+      }
+
+      30% {
+        transform: translateY(-43px)
+                   scale(1.04, 0.97)
+                   rotate(-5deg);
+      }
+
+      39% {
+        transform: translateY(-10px)
+                   scale(0.94, 1.08)
+                   rotate(3deg);
+      }
+
+      44% {
+        transform: translateY(3px)
+                   scale(1.16, 0.83)
+                   rotate(-2deg);
+      }
+
+      52% {
+        transform: translateY(-16px)
+                   scale(0.96, 1.07)
+                   rotate(3deg);
+      }
+
+      61% {
+        transform: translateY(0)
+                   scale(1.06, 0.94)
+                   rotate(-2deg);
+      }
+
+      68% {
+        transform: translateY(-4px)
+                   scale(0.99, 1.02)
+                   rotate(1deg);
+      }
+    }
+
+    /* Typography */
+    .login-card .brand-title {
+      margin: 0;
+      color: #191b24;
+      font-family: 'Inter', sans-serif;
+      font-size: 50px;
+      font-weight: 900;
+      letter-spacing: -2.2px;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      margin: 11px 0 22px;
+      color: #777e8d;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.7;
+      letter-spacing: -0.1px;
+    }
+
+    /* Slack button */
+    .slack-button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+
+      width: 100%;
+      min-height: 56px;
+      padding: 14px 22px;
+
+      border: 1px solid transparent;
+      border-radius: 14px;
+
+      background: #4169e1;
+      color: #ffffff;
+
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.15px;
+
+      cursor: pointer;
+
+      box-shadow:
+        0 5px 13px rgba(65, 105, 225, 0.15);
+
+      transition:
+        background 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .slack-button:hover {
+      background: #355bd2;
+      box-shadow:
+        0 7px 18px rgba(65, 105, 225, 0.20);
+      transform: translateY(-1px);
+    }
+
+    .slack-button:active {
+      transform: scale(0.985);
+      box-shadow:
+        0 3px 8px rgba(65, 105, 225, 0.12);
+    }
+
+    .slack-button:focus-visible {
+      outline: 3px solid rgba(65, 105, 225, 0.32);
+      outline-offset: 4px;
+    }
+
+    .slack-icon {
+      width: 25px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: #ffffff;
+      border-radius: 7px;
+      flex-shrink: 0;
+    }
+
+    .slack-icon img {
+      width: 19px;
+      height: 19px;
+      object-fit: contain;
+    }
+
+    /* Slack login instructions */
+    .login-instruction {
+      margin: 12px 0 0;
+      color: #777e8d;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .login-instruction strong {
+      font-weight: 600;
+      color: #4169e1;
+    }
+
+    /* Footer */
+    .access-note {
+      margin: 16px 0 0;
+      color: #a0a5b0;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.6;
+      letter-spacing: -0.05px;
+    }
+
+    /* Entry animation */
+    @keyframes cardAppear {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+      .page {
+        padding: 24px 18px;
+      }
+
+      .login-card {
+        padding: 30px 26px 26px;
+        border-radius: 25px;
+      }
+
+      .logo-container {
+        width: 96px;
+        height: 96px;
+        margin-bottom: 12px;
+      }
+
+      .login-card .brand-title {
+        font-size: 44px;
+      }
+
+      .subtitle {
+        font-size: 13px;
+        margin-bottom: 20px;
+      }
+
+      .access-note {
+        font-size: 10.5px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-card,
+      .logo-container img {
+        animation: none;
+      }
+
+      .slack-button {
+        transition: none;
+      }
+
+      #cursor-trail {
+        display: none;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- FULL VIEWPORT CANVAS -->
-  <div class="relative w-full h-[100svh] overflow-hidden">
+  <!-- CURSOR PAWPRINT TRAIL -->
+  <canvas id="cursor-trail" aria-hidden="true"></canvas>
 
-    <!-- BACKGROUND GLOWS (CLIPPED) -->
-    <div class="absolute inset-0 pointer-events-none -z-10">
+  <main class="page">
 
-      <div
-        class="absolute top-[-25%] left-1/2 -translate-x-1/2
-               w-[520px] h-[520px]
-               bg-yellow-600/20
-               rounded-full blur-[140px]">
-      </div>
+    <div class="login-card">
 
-      <div
-        class="absolute bottom-[-30%] left-1/2 -translate-x-1/2
-               w-[480px] h-[480px]
-               bg-blue-500/20
-               rounded-full blur-[140px]">
-      </div>
-
-    </div>
-
-    <!-- CENTERED CONTENT -->
-    <main class="grid place-items-center w-full h-full px-4">
-
-      <div
-        class="
-          w-full max-w-[420px]
-          glass
-          bg-white/10
-          border border-white/15
-          rounded-[28px]
-          shadow-[0_30px_80px_rgba(0,0,0,0.65)]
-          px-6 sm:px-10
-          py-10 sm:py-12
-          text-center
-          opacity-0 animate-fadeUp
-        "
-      >
-
-        <!-- LOGO -->
+      <!-- CROWN LOGO -->
+      <div class="logo-container">
         <img
           src="/paws-crown.png"
           alt="Paws HQ"
-          class="w-14 h-14 mx-auto mb-4 drop-shadow-xl animate-float"
+          draggable="false"
         />
+      </div>
 
-        <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
-          Paws HQ
-        </h1>
+      <h1 class="brand-title">Paws HQ</h1>
 
-        <p class="text-white/60 mt-4 mb-6 text-sm leading-relaxed">
-          Internal knowledge, policies, and tools
-        </p>
+      <p class="subtitle">
+        Internal knowledge, policies, and tools
+      </p>
 
-        <!-- SLACK LOGIN -->
-        <button
-          onclick="signInWithSlack()"
-          class="
-            w-full
-            flex items-center justify-center gap-3
-            px-6 py-4
-            rounded-xl
-            font-semibold
-            bg-white text-black
-            hover:bg-white/90
-            transition
-            shadow-lg
-            hover:shadow-2xl
-            active:scale-[0.97]
-          "
-        >
+      <!-- SLACK LOGIN -->
+      <button
+        type="button"
+        onclick="signInWithSlack()"
+        class="slack-button"
+      >
+        <span class="slack-icon">
           <img
             src="https://a.slack-edge.com/80588/marketing/img/icons/icon_slack_hash_colored.png"
-            class="w-5 h-5"
             alt=""
           />
-          Continue with Slack
-        </button>
+        </span>
 
-        <p class="mt-6 text-xs text-white/40">
-          Access restricted to the Paws Slack workspace
-        </p>
+        Continue with Slack
+      </button>
 
-      </div>
-    </main>
-  </div>
+      <!-- LOGIN INSTRUCTIONS -->
+      <p class="login-instruction">
+        On the next page, sign in using
+        <strong>pawspet.slack.com</strong>
+      </p>
+
+      <p class="access-note">
+        Access restricted to the Paws Slack workspace
+      </p>
+
+    </div>
+
+  </main>
+
+  <!-- CURSOR PAWPRINT TRAIL -->
+  <script>
+    (() => {
+      const canvas = document.getElementById('cursor-trail');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) return;
+
+      const reduceMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+      );
+
+      if (reduceMotion.matches) return;
+
+      let width;
+      let height;
+      let particles = [];
+      let animating = false;
+      let lastTime = 0;
+      let previousX = null;
+      let previousY = null;
+
+      const colors = [
+        [65, 105, 225],
+        [140, 182, 240],
+        [95, 143, 220],
+        [212, 175, 85]
+      ];
+
+      function resize() {
+        const dpr = Math.min(
+          window.devicePixelRatio || 1, 2
+        );
+
+        width = window.innerWidth;
+        height = window.innerHeight;
+
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      function createParticle(x, y) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.2 + Math.random() * 0.5;
+        const life = 500 + Math.random() * 450;
+        const scale = 0.55 + Math.random() * 0.4;
+
+        return {
+          x: x + (Math.random() - 0.5) * 8,
+          y: y + (Math.random() - 0.5) * 8,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 0.08,
+          scale,
+          life,
+          maxLife: life,
+          color: colors[
+            Math.floor(Math.random() * colors.length)
+          ],
+          rotation: (Math.random() - 0.5) * 0.6
+        };
+      }
+
+      function emit(x, y) {
+        const count = 2 + Math.floor(Math.random() * 2);
+
+        for (let i = 0; i < count; i++) {
+          particles.push(createParticle(x, y));
+        }
+
+        if (particles.length > 80) {
+          particles.splice(0, particles.length - 80);
+        }
+
+        if (!animating) {
+          animating = true;
+          lastTime = 0;
+          requestAnimationFrame(animate);
+        }
+      }
+
+      function drawPaw(p, alpha) {
+        const [r, g, b] = p.color;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.scale(p.scale, p.scale);
+
+        // Soft glow
+        ctx.fillStyle =
+          `rgba(${r},${g},${b},${alpha * 0.12})`;
+
+        const glowPads = [
+          { x: 0, y: 7, rx: 8.6, ry: 6.7 },
+          { x: -7.5, y: -5.5, rx: 3.9, ry: 5.1 },
+          { x: -2.4, y: -10.2, rx: 3.7, ry: 4.9 },
+          { x: 2.8, y: -10.2, rx: 3.7, ry: 4.9 },
+          { x: 7.8, y: -5.5, rx: 3.9, ry: 5.1 }
+        ];
+
+        for (const part of glowPads) {
+          ctx.beginPath();
+          ctx.ellipse(
+            part.x,
+            part.y,
+            part.rx * 1.65,
+            part.ry * 1.65,
+            0, 0, Math.PI * 2
+          );
+          ctx.fill();
+        }
+
+        // Actual paw
+        ctx.fillStyle =
+          `rgba(${r},${g},${b},${alpha * 0.88})`;
+
+        // Main pad
+        ctx.beginPath();
+        ctx.ellipse(
+          0, 7, 8.4, 6.4,
+          0, 0, Math.PI * 2
+        );
+        ctx.fill();
+
+        // Four toes
+        const toes = [
+          { x: -7.5, y: -5.5, rx: 3.5, ry: 4.7 },
+          { x: -2.4, y: -10.2, rx: 3.2, ry: 4.4 },
+          { x: 2.8, y: -10.2, rx: 3.2, ry: 4.4 },
+          { x: 7.8, y: -5.5, rx: 3.5, ry: 4.7 }
+        ];
+
+        for (const toe of toes) {
+          ctx.beginPath();
+          ctx.ellipse(
+            toe.x,
+            toe.y,
+            toe.rx,
+            toe.ry,
+            0, 0, Math.PI * 2
+          );
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      function animate(time) {
+        const delta = lastTime
+          ? Math.min(time - lastTime, 33)
+          : 16.67;
+
+        lastTime = time;
+        const step = delta / 16.67;
+
+        ctx.clearRect(0, 0, width, height);
+
+        particles = particles.filter(p => p.life > 0);
+
+        for (const p of particles) {
+          p.life -= delta;
+
+          p.x += p.vx * step;
+          p.y += p.vy * step;
+
+          p.vx *= Math.pow(0.986, step);
+          p.vy += 0.003 * step;
+
+          const progress = Math.max(
+            0, p.life / p.maxLife
+          );
+
+          const alpha =
+            Math.pow(progress, 1.55) * 0.9;
+
+          drawPaw(p, alpha);
+        }
+
+        if (particles.length > 0) {
+          requestAnimationFrame(animate);
+        } else {
+          animating = false;
+          lastTime = 0;
+        }
+      }
+
+      window.addEventListener('pointermove', e => {
+        if (e.pointerType === 'touch') return;
+
+        const x = e.clientX;
+        const y = e.clientY;
+
+        if (previousX !== null) {
+          const distance = Math.hypot(
+            x - previousX,
+            y - previousY
+          );
+
+          if (distance < 7) return;
+        }
+
+        previousX = x;
+        previousY = y;
+
+        emit(x, y);
+      }, { passive: true });
+
+      window.addEventListener('pointerleave', () => {
+        previousX = null;
+        previousY = null;
+      });
+    })();
+  </script>
+
+  <!-- DRAGGABLE INTERACTIVE CROWN -->
+  <script>
+    (() => {
+      const container =
+        document.querySelector('.logo-container');
+
+      const crown = container?.querySelector('img');
+
+      if (!container || !crown) return;
+
+      const reduceMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+      );
+
+      if (reduceMotion.matches) return;
+
+      let hovering = false;
+      let dragging = false;
+      let running = false;
+
+      let activePointer = null;
+      let dragStart = null;
+
+      const current = {
+        x: 0,
+        y: 0,
+        rotate: 0,
+        scaleX: 1,
+        scaleY: 1
+      };
+
+      const target = { ...current };
+
+      const velocity = {
+        x: 0,
+        y: 0,
+        rotate: 0,
+        scaleX: 0,
+        scaleY: 0
+      };
+
+      const keys = Object.keys(current);
+
+      const stiffness = 0.14;
+      const damping = 0.76;
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      // Capture the current animated position so
+      // grabbing the crown doesn't cause a jump.
+      function captureCurrentPose() {
+        const transform =
+          getComputedStyle(crown).transform;
+
+        if (transform === 'none') return;
+
+        const m = new DOMMatrixReadOnly(transform);
+
+        current.x = m.m41;
+        current.y = m.m42;
+
+        current.rotate =
+          Math.atan2(m.m12, m.m11) * 180 / Math.PI;
+
+        current.scaleX =
+          Math.hypot(m.m11, m.m12);
+
+        current.scaleY =
+          Math.hypot(m.m21, m.m22);
+      }
+
+      function render() {
+        crown.style.transform = `
+          translate3d(
+            ${current.x}px,
+            ${current.y}px,
+            0
+          )
+          rotate(${current.rotate}deg)
+          scale(
+            ${current.scaleX},
+            ${current.scaleY}
+          )
+        `;
+      }
+
+      function animate() {
+        let moving = false;
+
+        for (const key of keys) {
+          // Translation follows the mouse directly
+          // while dragging.
+          if (
+            dragging &&
+            (key === 'x' || key === 'y')
+          ) {
+            continue;
+          }
+
+          const force =
+            (target[key] - current[key]) * stiffness;
+
+          velocity[key] =
+            (velocity[key] + force) * damping;
+
+          current[key] += velocity[key];
+
+          if (
+            Math.abs(target[key] - current[key]) > 0.002 ||
+            Math.abs(velocity[key]) > 0.002
+          ) {
+            moving = true;
+          }
+        }
+
+        render();
+
+        if (moving) {
+          requestAnimationFrame(animate);
+        } else {
+          running = false;
+
+          if (!hovering && !dragging) {
+            crown.style.transform = '';
+
+            container.classList.remove(
+              'is-interacting'
+            );
+          }
+        }
+      }
+
+      function startAnimation() {
+        if (running) return;
+
+        running = true;
+        requestAnimationFrame(animate);
+      }
+
+      // Existing playful cursor hover
+      function followCursor(e) {
+        const rect =
+          container.getBoundingClientRect();
+
+        const centerX =
+          rect.left + rect.width / 2;
+
+        const centerY =
+          rect.top + rect.height / 2;
+
+        const nx = clamp(
+          (e.clientX - centerX) /
+          (rect.width / 2),
+          -1, 1
+        );
+
+        const ny = clamp(
+          (e.clientY - centerY) /
+          (rect.height / 2),
+          -1, 1
+        );
+
+        target.x = nx * 9;
+        target.y = -13 + ny * 3;
+
+        target.rotate = nx * 16;
+
+        target.scaleX =
+          1.06 - Math.abs(nx) * 0.025;
+
+        target.scaleY =
+          0.97 + Math.abs(ny) * 0.035;
+
+        startAnimation();
+      }
+
+      // Hover enter: crown perks up
+      container.addEventListener(
+        'pointerenter',
+        e => {
+          if (dragging || e.pointerType === 'touch') {
+            return;
+          }
+
+          captureCurrentPose();
+
+          hovering = true;
+
+          container.classList.add(
+            'is-interacting'
+          );
+
+          velocity.y = -2.5;
+
+          followCursor(e);
+        }
+      );
+
+      // Grab crown
+      container.addEventListener(
+        'pointerdown',
+        e => {
+          if (
+            e.pointerType === 'mouse' &&
+            e.button !== 0
+          ) {
+            return;
+          }
+
+          if (dragging) return;
+
+          e.preventDefault();
+
+          if (!hovering) {
+            captureCurrentPose();
+          }
+
+          hovering = true;
+          dragging = true;
+          activePointer = e.pointerId;
+
+          container.classList.add(
+            'is-interacting',
+            'is-dragging'
+          );
+
+          // Capture pointer so dragging works even
+          // far outside the original logo position.
+          container.setPointerCapture(e.pointerId);
+
+          dragStart = {
+            x: e.clientX,
+            y: e.clientY,
+
+            originX: current.x,
+            originY: current.y,
+
+            lastX: e.clientX,
+            lastY: e.clientY
+          };
+
+          velocity.x = 0;
+          velocity.y = 0;
+
+          // Small playful squeeze when picked up.
+          target.scaleX = 1.08;
+          target.scaleY = 0.94;
+
+          startAnimation();
+        }
+      );
+
+      // Drag crown freely across the screen
+      container.addEventListener(
+        'pointermove',
+        e => {
+          if (dragging) {
+            if (e.pointerId !== activePointer) {
+              return;
+            }
+
+            const dx =
+              e.clientX - dragStart.x;
+
+            const dy =
+              e.clientY - dragStart.y;
+
+            // Direct movement: crown stays attached
+            // to the cursor while being dragged.
+            current.x = dragStart.originX + dx;
+            current.y = dragStart.originY + dy;
+
+            target.x = current.x;
+            target.y = current.y;
+
+            velocity.x = 0;
+            velocity.y = 0;
+
+            // Playful tilt based on movement.
+            const movementX =
+              e.clientX - dragStart.lastX;
+
+            target.rotate = clamp(
+              movementX * 1.3 + dx * 0.015,
+              -24,
+              24
+            );
+
+            // A little stretch while moving.
+            target.scaleX = 1.04;
+            target.scaleY = 0.97;
+
+            dragStart.lastX = e.clientX;
+            dragStart.lastY = e.clientY;
+
+            render();
+            startAnimation();
+
+            return;
+          }
+
+          if (!hovering) return;
+
+          followCursor(e);
+        }
+      );
+
+      // Release crown: elastic snap back
+      function releaseCrown() {
+        if (!dragging) return;
+
+        dragging = false;
+        hovering = false;
+
+        container.classList.remove(
+          'is-dragging'
+        );
+
+        // Spring back to its original position.
+        target.x = 0;
+        target.y = 0;
+        target.rotate = 0;
+        target.scaleX = 1;
+        target.scaleY = 1;
+
+        // Small rebound gives it that Pixar feel.
+        velocity.rotate *= 0.5;
+
+        activePointer = null;
+        dragStart = null;
+
+        startAnimation();
+      }
+
+      container.addEventListener(
+        'pointerup',
+        e => {
+          if (e.pointerId !== activePointer) {
+            return;
+          }
+
+          releaseCrown();
+
+          if (
+            container.hasPointerCapture(e.pointerId)
+          ) {
+            container.releasePointerCapture(
+              e.pointerId
+            );
+          }
+        }
+      );
+
+      container.addEventListener(
+        'pointercancel',
+        e => {
+          if (e.pointerId === activePointer) {
+            releaseCrown();
+          }
+        }
+      );
+
+      container.addEventListener(
+        'lostpointercapture',
+        () => {
+          if (dragging) {
+            releaseCrown();
+          }
+        }
+      );
+
+      // Normal hover exit
+      container.addEventListener(
+        'pointerleave',
+        () => {
+          if (dragging) return;
+
+          hovering = false;
+
+          target.x = 0;
+          target.y = 0;
+          target.rotate = 0;
+          target.scaleX = 1;
+          target.scaleY = 1;
+
+          velocity.y += 1.2;
+
+          startAnimation();
+        }
+      );
+
+      // Return safely if browser loses focus.
+      window.addEventListener('blur', () => {
+        if (dragging) {
+          releaseCrown();
+        }
+      });
+
+    })();
+  </script>
 
   <!-- SUPABASE -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
