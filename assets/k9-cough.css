@@ -1,0 +1,37 @@
+/* K9 Cough-specific layout; HQ sheet typography and controls come from training.css. */
+#coughPage {min-width:0;}
+.kc-filters {display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.kc-search {display:flex;align-items:center;gap:8px;flex:1;max-width:420px;color:var(--tr-muted);}
+.kc-search input {min-width:0;border:1px solid var(--tr-line);border-radius:9px;background:var(--tr-input);color:var(--tr-text);padding:9px 11px;font-family:inherit;font-size:12px;}
+.kc-search input {width:100%;}
+.kc-search input::placeholder {color:var(--tr-muted);}
+.kc-search input:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
+.kc-search input:disabled {opacity:.5;}
+@media (max-width:700px) {.kc-filters {flex-basis:100%;}.kc-search {max-width:none;}.kc-search input {font-size:16px;}}
+#coughPage .tr-table {min-width:1080px;}
+.kc-col-added {width:115px;}.kc-col-initials {width:70px;}.kc-col-pet {width:auto;}.kc-col-service-dates {width:155px;}.kc-col-room {width:150px;}.kc-col-group {width:125px;}.kc-col-services {width:115px;}.kc-col-details {width:90px;}
+#coughPage .tr-table-scroll {min-height:0;max-height:65dvh;}
+#coughPage .tr-table td,#coughPage .tr-cell textarea {height:44px;min-height:44px;}
+#coughPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#coughPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#coughPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#coughPage .tr-delete {margin:0;}
+#coughPage .tr-sheet-footer {align-items:flex-start;}
+#coughPage .tr-order-hint {padding-block:13px;}
+@media (max-width:700px) {#coughPage .tr-cell textarea {font-size:16px;}}
+@media print {#coughPage .tr-table-scroll {max-height:none;}}
+
+.kc-details-button {width:100%;min-height:44px;padding:7px 4px;border:0;background:transparent;color:var(--tr-focus);font-family:inherit;font-size:10px!important;white-space:nowrap;}
+#coughPage .kc-details td {height:auto;padding:16px;border-bottom:1px solid var(--tr-line);background:var(--tr-soft);}
+.kc-detail-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:100%;max-width:calc(100vw - 100px);}
+.kc-detail-field {display:block;min-width:0;font-size:12px;}
+.kc-detail-field > span {display:block;margin:0 0 8px;font-weight:600;color:var(--tr-muted);}
+#coughPage .kc-detail-field textarea {display:block;width:100%;height:112px;min-height:112px;max-height:480px;padding:10px 12px;border:1px solid var(--tr-line);border-radius:8px;background:var(--tr-input);color:var(--tr-text);font-family:inherit;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow:auto;overflow-wrap:anywhere;resize:vertical;}
+#coughPage .kc-detail-field textarea:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
+#coughPage .kc-detail-field textarea:disabled {opacity:.6;}
+#coughPage .kc-details.is-error td {background:rgba(217,72,80,.05);}
+@media(max-width:900px) {.kc-detail-grid {grid-template-columns:1fr;max-width:calc(100vw - 94px);}}
+@media(max-width:700px) {.kc-detail-grid {max-width:calc(100vw - 62px);}#coughPage .kc-detail-field textarea {font-size:16px;}}
+@media print {.kc-details-button {display:none;}#coughPage .kc-details td {background:white;padding:10px 0;}.kc-detail-grid {max-width:none;}}
+
+.kc-collapse-details {min-height:36px;margin-top:10px;padding:6px 0;border:0;background:transparent;color:var(--tr-focus);font-size:11px!important;}
