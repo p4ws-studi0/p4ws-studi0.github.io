@@ -1,0 +1,31 @@
+/* Vet cheat sheet layout; HQ sheet typography and controls come from training.css. */
+#vetPage {min-width:0;}
+.vc-filters {display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.vc-search {display:flex;align-items:center;gap:8px;flex:1;max-width:420px;color:var(--tr-muted);}
+.vc-search input {min-width:0;border:1px solid var(--tr-line);border-radius:9px;background:var(--tr-input);color:var(--tr-text);padding:9px 11px;font-family:inherit;font-size:12px;}
+.vc-search input {width:100%;}
+.vc-search input::placeholder {color:var(--tr-muted);}
+.vc-search input:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
+.vc-search input:disabled {opacity:.5;}
+@media (max-width:700px) {.vc-filters {flex-basis:100%;flex-wrap:wrap;}.vc-search {max-width:none;min-width:170px;}.vc-search input {font-size:16px;}}
+#vetPage .tr-table {min-width:1200px;}
+.vc-col-vet {width:185px;}
+.vc-col-phone {width:123px;}
+.vc-col-hours {width:200px;}
+.vc-col-lunch {width:95px;}
+.vc-col-menu {width:100px;}
+.vc-col-email {width:205px;}
+.vc-col-notes {width:auto;}
+#vetPage .tr-table-scroll {min-height:0;max-height:65dvh;}
+#vetPage .tr-table td,#vetPage .tr-cell textarea {height:44px;min-height:44px;}
+#vetPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#vetPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#vetPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#vetPage .tr-delete {margin:0;}
+#vetPage .tr-sheet-footer {align-items:flex-start;}
+#vetPage .tr-order-hint {padding-block:13px;}
+@media (max-width:700px) {#vetPage .tr-cell textarea {font-size:16px;}}
+@media print {#vetPage .tr-table-scroll {max-height:none;}}
+
+#vetPage .tr-table th {white-space:normal;}
+#vetPage .tr-cell textarea[data-field="phone"] {font-variant-numeric:tabular-nums;}
