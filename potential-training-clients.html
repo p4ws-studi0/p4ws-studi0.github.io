@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Potential Training Clients · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/potential-training-clients.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="trainingClientsPage" class="tr-page">
+      <div class="tr-page-heading">
+        <h1>Potential Training Clients</h1>
+        <p>Type in any cell. Tab to the next. Changes save when you leave a cell.</p>
+      </div>
+
+      <section class="tr-sheet glass" aria-label="Potential training clients">
+        <div class="tr-toolbar">
+          <div class="ptc-filters">
+            <label class="ptc-search"><span class="tr-sr-only">Search owners, dogs, phone numbers and notes</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="searchClients" type="search" placeholder="Search clients…" autocomplete="off" disabled /></label>
+          </div>
+          <button id="addRow" disabled type="button" class="tr-button tr-button-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add client</button>
+        </div>
+
+        <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+        <div class="tr-sheet-caption"><span id="rowCount">Loading rows…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
+
+        <div id="tableScroll" class="tr-table-scroll" role="region" aria-label="Editable potential training clients; scroll horizontally to see all columns" tabindex="0">
+          <table class="tr-table">
+            <caption class="tr-sr-only">Potential training clients, newest added first. Edit any cell to update it.</caption>
+            <colgroup><col class="ptc-col-owner" /><col class="ptc-col-dog" /><col class="ptc-col-phone" /><col class="ptc-col-initial" /><col class="ptc-col-first" /><col class="ptc-col-follow-up" /><col class="ptc-col-evaluation" /><col class="ptc-col-outcome" /><col class="tr-col-action" /></colgroup>
+            <thead><tr><th scope="col">Owner</th><th scope="col">Dog</th><th scope="col">Phone</th><th scope="col">Initial conversation</th><th scope="col">First contact</th><th scope="col">Follow-up call</th><th scope="col">Evaluation</th><th scope="col">How did it go?</th><th scope="col"><span class="tr-sr-only">Delete</span></th></tr></thead>
+            <tbody id="clientRows"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="tr-empty-state" hidden><p>No clients yet.</p><span>Add a client to get started.</span></div>
+        <div class="tr-sheet-footer"><span class="tr-order-hint">Newest added first · scroll sideways for follow-up and results</span><button id="refreshLogs" type="button" class="tr-refresh"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5"/></svg>Refresh</button></div>
+      </section>
+      <details id="deletedSection" class="tr-deleted-dogs">
+        <summary>Deleted entries <span id="deletedCount">0</span></summary>
+        <div id="deletedList" class="tr-deleted-dog-list"><p>No deleted entries.</p></div>
+      </details>
+      <noscript><p class="tr-page-message">Please enable JavaScript to view and update potential training clients.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+  <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {
+          document.getElementById(id).innerHTML=html
+          if (id==='header') document.dispatchEvent(new Event('header:ready'))
+          if (id==='footer') {const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear()}
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/potential-training-clients.js?v=1" defer></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+/* Potential training clients layout; HQ sheet typography and controls come from training.css. */
+#trainingClientsPage {min-width:0;}
+.ptc-filters {display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.ptc-search {display:flex;align-items:center;gap:8px;flex:1;max-width:420px;color:var(--tr-muted);}
+.ptc-search input {min-width:0;border:1px solid var(--tr-line);border-radius:9px;background:var(--tr-input);color:var(--tr-text);padding:9px 11px;font-family:inherit;font-size:12px;}
+.ptc-search input {width:100%;}
+.ptc-search input::placeholder {color:var(--tr-muted);}
+.ptc-search input:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
+.ptc-search input:disabled {opacity:.5;}
+@media (max-width:700px) {.ptc-filters {flex-basis:100%;flex-wrap:wrap;}.ptc-search {max-width:none;min-width:170px;}.ptc-search input {font-size:16px;}}
+#trainingClientsPage .tr-table {min-width:1540px;}
+.ptc-col-owner {width:170px;}
+.ptc-col-dog {width:170px;}
+.ptc-col-phone {width:135px;}
+.ptc-col-initial {width:150px;}
+.ptc-col-first {width:145px;}
+.ptc-col-follow-up {width:235px;}
+.ptc-col-evaluation {width:230px;}
+.ptc-col-outcome {width:auto;}
+#trainingClientsPage .tr-table-scroll {min-height:0;max-height:65dvh;}
+#trainingClientsPage .tr-table td,#trainingClientsPage .tr-cell textarea {height:44px;min-height:44px;}
+#trainingClientsPage .tr-cell textarea {padding:11px 12px;line-height:22px;font-size:13px;}
+#trainingClientsPage .tr-cell textarea:not(:focus) {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#trainingClientsPage .tr-cell textarea:focus {white-space:pre-wrap;overflow:auto;}
+#trainingClientsPage .tr-delete {margin:0;}
+#trainingClientsPage .tr-sheet-footer {align-items:flex-start;}
+#trainingClientsPage .tr-order-hint {padding-block:13px;}
+@media (max-width:700px) {#trainingClientsPage .tr-cell textarea {font-size:16px;}}
+@media print {#trainingClientsPage .tr-table-scroll {max-height:none;}}
+
+#trainingClientsPage .tr-table th {white-space:normal;}
+#trainingClientsPage .tr-cell textarea[data-field="phone"] {font-variant-numeric:tabular-nums;}
