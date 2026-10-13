@@ -1,0 +1,33 @@
+# End Of Day
+
+`/end-of-day.html` is a separate daily workflow linked from the sidebar. It reuses Paws HQ typography, themes, and sign-in. The default list covers today and the six preceding calendar days in America/New_York; earlier weeks can be expanded. One immutable calendar date identifies each entry, including deleted entries. Deleting and restoring a day keeps its original record rather than creating a second copy.
+
+The 24 working text fields follow physical source rows 2–25: staff name; cash and checks received; card tips received and paid; receipts paid and description; drawer total; cash replaced; cash and check deposits; total deposit; notes; additional note from the unlabelled source row; six bill amounts; and four coin amounts. Denomination entries are dollar amounts, not bill or coin counts. The confirmed drawer target is $200; no opening balance or inferred cash-flow reconciliation formula is applied.
+
+## Money and calculated totals
+
+All editable working strings remain literal, including blank fields and surrounding whitespace. Money inputs allow outer whitespace, one plus or minus sign before or after a leading dollar sign, correctly grouped thousands commas, or accounting parentheses. `.50` and `40.` are valid. Parentheses represent negative values and cannot also contain a sign. Values must have no more than two decimal places and an absolute magnitude of at most `999999999.99`. Internal whitespace, exponents, malformed grouping, duplicate signs or currency symbols, and extra decimal places are rejected. Negative historical amounts remain valid. No bill/coin multiple restriction is applied.
+
+The server protects both calculated fields. Authenticated inserts calculate drawer total from the ten denomination amounts and total deposit from cash/check deposits. Updates recalculate drawer total only when a denomination string changes, and total deposit only when a cash/check deposit string changes. An entirely blank component set gives a blank total; otherwise blank components contribute zero. Arithmetic uses exact PostgreSQL numeric values and renders two decimal places. Derived sums may exceed the individual-input limit. Submitted computed overrides have no effect.
+
+Administrative imports preserve all original calculated strings. Unrelated staff or notes edits retain them, including six historical deposit-total discrepancies. Changing a corresponding input recalculates only the current working total; immutable original source cells still retain the imported value. Raw strings are preserved even when changing formatting causes a recalculation.
+
+## Storage and access
+
+Run `end-of-day-setup.sql` in the existing Supabase project after Tours membership setup. It is safe to rerun and creates `public.hq_end_of_day` with row-level security. Only active members of the existing administrator-managed `hq_tour_staff` allowlist may select, insert, or update, including previously approved guest accounts. No accounts are enrolled and permanent deletion is not granted. Pure currency parsing and summing helpers expose no records.
+
+The server controls audit timestamps, actor IDs, revisions, and deletion timestamps. Updates filter by the expected revision. Dates, IDs, creation details, source order, and original source metadata are immutable. Browser-created entries cannot claim imported metadata. Staff name allows 500 characters, each money string including computed fields allows 200, and receipt description, notes, and additional note allow 20,000 each. Any nonblank editable field permits a partial day; a blank draft or computed-only submission does not create one.
+
+## Private import
+
+The CSV is transposed: dates are in row 1 and each daily record occupies one column. There are 1,245 consecutive dates, June 11, 2023 through November 6, 2026, and 29,880 daily cells. Preserve all original dates, including future columns and prefilled zero values. Do not infer a completed day from template zeros alone.
+
+Use stable UUIDv5 IDs based on the source filename and ISO day. Retain the original filename, physical column number (at least 2), original date-header string, and all 24 strings in `source_values`. Filter existing IDs or calendar dates before inserting; retain `ON CONFLICT DO NOTHING` as a final guard. This preserves a staff-created date under a different UUID and does not duplicate, overwrite, or revive existing days. Import in source-column order. The verification query must explicitly report missing expected IDs if a date collision prevented an imported record.
+
+Privately archive the entire 25×1,246 matrix, all row labels, the stray corner cell, the unlabelled row, and the unchanged original CSV bytes. Do not commit source values, archives, private import scripts, credentials, or fixture databases to the public website repository. The supplied private importer provides one atomic full import and five optional 250-date chunks for SQL editor size limits; both use the same conflict guards.
+
+## Validation
+
+Run `node --test tests/*.test.cjs` for application checks. Run `end-of-day-rls-check.sql` after setup to verify immutable unique dates (including deleted days), approved account operations, each editable field as a partial record, money formats and limits, exact cents and large sums, selective protected totals, source/audit/revision controls, reversible deletion, and anonymous/nonstaff/inactive isolation. Its synthetic fixtures and membership changes roll back. If the SQL editor stops after an error, run `rollback;` before another query.
+
+PostgreSQL-compatible validation passed these checks and reconciled all 1,245 imported days, all 29,880 working cells and 29,880 archived daily cells, exact date/header metadata, the complete 31,150-cell matrix, and original CSV bytes. Verification returned 1,245 imported records and zero mismatches. Repeated setup and import preserve later edits, deleted/restored days, and an existing same-date record under a different UUID. All six cached deposit exceptions survive unrelated edits and protected override attempts; changing a deposit input recalculates the working total without changing its original source archive.

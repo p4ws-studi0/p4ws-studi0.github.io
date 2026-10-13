@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>End Of Day · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/end-of-day.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="endOfDayPage" class="tr-page">
+      <div class="eod-heading">
+        <div><p class="eod-eyebrow">DAILY CLOSE</p><h1>End Of Day</h1><p>Count the drawer, record deposits, and leave notes. Changes save as you leave each field.</p></div>
+        <span class="eod-target">Drawer target <strong>$200</strong></span>
+      </div>
+
+      <div id="pageMessage" class="eod-message" role="status" aria-live="polite" hidden></div>
+      <div id="attentionList" class="eod-attention" aria-label="Days with unsaved changes" hidden></div>
+
+      <section id="weekSection" class="eod-week glass" aria-label="Seven-day overview">
+        <div class="eod-week-toolbar">
+          <div class="eod-range"><span>This view</span><h2 id="weekRange">Loading week…</h2></div>
+          <div class="eod-week-navigation">
+            <button id="previousWeek" class="eod-icon-button" type="button" aria-label="Previous seven days" title="Previous seven days" disabled>‹</button>
+            <button id="goToday" class="eod-today-button" type="button" disabled>Enter today</button>
+            <button id="nextWeek" class="eod-icon-button" type="button" aria-label="Next seven days" title="Next seven days" disabled>›</button>
+            <label class="eod-date-jump"><span>Go to date</span><input id="jumpDate" type="date" disabled /></label>
+          </div>
+        </div>
+        <div class="eod-overview-scroll" role="region" aria-label="Seven days; scroll horizontally on a small screen" tabindex="0">
+          <table class="eod-overview">
+            <caption class="tr-sr-only">Seven-day overview. Select a day to view or edit its end-of-day entry.</caption>
+            <colgroup><col class="eod-date-col" /><col class="eod-staff-col" /><col class="eod-total-col" /><col class="eod-total-col" /><col class="eod-state-col" /><col class="eod-open-col" /></colgroup>
+            <thead><tr><th scope="col">Day</th><th scope="col">Staff</th><th scope="col">Drawer</th><th scope="col">Deposit</th><th scope="col">Entry</th><th scope="col"><span class="tr-sr-only">Open day</span></th></tr></thead>
+            <tbody id="weekRows"></tbody>
+          </table>
+        </div>
+        <div class="eod-week-footer"><span>Last seven days by default · open any day to enter details</span><button id="refreshLogs" type="button" class="tr-refresh" disabled>↻ Refresh</button></div>
+      </section>
+
+      <section id="dayPanel" class="eod-day" aria-label="Daily entry">
+        <div class="eod-day-heading"><div><p id="dayEyebrow" class="eod-eyebrow">TODAY’S ENTRY</p><h2 id="dayTitle">Loading…</h2></div><span id="saveStatus" class="eod-save-status" role="status" aria-live="polite">Connecting…</span></div>
+        <div id="dayContent"></div>
+      </section>
+
+      <details id="historySection" class="eod-history glass">
+        <summary><span>Browse earlier weeks</span><span class="eod-history-hint">Open history <span aria-hidden="true">⌄</span></span></summary>
+        <div class="eod-history-body"><p>Choose a week, or use “Go to date” to jump directly to any day.</p><div id="historyList" class="eod-history-list"></div><button id="loadOlderWeeks" class="eod-secondary-button" type="button" disabled>Show older weeks</button></div>
+      </details>
+
+      <details id="deletedSection" class="tr-deleted-dogs">
+        <summary>Deleted entries <span id="deletedCount">0</span></summary>
+        <div id="deletedList" class="tr-deleted-dog-list"><p>No deleted entries.</p></div>
+      </details>
+      <datalist id="staffSuggestions"></datalist>
+      <noscript><p class="eod-message">Please enable JavaScript to view and update End Of Day.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+  <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {
+          document.getElementById(id).innerHTML=html
+          if (id==='header') document.dispatchEvent(new Event('header:ready'))
+          if (id==='footer') {const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear()}
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/end-of-day.js?v=1" defer></script>
+</body>
+</html>
