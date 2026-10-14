@@ -1,3 +1,7 @@
+<div class="hq-nav-search">
+  <label for="sidebarSearchInput"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" stroke-linecap="round" /></svg><input id="sidebarSearchInput" type="search" placeholder="Search pages…" aria-label="Search pages and articles" aria-controls="sidebarSearchResults" autocomplete="off" maxlength="120" /></label>
+  <button id="sidebarSearchClear" type="button" aria-label="Clear navigation search" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" stroke-linecap="round" /></svg></button>
+</div>
 
 <nav class="hq-nav" aria-label="Paws HQ pages">
   <p class="hq-nav-caption">Quick access</p>
@@ -976,6 +980,11 @@
     </div>
   </details>
 
+</nav>
+
+<nav id="sidebarSearchResults" class="hq-nav-search-results" aria-label="Navigation search results" hidden>
+  <p id="sidebarSearchStatus" class="hq-nav-search-status" role="status" aria-live="polite"></p>
+  <div id="sidebarSearchList" class="hq-nav-search-list"></div>
 </nav>
 
 <div class="hq-nav-footer">

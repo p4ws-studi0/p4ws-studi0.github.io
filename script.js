@@ -212,6 +212,84 @@ supabaseClient.auth.onAuthStateChange(() => {
  *************************************************/
 let preparedSidebarNav = null
 let preparedMenuToggle = null
+let sidebarSearchEntries = []
+
+function sidebarText(node) {
+  if (!node) return ''
+  const copy = node.cloneNode(true)
+  for (const icon of copy.querySelectorAll('[aria-hidden="true"]')) icon.remove()
+  return copy.textContent.replace(/\s+/g, ' ').trim()
+}
+
+function sidebarFold(value) {
+  return String(value).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+function indexSidebarSearch(sideMenu) {
+  sidebarSearchEntries = [...sideMenu.querySelectorAll('.hq-nav a[href], .hq-nav-footer a[href]')].map(link => {
+    const sections = []
+    let group = link.closest('details')
+    while (group) {
+      sections.unshift(sidebarText(group.querySelector('summary')))
+      group = group.parentElement?.closest('details')
+    }
+    let label = sidebarText(link)
+    if (label === 'View all') label = `${sections.at(-1)} overview`
+    if (link.getAttribute('href') === '/kb/index.html') label = 'Knowledge Base'
+    const context = sections.join(' · ') || (link.closest('.hq-nav-footer') ? 'Account' : 'Quick access')
+    return {href:link.getAttribute('href'), label, context, current:link.getAttribute('aria-current') === 'page', kb:link.getAttribute('href').startsWith('/kb/'), search:sidebarFold(`${label} ${context}`)}
+  })
+}
+
+function searchSidebar(value) {
+  const nav = document.querySelector('#sideMenu .hq-nav')
+  const results = document.getElementById('sidebarSearchResults')
+  const list = document.getElementById('sidebarSearchList')
+  if (!nav || !results || !list) return
+  const query = sidebarFold(value).trim().slice(0,120)
+  nav.hidden = Boolean(query)
+  results.hidden = !query
+  document.getElementById('sidebarSearchClear').hidden = !query
+  list.replaceChildren()
+  results.scrollTop = 0
+  if (!query) {
+    document.getElementById('sidebarSearchStatus').textContent = ''
+    return
+  }
+  const words = query.split(/\s+/)
+  const rank = entry => {
+    const title = sidebarFold(entry.label)
+    return title === query ? 0 : title.startsWith(query) ? 1 : words.every(word => title.includes(word)) ? 2 : 3
+  }
+  const matches = sidebarSearchEntries.filter(entry => words.every(word => entry.search.includes(word)))
+    .sort((a,b) => rank(a)-rank(b) || Number(a.kb)-Number(b.kb) || a.label.localeCompare(b.label))
+  document.getElementById('sidebarSearchStatus').textContent = `${matches.length} ${matches.length === 1 ? 'page' : 'pages'} found`
+  for (const entry of matches) {
+    const link = document.createElement('a')
+    link.href = entry.href
+    if (entry.current) link.setAttribute('aria-current', 'page')
+    const title = document.createElement('strong')
+    title.textContent = entry.label
+    const context = document.createElement('span')
+    context.textContent = entry.context
+    link.append(title, context)
+    list.append(link)
+  }
+  if (!matches.length) {
+    const empty = document.createElement('p')
+    empty.className = 'hq-nav-search-empty'
+    empty.textContent = 'No pages found. Try another name.'
+    list.append(empty)
+  }
+}
+
+function clearSidebarSearch() {
+  const input = document.getElementById('sidebarSearchInput')
+  if (!input) return
+  input.value = ''
+  searchSidebar('')
+  input.focus()
+}
 
 function sidebarPath(value) {
   try {
@@ -258,6 +336,8 @@ function prepareSidebar() {
       knowledgeBase.classList.add('is-current-section')
     }
   }
+  indexSidebarSearch(sideMenu)
+  searchSidebar(document.getElementById('sidebarSearchInput')?.value || '')
 }
 
 function setSidebarOpen(open, restoreFocus = false) {
@@ -271,7 +351,8 @@ function setSidebarOpen(open, restoreFocus = false) {
   toggle?.setAttribute('aria-expanded', String(open))
   toggle?.setAttribute('aria-label', open ? 'Close menu' : 'Open menu')
   if (open) {
-    let target = sideMenu.querySelector('a[aria-current="page"]') || sideMenu.querySelector('a[href]')
+    const input = document.getElementById('sidebarSearchInput')
+    let target = input?.value.trim() ? input : sideMenu.querySelector('a[aria-current="page"]') || sideMenu.querySelector('a[href]')
     let group = target?.closest('details')
     while (group) {
       if (!group.open) target = group.querySelector('summary')
@@ -284,6 +365,10 @@ function setSidebarOpen(open, restoreFocus = false) {
 document.addEventListener('click', e => {
   const sideMenu = document.getElementById('sideMenu')
   if (!sideMenu) return
+  if (e.target.closest('#sidebarSearchClear')) {
+    clearSidebarSearch()
+    return
+  }
   const toggle = e.target.closest('#menuToggle')
   const isOpen = !sideMenu.classList.contains('-translate-x-full')
   if (toggle) {
@@ -299,9 +384,23 @@ document.addEventListener('click', e => {
 
 document.addEventListener('keydown', e => {
   const sideMenu = document.getElementById('sideMenu')
-  if (e.key !== 'Escape' || !sideMenu || sideMenu.classList.contains('-translate-x-full')) return
-  e.preventDefault()
-  setSidebarOpen(false, true)
+  if (!sideMenu || sideMenu.classList.contains('-translate-x-full')) return
+  const input = document.getElementById('sidebarSearchInput')
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    if (input?.value.trim()) clearSidebarSearch()
+    else setSidebarOpen(false, true)
+  } else if (e.target === input && input.value.trim() && ['ArrowDown','Enter'].includes(e.key)) {
+    const first = document.querySelector('#sidebarSearchList a')
+    if (!first) return
+    e.preventDefault()
+    if (e.key === 'Enter') first.click()
+    else first.focus()
+  }
+})
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'sidebarSearchInput') searchSidebar(e.target.value)
 })
 
 // Native disclosures provide keyboard interaction and announce their state.
