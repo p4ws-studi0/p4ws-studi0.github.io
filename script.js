@@ -358,7 +358,10 @@ function setSidebarOpen(open, restoreFocus = false) {
       if (!group.open) target = group.querySelector('summary')
       group = group.parentElement?.closest('details')
     }
-    target?.focus()
+    // Finish the menu button's activation before moving keyboard focus.
+    requestAnimationFrame(() => {
+      if (!sideMenu.classList.contains('-translate-x-full') && target?.isConnected) target.focus()
+    })
   } else if (restoreFocus) toggle?.focus({preventScroll:true})
 }
 
