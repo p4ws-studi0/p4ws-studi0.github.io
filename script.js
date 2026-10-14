@@ -208,46 +208,127 @@ supabaseClient.auth.onAuthStateChange(() => {
 
 
 /*************************************************
- * SIDEBAR TOGGLE (INJECTED-SAFE)
- * - Toggle via #menuToggle
- * - Close on ESC
- * - Close on click outside
+ * SHARED NAVIGATION (PARTIALS CAN LOAD IN ANY ORDER)
  *************************************************/
+let preparedSidebarNav = null
+let preparedMenuToggle = null
+
+function sidebarPath(value) {
+  try {
+    const path = new URL(value, window.location.origin).pathname
+    return path.replace(/\/index\.html$/, '/').replace(/\/+$/, '') || '/'
+  } catch { return '' }
+}
+
+function prepareSidebar() {
+  const sideMenu = document.getElementById('sideMenu')
+  if (!sideMenu) return
+  const isOpen = !sideMenu.classList.contains('-translate-x-full')
+  sideMenu.inert = !isOpen
+  sideMenu.setAttribute('aria-hidden', String(!isOpen))
+  const toggle = document.getElementById('menuToggle')
+  if (toggle && toggle !== preparedMenuToggle) {
+    toggle.setAttribute('aria-controls', 'sideMenu')
+    toggle.setAttribute('aria-expanded', String(isOpen))
+    toggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu')
+    preparedMenuToggle = toggle
+  }
+  const nav = sideMenu.querySelector('.hq-nav')
+  if (!nav || nav === preparedSidebarNav) return
+  preparedSidebarNav = nav
+  const currentPath = sidebarPath(window.location.href)
+  let activeLink = null
+  for (const link of sideMenu.querySelectorAll('a[href]')) {
+    if (sidebarPath(link.getAttribute('href')) === currentPath) {
+      link.setAttribute('aria-current', 'page')
+      activeLink = link
+    }
+  }
+  if (activeLink) {
+    let group = activeLink.closest('details')
+    while (group) {
+      group.open = true
+      if (group.classList.contains('hq-nav-group')) group.classList.add('is-current-section')
+      group = group.parentElement?.closest('details')
+    }
+  } else if (currentPath.startsWith('/kb/')) {
+    const knowledgeBase = nav.querySelector('.hq-nav-kb')
+    if (knowledgeBase) {
+      knowledgeBase.open = true
+      knowledgeBase.classList.add('is-current-section')
+    }
+  }
+}
+
+function setSidebarOpen(open, restoreFocus = false) {
+  const sideMenu = document.getElementById('sideMenu')
+  if (!sideMenu) return
+  const toggle = document.getElementById('menuToggle')
+  sideMenu.classList.toggle('-translate-x-full', !open)
+  sideMenu.inert = !open
+  sideMenu.setAttribute('aria-hidden', String(!open))
+  toggle?.classList.toggle('open', open)
+  toggle?.setAttribute('aria-expanded', String(open))
+  toggle?.setAttribute('aria-label', open ? 'Close menu' : 'Open menu')
+  if (open) {
+    let target = sideMenu.querySelector('a[aria-current="page"]') || sideMenu.querySelector('a[href]')
+    let group = target?.closest('details')
+    while (group) {
+      if (!group.open) target = group.querySelector('summary')
+      group = group.parentElement?.closest('details')
+    }
+    target?.focus()
+  } else if (restoreFocus) toggle?.focus({preventScroll:true})
+}
 
 document.addEventListener('click', e => {
-  const toggle = e.target.closest('#menuToggle')
   const sideMenu = document.getElementById('sideMenu')
   if (!sideMenu) return
-
+  const toggle = e.target.closest('#menuToggle')
   const isOpen = !sideMenu.classList.contains('-translate-x-full')
-
-  // Toggle button clicked
   if (toggle) {
-    sideMenu.classList.toggle('-translate-x-full')
-    toggle.classList.toggle('open')
+    setSidebarOpen(!isOpen)
     return
   }
-
-  // Clicked outside sidebar while open
-  if (
-    isOpen &&
-    !e.target.closest('#sideMenu')
-  ) {
-    sideMenu.classList.add('-translate-x-full')
-    document.getElementById('menuToggle')?.classList.remove('open')
+  if (isOpen && !e.target.closest('#sideMenu')) {
+    setSidebarOpen(false, sideMenu.contains(document.activeElement))
+  } else if (isOpen && e.target.closest('#sideMenu a[href]') && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+    setSidebarOpen(false)
   }
 })
 
-// ESC key closes sidebar
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return
-
   const sideMenu = document.getElementById('sideMenu')
-  if (!sideMenu) return
-
-  sideMenu.classList.add('-translate-x-full')
-  document.getElementById('menuToggle')?.classList.remove('open')
+  if (e.key !== 'Escape' || !sideMenu || sideMenu.classList.contains('-translate-x-full')) return
+  e.preventDefault()
+  setSidebarOpen(false, true)
 })
+
+// Native disclosures provide keyboard interaction and announce their state.
+// Keep one top-level section open, including in browsers without details[name].
+document.addEventListener('toggle', e => {
+  const group = e.target
+  if (!group.matches?.('#sideMenu .hq-nav-group') || !group.open) return
+  for (const other of document.querySelectorAll('#sideMenu .hq-nav-group')) {
+    if (other !== group && other.open) other.open = false
+  }
+}, true)
+
+document.addEventListener('focusin', e => {
+  const sideMenu = document.getElementById('sideMenu')
+  if (!sideMenu || sideMenu.classList.contains('-translate-x-full')) return
+  if (!sideMenu.contains(e.target) && !e.target.closest('#menuToggle')) setSidebarOpen(false)
+})
+
+prepareSidebar()
+document.addEventListener('header:ready', prepareSidebar)
+if (document.body) {
+  new MutationObserver(records => {
+    if (records.some(record => record.target.id === 'sideMenu' || [...record.addedNodes].some(node =>
+      node.nodeType === 1 && (node.id === 'sideMenu' || node.id === 'menuToggle' || node.querySelector?.('.hq-nav, #menuToggle'))
+    ))) prepareSidebar()
+  }).observe(document.body, {childList:true, subtree:true})
+} else document.addEventListener('DOMContentLoaded', prepareSidebar, {once:true})
 
 
 /*************************************************

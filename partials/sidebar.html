@@ -1,13 +1,14 @@
 
-<nav class="space-y-2 text-base">
+<nav class="hq-nav" aria-label="Paws HQ pages">
+  <p class="hq-nav-caption">Quick access</p>
 
   <a href="/"
      class="block px-4 py-2.5 rounded-lg font-semibold
             hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🏠 Home
+    <span class="hq-nav-icon" aria-hidden="true">🏠</span><span>Home</span>
   </a>
 
-  <details class="group/kb">
+  <details class="group/kb hq-nav-group hq-nav-kb" name="hq-nav-sections">
     <summary
       class="
         list-none cursor-pointer
@@ -16,11 +17,12 @@
         hover:bg-black/5 dark:hover:bg-white/10
         transition
       ">
-      📚 Knowledge Base
+      <span class="hq-nav-label"><span class="hq-nav-icon" aria-hidden="true">📚</span>Knowledge Base</span>
+      <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
     </summary>
 
     <div
-      class="
+      class="hq-nav-kb-body
         ml-2 mt-1 space-y-2 pl-2
         border-l border-black/10 dark:border-white/20
         grid grid-rows-[0fr] group-open/kb:grid-rows-[1fr]
@@ -28,6 +30,7 @@
       "
     >
       <div class="overflow-hidden">
+        <a class="hq-nav-all" href="/kb/index.html">Browse all articles</a>
         
         <details class="group/cat">
           <summary
@@ -40,7 +43,7 @@
               transition
             ">
             <span>Activity Procedures</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -121,7 +124,7 @@
               transition
             ">
             <span>Administrative Procedures</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -160,7 +163,7 @@
               transition
             ">
             <span>Company Policies</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -199,7 +202,7 @@
               transition
             ">
             <span>Customer Service Procedures</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -420,7 +423,7 @@
               transition
             ">
             <span>Facility Maintenance Procedures</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -459,7 +462,7 @@
               transition
             ">
             <span>Gingr Procedures</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -589,7 +592,7 @@
               transition
             ">
             <span>Health First Aid</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -642,7 +645,7 @@
               transition
             ">
             <span>Other</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -730,7 +733,7 @@
               transition
             ">
             <span>Petcare Procedures</span>
-            <span class="opacity-40 transition group-open/cat:rotate-90">›</span>
+            <svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </summary>
 
           <div
@@ -932,101 +935,49 @@
 
 
 
-    <a href="/occupied-runs.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🏘 Occupied Runs
-  </a>
-  
-  <a href="/digital-whiteboard.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    ▦ Digital Whiteboard
-  </a>
+  <p class="hq-nav-caption hq-nav-divider">Tools & trackers</p>
 
-  <a href="/tours.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🗓 Tours
-  </a>
+  <details class="hq-nav-group" data-nav-group="front-desk" name="hq-nav-sections">
+    <summary><span class="hq-nav-label">Front Desk</span><svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg></summary>
+    <div class="hq-nav-links">
+      <a href="/digital-whiteboard.html">Digital Whiteboard</a>
+      <a href="/occupied-runs.html">Occupied Runs</a>
+      <a href="/tours.html">Tours</a>
+      <a href="/follow-up-calls.html">Client Follow-Up Calls</a>
+    </div>
+  </details>
 
-  <a href="/training.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🐾 Dog Training
-  </a>
+  <details class="hq-nav-group" data-nav-group="pet-care" name="hq-nav-sections">
+    <summary><span class="hq-nav-label">Pet Care &amp; Training</span><svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg></summary>
+    <div class="hq-nav-links">
+      <a href="/training.html">Dog Training</a>
+      <a href="/potential-training-clients.html">Potential Training Clients</a>
+      <a href="/dog-licenses.html">Dog Licenses</a>
+      <a href="/k9-cough.html">K9 Cough</a>
+      <a href="/vet-cheat-sheet.html">Vet Cheat Sheet</a>
+    </div>
+  </details>
 
-  <a href="/potential-training-clients.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🐕 Potential Training Clients
-  </a>
+  <details class="hq-nav-group" data-nav-group="outreach" name="hq-nav-sections">
+    <summary><span class="hq-nav-label">Marketing &amp; Outreach</span><svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg></summary>
+    <div class="hq-nav-links">
+      <a href="/marketing-initiatives.html">Marketing Initiatives</a>
+      <a href="/biscuit-baskets.html">Biscuit Baskets</a>
+      <a href="/realtor-info.html">Realtor Info</a>
+    </div>
+  </details>
 
-  <a href="/dog-licenses.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🪪 Dog Licenses
-  </a>
-
-  <a href="/follow-up-calls.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    📞 Client Follow-Up Calls
-  </a>
-
-  <a href="/marketing-initiatives.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    📣 Marketing Initiatives
-  </a>
-
-  <a href="/biscuit-baskets.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🧺 Biscuit Baskets
-  </a>
-
-  <a href="/suggestions.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    💡 Suggestions
-  </a>
-
-  <a href="/gift-cards.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🎁 Gift Cards
-  </a>
-
-  <a href="/realtor-info.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🏡 Realtor Info
-  </a>
-
-  <a href="/k9-cough.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🐕 K9 Cough
-  </a>
-
-  <a href="/vet-cheat-sheet.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    🩺 Vet Cheat Sheet
-  </a>
-
-  <a href="/end-of-day.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    💵 End Of Day
-  </a>
-
-  <a href="/settings.html"
-     class="block px-4 py-2.5 rounded-lg font-semibold
-            hover:bg-black/5 dark:hover:bg-white/10 transition">
-    ⚙️ Settings
-  </a>
-
+  <details class="hq-nav-group" data-nav-group="office" name="hq-nav-sections">
+    <summary><span class="hq-nav-label">Office &amp; Team</span><svg class="hq-nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg></summary>
+    <div class="hq-nav-links">
+      <a href="/end-of-day.html">End Of Day</a>
+      <a href="/gift-cards.html">Gift Cards</a>
+      <a href="/suggestions.html">Suggestions</a>
+    </div>
+  </details>
 
 </nav>
+
+<div class="hq-nav-footer">
+  <a href="/settings.html"><span class="hq-nav-icon" aria-hidden="true">⚙️</span><span>Settings</span></a>
+</div>
