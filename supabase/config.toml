@@ -1,3 +1,7 @@
 [functions.hq-slack-general]
 verify_jwt = true
 entrypoint = "./functions/hq-slack-general/index.ts"
+
+[functions.hq-gingr-whiteboard]
+verify_jwt = true
+entrypoint = "./functions/hq-gingr-whiteboard/index.ts"

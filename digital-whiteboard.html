@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Digital Whiteboard · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/digital-whiteboard.css?v=1" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="wbPage" class="wb-page">
+      <header class="wb-heading">
+        <div class="wb-heading-copy">
+          <p class="wb-eyebrow"><span class="wb-eyebrow-mark" aria-hidden="true"></span>THE DAY AT PAWS</p>
+          <h1>Digital Whiteboard<span class="wb-title-dot" aria-hidden="true">.</span></h1>
+          <p class="wb-intro">Every arrival. Every departure. A clear view of what’s next.</p>
+        </div>
+        <div class="wb-day-clock"><span id="wbDate">Today at Paws</span><time id="wbClock">—</time><span>Eastern time</span></div>
+      </header>
+
+      <div class="wb-sync-bar">
+        <div class="wb-sync-info"><span id="wbConnection" class="wb-connection" data-state="connecting">Connecting to Gingr</span><span id="wbUpdated" class="wb-updated">Waiting for the latest reservations</span></div>
+        <div class="wb-actions">
+          <button id="wbRefresh" class="wb-button" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17" stroke-linecap="round"/></svg><span>Refresh</span></button>
+          <button id="wbExpand" class="wb-button" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Focus view</span></button>
+        </div>
+      </div>
+
+      <section class="wb-metrics" aria-label="Whiteboard overview">
+        <div class="wb-metric wb-metric-arrival"><div><p>Pending arrivals</p><strong id="wbArrivalCount">—</strong><span id="wbArrivalNote">For the selected time window</span></div><span class="wb-metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 5v12h12M7 17 19 5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        <div class="wb-metric wb-metric-departure"><div><p>Pending departures</p><strong id="wbDepartureCount">—</strong><span id="wbDepartureNote">For the selected time window</span></div><span class="wb-metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 5h12v12M19 5 7 17" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        <div class="wb-metric wb-metric-soon"><div><p>Coming up</p><strong id="wbSoonCount">—</strong><span id="wbSoonNote">Scheduled in the next hour</span></div><span class="wb-metric-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      </section>
+
+      <section class="wb-toolbar" aria-label="Filter reservations">
+        <div class="wb-filter-controls">
+          <label class="wb-search"><span class="wb-sr-only">Search pets, owners or rooms</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4" stroke-linecap="round"/></svg><input id="wbSearch" type="search" placeholder="Search pets, owners or rooms…" autocomplete="off" /></label>
+          <label class="wb-select"><span>Service</span><select id="wbService"><option value="">All services</option></select></label>
+          <label class="wb-select"><span>Time window</span><select id="wbWindow" aria-describedby="wbWindowHint"><option value="today">All day</option><option value="60">Within 1 hour</option><option value="120">Within 2 hours</option></select></label>
+        </div>
+        <div class="wb-filter-bottom"><p id="wbWindowHint">Time windows include the previous and next hour(s).</p><div class="wb-filter-options"><label class="wb-checkbox"><input id="wbCompleted" type="checkbox" /><span>Include completed</span></label><button id="wbClear" type="button" class="wb-clear" hidden>Clear filters</button></div></div>
+      </section>
+
+      <div id="wbNotice" class="wb-notice" role="status" aria-live="polite" hidden></div>
+      <div class="wb-board-heading"><h2>Arrivals &amp; departures</h2><p id="wbResults">Reservations will appear below</p></div>
+
+      <div id="wbEmpty" class="wb-empty" hidden><span class="wb-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4M16 3v4M4 11h16M9 16h6" stroke-linecap="round"/></svg></span><h3 id="wbEmptyTitle">Nothing on the board yet</h3><p id="wbEmptyText">Reservations will appear here once the whiteboard connects.</p></div>
+
+      <div id="wbBoard" class="wb-board">
+        <section class="wb-lane wb-lane-arrival" aria-labelledby="wbArrivalsTitle"><div class="wb-lane-heading"><div class="wb-lane-name"><span class="wb-lane-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5v12h12M7 17 19 5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h2 id="wbArrivalsTitle">Arrivals</h2><span id="wbArrivalsCount" class="wb-lane-count">—</span></div><span class="wb-lane-description">Checking in</span></div><div id="wbArrivals" class="wb-lane-content"><p class="wb-lane-empty">Loading arrivals…</p></div></section>
+        <section class="wb-lane wb-lane-departure" aria-labelledby="wbDeparturesTitle"><div class="wb-lane-heading"><div class="wb-lane-name"><span class="wb-lane-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5h12v12M19 5 7 17" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h2 id="wbDeparturesTitle">Departures</h2><span id="wbDeparturesCount" class="wb-lane-count">—</span></div><span class="wb-lane-description">Checking out</span></div><div id="wbDepartures" class="wb-lane-content"><p class="wb-lane-empty">Loading departures…</p></div></section>
+      </div>
+      <p class="wb-board-footnote">Select a reservation for details. Reservation changes are made in Gingr.</p>
+      <noscript><p class="wb-notice">Please enable JavaScript to view the Digital Whiteboard.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+
+  <dialog id="wbDialog" class="wb-dialog" aria-labelledby="wbDialogTitle"><div class="wb-dialog-heading"><div><p class="wb-eyebrow">RESERVATION DETAILS</p><h2 id="wbDialogTitle">Reservation</h2></div><button id="wbDialogClose" class="wb-dialog-close" type="button" aria-label="Close reservation details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" stroke-linecap="round"/></svg></button></div><div id="wbDialogBody"></div></dialog>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {
+          document.getElementById(id).innerHTML=html
+          if (id==='header') document.dispatchEvent(new Event('header:ready'))
+          if (id==='footer') {const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear()}
+        })
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/digital-whiteboard.js?v=1" defer></script>
+</body>
+</html>
