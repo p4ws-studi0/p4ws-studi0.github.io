@@ -87,63 +87,52 @@
       flex: 0 0 auto;
     }
 
-    #quickAccessGrid > div { width: 100%; min-width: 0; }
-
-    #occupiedRunsQuickLink { --quick-rgb: 8,145,178; --quick-text: #0e7490; --quick-dark: #67e8f9; }
-    #endOfDayQuickLink { --quick-rgb: 225,29,72; --quick-text: #be123c; --quick-dark: #fda4af; }
-    #runCardsButton { --quick-rgb: 37,99,235; --quick-text: #1d4ed8; --quick-dark: #93c5fd; }
-    #printablesButton { --quick-rgb: 124,58,237; --quick-text: #6d28d9; --quick-dark: #c4b5fd; }
-    #priceSheetsButton { --quick-rgb: 5,150,105; --quick-text: #047857; --quick-dark: #6ee7b7; }
-    #infoSheetsButton { --quick-rgb: 217,119,6; --quick-text: #b45309; --quick-dark: #fcd34d; }
-
-    #quickAccessGrid .quick-access-button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      min-width: 0;
-      height: 56px;
-      padding: 8px 10px;
-      gap: 8px;
-      border-radius: 12px;
-      border: 1px solid rgba(var(--quick-rgb), .27);
-      background: rgba(var(--quick-rgb), .10);
-      color: var(--quick-text);
-      font-size: 14px;
-      font-weight: 600;
-      line-height: 1.25;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
-      text-decoration: none;
+    .quick-icon-run {
+      color: #2563eb;
     }
 
-    #quickAccessGrid .quick-access-button > span {
-      min-width: 0;
-      overflow-wrap: anywhere;
+    .quick-icon-print {
+      color: #7c3aed;
     }
 
-    #quickAccessGrid .quick-access-button svg { flex-shrink: 0; color: inherit; }
-    #quickAccessGrid .quick-access-button:hover { background: rgba(var(--quick-rgb), .17); }
-    #quickAccessGrid .quick-access-button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
-    #quickAccessGrid .quick-access-button:disabled { opacity: .5; cursor: wait; }
-
-    .dark #quickAccessGrid .quick-access-button {
-      background: rgba(var(--quick-rgb), .18);
-      border-color: rgba(var(--quick-rgb), .35);
-      color: var(--quick-dark);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-    }
-    .dark #quickAccessGrid .quick-access-button:hover { background: rgba(var(--quick-rgb), .27); }
-
-    @media (min-width: 640px) {
-      #infoSheetsMenu { left: auto; right: 0; }
+    .quick-icon-price {
+      color: #059669;
     }
 
-    @media (min-width: 640px) and (max-width: 1023px) {
-      #runCardsMenu { left: auto; right: 0; }
+    .quick-icon-info {
+      color: #d97706;
     }
 
-    @media (min-width: 1024px) {
-      #priceSheetsMenu { left: auto; right: 0; }
+    .quick-icon-occupied {
+      color: #0891b2;
+    }
+
+    .quick-icon-close {
+      color: #e11d48;
+    }
+
+    .dark .quick-icon-run {
+      color: #60a5fa;
+    }
+
+    .dark .quick-icon-print {
+      color: #c4b5fd;
+    }
+
+    .dark .quick-icon-price {
+      color: #6ee7b7;
+    }
+
+    .dark .quick-icon-info {
+      color: #fbbf24;
+    }
+
+    .dark .quick-icon-occupied {
+      color: #67e8f9;
+    }
+
+    .dark .quick-icon-close {
+      color: #fda4af;
     }
 
     @media (max-width: 639px) {
@@ -167,7 +156,7 @@
 
       /* Anchor large searchable menus to the Quick Access card,
          not to whichever grid-cell button opened them. */
-      #quickAccessGrid .searchable-quick-dropdown {
+      .searchable-quick-dropdown {
         position: static;
       }
 
@@ -179,10 +168,6 @@
         max-width: none !important;
         max-height: min(26rem, 60vh) !important;
       }
-    }
-    @media (max-width: 379px) {
-      #quickAccessGrid .quick-access-button { padding: 6px; gap: 4px; font-size: 13px; }
-      #quickAccessGrid .quick-access-button svg { width: 14px; height: 14px; }
     }
   </style>
 
@@ -292,14 +277,14 @@
       </div>
 
       <!-- Add future quick-access items inside this row -->
-      <div id="quickAccessGrid" class="relative z-20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      <div class="relative z-20 grid grid-cols-2 sm:flex sm:flex-wrap items-start gap-2.5">
         <a id="occupiedRunsQuickLink" href="/occupied-runs.html"
-           class="quick-access-button quick-direct-link inline-flex w-full sm:w-auto min-w-0 min-h-[44px] self-stretch items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/15 text-slate-900 dark:text-white text-sm font-semibold border border-black/10 dark:border-white/15 shadow-soft active:scale-[0.98] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+           class="quick-direct-link inline-flex w-full sm:w-auto min-w-0 min-h-[44px] self-stretch items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/15 text-slate-900 dark:text-white text-sm font-semibold border border-black/10 dark:border-white/15 shadow-soft active:scale-[0.98] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="quick-icon quick-icon-occupied" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M4 11h16M9 21v-6h6v6M2 21h20" /></svg>
           <span class="min-w-0">Occupied Runs</span>
         </a>
         <a id="endOfDayQuickLink" href="/end-of-day.html"
-           class="quick-access-button quick-direct-link inline-flex w-full sm:w-auto min-w-0 min-h-[44px] self-stretch items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/15 text-slate-900 dark:text-white text-sm font-semibold border border-black/10 dark:border-white/15 shadow-soft active:scale-[0.98] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+           class="quick-direct-link inline-flex w-full sm:w-auto min-w-0 min-h-[44px] self-stretch items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/15 text-slate-900 dark:text-white text-sm font-semibold border border-black/10 dark:border-white/15 shadow-soft active:scale-[0.98] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="quick-icon quick-icon-close" aria-hidden="true"><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3" /><rect x="9" y="2" width="6" height="4" rx="1" /><path d="m8 13 3 3 5-6" /></svg>
           <span class="min-w-0">End Of Day</span>
         </a>
@@ -323,7 +308,7 @@
 
 
 
-            class="quick-access-button
+            class="
 
               inline-flex
               w-full sm:w-auto
@@ -416,6 +401,10 @@
               stroke-linecap="round"
 
               stroke-linejoin="round"
+
+              class="quick-icon quick-icon-run"
+
+              aria-hidden="true"
 
             >
 
@@ -778,7 +767,7 @@
             type="button"
             aria-haspopup="true"
             aria-expanded="false"
-            class="quick-access-button
+            class="
               inline-flex
               w-full sm:w-auto
               items-center
@@ -1304,7 +1293,7 @@
             type="button"
             aria-haspopup="true"
             aria-expanded="false"
-            class="quick-access-button
+            class="
               inline-flex
               w-full sm:w-auto
               items-center
@@ -1592,7 +1581,7 @@
             type="button"
             aria-haspopup="true"
             aria-expanded="false"
-            class="quick-access-button
+            class="
               inline-flex
               w-full sm:w-auto
               items-center
