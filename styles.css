@@ -251,7 +251,7 @@ article {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 16px 10px 10px;
+  padding: 14px 10px 10px;
   border: 1px solid rgba(255,255,255,.74);
   border-radius: 12px;
   background: linear-gradient(135deg,rgba(255,255,255,.76),rgba(237,245,255,.57));
@@ -276,7 +276,7 @@ article {
 .hq-nav-footer a[aria-current="page"] {background:var(--nav-active);color:var(--nav-blue);box-shadow:inset 3px 0 var(--nav-blue);}
 .hq-nav-footer a:focus-visible {outline:2px solid var(--nav-blue);outline-offset:2px;}
 #sideMenu [hidden] {display:none!important;}
-.hq-nav-search {display:flex;align-items:center;flex-shrink:0;gap:4px;margin:0 4px 17px;padding:0 8px 0 11px;min-height:40px;border:1px solid var(--nav-line);border-radius:8px;background:rgba(255,255,255,.24);color:var(--nav-muted);}
+.hq-nav-search {display:flex;align-items:center;flex-shrink:0;gap:4px;margin:0 4px 11px;padding:0 8px 0 11px;min-height:40px;border:1px solid var(--nav-line);border-radius:8px;background:rgba(255,255,255,.24);color:var(--nav-muted);}
 .dark .hq-nav-search {background:rgba(0,0,0,.14);}
 .hq-nav-search:focus-within {border-color:var(--nav-blue);box-shadow:0 0 0 2px var(--nav-hover);}
 .hq-nav-search label {display:flex;align-items:center;gap:8px;flex:1;min-width:0;}
@@ -298,8 +298,8 @@ article {
 .hq-nav-search-empty {padding:10px;color:var(--nav-muted);font-size:13px;line-height:1.65;}
 @media(max-width:640px) {.hq-nav-search input {font-size:16px;padding:8px 0;}.hq-nav-search input::placeholder {font-size:13px;}}
 .hq-nav-caption {margin:0 12px 8px;color:var(--nav-muted);font-size:10px;font-weight:650;line-height:1.5;letter-spacing:.1em;text-transform:uppercase;}
-.hq-nav .hq-nav-divider {margin:17px 12px 8px;padding-top:15px;border-top:1px solid var(--nav-line);}
-.hq-nav > a,.hq-nav-group > summary {display:flex;align-items:center;gap:10px;min-height:44px;margin:3px 0;padding:10px 12px;border-radius:7px;color:var(--nav-text);font-size:14px;font-weight:600;line-height:1.5;text-decoration:none;cursor:pointer;list-style:none;transition:background .15s,color .15s;}
+.hq-nav .hq-nav-divider {margin:13px 12px 8px;padding-top:15px;border-top:1px solid var(--nav-line);}
+.hq-nav > a,.hq-nav-group > summary {display:flex;align-items:center;gap:10px;min-height:36px;margin:3px 0;padding:7px 12px;border-radius:7px;color:var(--nav-text);font-size:14px;font-weight:600;line-height:1.5;text-decoration:none;cursor:pointer;list-style:none;transition:background .15s,color .15s;}
 .hq-nav summary::-webkit-details-marker {display:none;}
 .hq-nav summary::marker {content:"";}
 .hq-nav > a:hover,.hq-nav summary:hover,.hq-nav a:hover {background:var(--nav-hover);}
@@ -309,7 +309,7 @@ article {
 .hq-nav details[open] > summary > .hq-nav-chevron {transform:rotate(90deg);}
 .hq-nav details[open] > summary {color:var(--nav-blue);}
 .hq-nav .hq-nav-links {display:grid;gap:2px;margin:4px 9px 8px 18px;padding-left:11px;border-left:1px solid var(--nav-line);}
-.hq-nav .hq-nav-links a {display:block;min-height:36px;padding:8px 11px;border-radius:7px;color:var(--nav-text);font-size:13px;font-weight:450;line-height:1.55;text-decoration:none;overflow-wrap:anywhere;transition:background .15s;}
+.hq-nav .hq-nav-links a {display:block;min-height:32px;padding:6px 11px;border-radius:7px;color:var(--nav-text);font-size:13px;font-weight:450;line-height:1.55;text-decoration:none;overflow-wrap:anywhere;transition:background .15s;}
 .hq-nav .hq-nav-kb-body {margin:4px 8px 8px 18px;padding-left:11px;border-color:var(--nav-line);}
 .hq-nav .hq-nav-kb-body summary {display:flex;align-items:center;justify-content:space-between;gap:9px;margin:2px 0;padding:9px 10px;border-radius:7px;color:var(--nav-text);font-size:13px;font-weight:550;line-height:1.5;list-style:none;cursor:pointer;}
 .hq-nav .hq-nav-kb-body a {display:block;padding:8px 10px;border-radius:7px;color:var(--nav-text);font-size:13px;line-height:1.55;text-decoration:none;overflow-wrap:anywhere;}
@@ -329,3 +329,5 @@ body {
 
 
 
+
+@media(max-width:640px) {.hq-nav > a,.hq-nav-group > summary {min-height:40px;padding-block:9px;}.hq-nav .hq-nav-links a {min-height:38px;padding-block:8px;}}
