@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -84,36 +85,67 @@
                  flex items-center justify-center
                  border border-dashed border-white/20
                  bg-white/50 dark:bg-white/[0.05]
-                 transition">
+                 transition-all duration-200">
 
           <input
             id="fileInput"
             type="file"
             accept=".csv"
-            class="absolute inset-0 opacity-0 cursor-pointer"
+            class="absolute inset-0 opacity-0 cursor-pointer z-10"
           />
 
-          <div class="text-center pointer-events-none space-y-2">
-            <!-- ICON -->
-            <svg
-              class="mx-auto h-6 w-6 opacity-50"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5">
-              <path d="M12 3v12" />
-              <path d="M7 8l5-5 5 5" />
-              <path d="M5 21h14" />
-            </svg>
+          <div class="text-center pointer-events-none space-y-2 px-4">
 
-            <div class="text-sm font-medium">
-              Drop file or click to upload
+            <!-- DEFAULT UPLOAD STATE -->
+            <div id="uploadDefault" class="space-y-2">
+              <svg
+                class="mx-auto h-6 w-6 opacity-50"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5">
+                <path d="M12 3v12" />
+                <path d="M7 8l5-5 5 5" />
+                <path d="M5 21h14" />
+              </svg>
+
+              <div class="text-sm font-medium">
+                Drop file or click to upload
+              </div>
             </div>
 
-            <div
-              id="fileName"
-              class="text-xs font-medium text-blue-400 hidden">
+            <!-- UPLOADED STATE -->
+            <div id="uploadSuccess" class="hidden space-y-2">
+              <div
+                class="mx-auto w-10 h-10 rounded-full
+                       bg-emerald-500/15
+                       flex items-center justify-center">
+                <svg
+                  class="h-6 w-6 text-emerald-500"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M5 12l4 4L19 6" />
+                </svg>
+              </div>
+
+              <div class="text-sm font-semibold text-emerald-500">
+                File Uploaded Successfully
+              </div>
+
+              <div
+                id="fileName"
+                class="text-xs font-medium opacity-70 break-all">
+              </div>
+
+              <div class="text-xs opacity-40">
+                Click or drop another file to replace
+              </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -214,6 +246,8 @@
   const dropZone = document.getElementById('dropZone')
   const fileInput = document.getElementById('fileInput')
   const fileName = document.getElementById('fileName')
+  const uploadDefault = document.getElementById('uploadDefault')
+  const uploadSuccess = document.getElementById('uploadSuccess')
   const reportDate = document.getElementById('reportDate')
   const runBtn = document.getElementById('runBtn')
   const status = document.getElementById('status')
@@ -239,7 +273,23 @@
   function setFile(file) {
     selectedFile = file
     fileName.textContent = file.name
-    fileName.classList.remove('hidden')
+
+    // Show the uploaded state
+    uploadDefault.classList.add('hidden')
+    uploadSuccess.classList.remove('hidden')
+
+    // Highlight the upload area
+    dropZone.classList.remove(
+      'border-white/20',
+      'bg-white/50',
+      'dark:bg-white/[0.05]'
+    )
+
+    dropZone.classList.add(
+      'border-emerald-500/60',
+      'bg-emerald-500/[0.06]'
+    )
+
     status.textContent = 'File ready'
   }
 
