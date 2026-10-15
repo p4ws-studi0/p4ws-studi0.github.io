@@ -83,6 +83,36 @@
       line-height: 1.15;
     }
 
+    #quickAccessControls > div { width: 100%; min-width: 0; }
+
+    #quickAccessControls > a,
+    #quickAccessControls > div > button {
+      width: 100%;
+      min-width: 0;
+      height: 44px;
+      min-height: 44px;
+      padding: 5px 10px;
+      line-height: 16px;
+    }
+
+    #quickAccessControls > a > span,
+    #quickAccessControls > div > button > span { min-width: 0; }
+
+    #quickAccessControls > a > svg,
+    #quickAccessControls > div > button > svg { flex-shrink: 0; }
+
+    @media (min-width: 640px) {
+      #infoSheetsMenu { left: auto; right: 0; }
+    }
+
+    @media (min-width: 640px) and (max-width: 1023px) {
+      #runCardsMenu { left: auto; right: 0; }
+    }
+
+    @media (min-width: 1024px) {
+      #priceSheetsMenu { left: auto; right: 0; }
+    }
+
     .quick-icon {
       flex: 0 0 auto;
     }
@@ -156,7 +186,7 @@
 
       /* Anchor large searchable menus to the Quick Access card,
          not to whichever grid-cell button opened them. */
-      .searchable-quick-dropdown {
+      #quickAccessControls .searchable-quick-dropdown {
         position: static;
       }
 
@@ -168,6 +198,12 @@
         max-width: none !important;
         max-height: min(26rem, 60vh) !important;
       }
+    }
+    @media (max-width: 379px) {
+      #quickAccessControls > a,
+      #quickAccessControls > div > button { padding: 5px 6px; gap: 4px; font-size: 13px; line-height: 15px; }
+      #quickAccessControls > a > svg,
+      #quickAccessControls > div > button > svg { width: 14px; height: 14px; }
     }
   </style>
 
@@ -277,7 +313,7 @@
       </div>
 
       <!-- Add future quick-access items inside this row -->
-      <div class="relative z-20 grid grid-cols-2 sm:flex sm:flex-wrap items-start gap-2.5">
+      <div id="quickAccessControls" class="relative z-20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
         <a id="occupiedRunsQuickLink" href="/occupied-runs.html"
            class="quick-direct-link inline-flex w-full sm:w-auto min-w-0 min-h-[44px] self-stretch items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/15 text-slate-900 dark:text-white text-sm font-semibold border border-black/10 dark:border-white/15 shadow-soft active:scale-[0.98] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="quick-icon quick-icon-occupied" aria-hidden="true"><path d="M4 21V7l8-4 8 4v14M4 11h16M9 21v-6h6v6M2 21h20" /></svg>
