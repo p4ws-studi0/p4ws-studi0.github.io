@@ -184,6 +184,12 @@
         font-size: 0.875rem;
       }
 
+      #quickAccessControls > a {
+        display: grid;
+        grid-template-columns: 17px minmax(0, 1fr) 17px;
+        text-align: center;
+      }
+
       /* Anchor large searchable menus to the Quick Access card,
          not to whichever grid-cell button opened them. */
       #quickAccessControls .searchable-quick-dropdown {
@@ -202,6 +208,7 @@
     @media (max-width: 379px) {
       #quickAccessControls > a,
       #quickAccessControls > div > button { padding: 5px 6px; gap: 4px; font-size: 13px; line-height: 15px; }
+      #quickAccessControls > a { grid-template-columns: 14px minmax(0, 1fr) 14px; }
       #quickAccessControls > a > svg,
       #quickAccessControls > div > button > svg { width: 14px; height: 14px; }
     }
