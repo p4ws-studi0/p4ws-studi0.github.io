@@ -95,6 +95,14 @@
       line-height: 16px;
     }
 
+    #quickAccessControls > div > button {
+      display: grid;
+      grid-template-columns: 17px minmax(0, 1fr) 17px;
+      text-align: center;
+    }
+
+    #quickAccessControls > div > button > svg:last-child { justify-self: end; }
+
     #quickAccessControls > a > span,
     #quickAccessControls > div > button > span { min-width: 0; }
 
@@ -208,7 +216,8 @@
     @media (max-width: 379px) {
       #quickAccessControls > a,
       #quickAccessControls > div > button { padding: 5px 6px; gap: 4px; font-size: 13px; line-height: 15px; }
-      #quickAccessControls > a { grid-template-columns: 14px minmax(0, 1fr) 14px; }
+      #quickAccessControls > a,
+      #quickAccessControls > div > button { grid-template-columns: 14px minmax(0, 1fr) 14px; }
       #quickAccessControls > a > svg,
       #quickAccessControls > div > button > svg { width: 14px; height: 14px; }
     }
