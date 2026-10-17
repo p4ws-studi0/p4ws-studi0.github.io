@@ -6,7 +6,7 @@
   const clamp = value => Math.max(0, Math.min(1, value));
   // GSAP power1.out: exactly quadratic ease-out, independently per tween.
   const ease = value => 1 - (1 - clamp(value)) ** 2;
-  const path = value => value.replace(/\/index\.html$/, '/').replace(/\/+$/, '') || '/';
+  const path = value => value.replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/\/+$/, '') || '/';
 
   function coverFrame(ms) {
     const x = -110 + 60 * ease(ms / 300);

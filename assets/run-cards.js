@@ -7,7 +7,7 @@
     if (busy || !['today','tomorrow'].includes(startMode)) return;
     const button = document.getElementById('runCardsButton');
     const label = button?.querySelector('.desktop-quick-label');
-    const reportWindow = window.open('/report-loading.html', '_blank');
+    const reportWindow = window.open('/report-loading', '_blank');
     if (!reportWindow) { alert('Please allow pop-ups for Paws HQ.'); return; }
     busy = true;
     if (button) { button.disabled = true; button.setAttribute('aria-busy','true'); }

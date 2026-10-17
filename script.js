@@ -158,17 +158,17 @@ function waitForElement(id, timeout = 5000) {
 
 const PROTECTED_PATHS = [
   '/',              // homepage
-  '/settings.html',
+  '/settings',
   '/kb/',            // if you later add folders
 ]
 
 function isProtectedPage() {
   return PROTECTED_PATHS.some(path =>
-    window.location.pathname.startsWith(path)
+    sidebarPath(window.location.href).startsWith(path)
   )
 }
 async function enforceAuthGate() {
-  const isLoginPage = window.location.pathname === '/login.html'
+  const isLoginPage = sidebarPath(window.location.href) === '/login'
   const body = document.body
 
   // Always show login page immediately
@@ -181,7 +181,7 @@ async function enforceAuthGate() {
   const { data } = await supabaseClient.auth.getSession()
 
   if (!data.session) {
-    window.location.replace('/login.html')
+    window.location.replace('/login')
     return
   }
 
@@ -235,7 +235,7 @@ function indexSidebarSearch(sideMenu) {
     }
     let label = sidebarText(link)
     if (label === 'View all') label = `${sections.at(-1)} overview`
-    if (link.getAttribute('href') === '/kb/index.html') label = 'Knowledge Base'
+    if (sidebarPath(link.getAttribute('href')) === '/kb') label = 'Knowledge Base'
     const context = sections.join(' · ') || (link.closest('.hq-nav-footer') ? 'Account' : 'Quick access')
     return {href:link.getAttribute('href'), label, context, current:link.getAttribute('aria-current') === 'page', kb:link.getAttribute('href').startsWith('/kb/'), search:sidebarFold(`${label} ${context}`)}
   })
@@ -294,7 +294,7 @@ function clearSidebarSearch() {
 function sidebarPath(value) {
   try {
     const path = new URL(value, window.location.origin).pathname
-    return path.replace(/\/index\.html$/, '/').replace(/\/+$/, '') || '/'
+    return path.replace(/\/+$/, '').replace(/\/index(?:\.html)?$/, '').replace(/\.html$/, '') || '/'
   } catch { return '' }
 }
 
@@ -722,17 +722,17 @@ document.addEventListener('click', e => {
 })
 
 // Shared taskbar navigation, after the existing auth and page initialization.
-if (window.location.pathname !== '/login.html') {
+if (sidebarPath(window.location.href) !== '/login') {
   const navigationStyle = document.createElement('link')
   navigationStyle.rel = 'stylesheet'
-  navigationStyle.href = '/assets/paws-navigation.css?v=20261017d'
+  navigationStyle.href = '/assets/paws-navigation.css?v=20261017f'
   document.head.append(navigationStyle)
   const loadNavigation = () => {
     const transitionScript = document.createElement('script')
-    transitionScript.src = '/assets/page-transition.js?v=20261017e'
+    transitionScript.src = '/assets/page-transition.js?v=20261017f'
     document.body.append(transitionScript)
     const navigationScript = document.createElement('script')
-    navigationScript.src = '/assets/paws-navigation.js?v=20261017d'
+    navigationScript.src = '/assets/paws-navigation.js?v=20261017f'
     document.body.append(navigationScript)
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadNavigation, {once:true})

@@ -289,8 +289,8 @@ test('all eight field labels and generous text limits match the backend contract
 });
 
 test('new page is linked once beside Dog Training in the sidebar and has clear table instructions',()=>{
- const sidebar=fs.readFileSync(path.join(root,'partials/sidebar.html'),'utf8');assert.equal((sidebar.match(/href="\/potential-training-clients.html"/g)||[]).length,1);assert.ok(sidebar.indexOf('href="/potential-training-clients.html"')>sidebar.indexOf('href="/training.html"'));assert.ok(sidebar.indexOf('href="/potential-training-clients.html"')<sidebar.indexOf('href="/dog-licenses.html"'));
- assert.doesNotMatch(fs.readFileSync(path.join(root,'index.html'),'utf8'),/potential-training-clients\.html|potential-training-clients\.js/);
+ const sidebar=fs.readFileSync(path.join(root,'partials/sidebar.html'),'utf8');assert.equal((sidebar.match(/href="\/potential-training-clients"/g)||[]).length,1);assert.ok(sidebar.indexOf('href="/potential-training-clients"')>sidebar.indexOf('href="/training"'));assert.ok(sidebar.indexOf('href="/potential-training-clients"')<sidebar.indexOf('href="/dog-licenses"'));
+ assert.doesNotMatch(fs.readFileSync(path.join(root,'index.html'),'utf8'),/href="\/potential-training-clients(?:\.html)?"|potential-training-clients\.js/);
  assert.match(html,/Changes save when you leave a cell/);assert.match(html,/Newest added first/);assert.match(html,/scroll sideways for follow-up and results/);assert.match(html,/scroll horizontally to see all columns/);
 });
 

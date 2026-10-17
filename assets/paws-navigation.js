@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  if (location.pathname === '/login.html') return;
+  if (/^\/login(?:\.html)?\/?$/.test(location.pathname)) return;
   let root = document.getElementById('pawsDesktopRoot');
   if (!root) { root = document.createElement('div'); root.id = 'pawsDesktopRoot'; document.body.append(root); }
   if (root.dataset.ready) return;
@@ -49,15 +49,15 @@
     rose: ['#bd4e70','#f8e7ed','#ef9fb6'], amber: ['#ad761f','#f9eedb','#e9c380'],
   };
   const appStyles = {
-    '/': ['home','accent'], '/kb/index.html': ['book','blue'],
-    '/occupied-runs.html': ['runs','blue'], '/end-of-day.html': ['close','rose'], '/tours.html': ['calendar','violet'],
-    '/training.html': ['training','amber'], '/potential-training-clients.html': ['people','amber'],
-    '/follow-up-calls.html': ['phone','green'], '/grooming-price-list.html': ['grooming','violet'],
-    '/boarding-base-rates.html': ['price','accent'], '/gift-cards.html': ['gift','rose'],
-    '/marketing-initiatives.html': ['megaphone','amber'], '/dog-licenses.html': ['shield','blue'],
-    '/k9-cough.html': ['heart','rose'], '/vet-cheat-sheet.html': ['vet','green'],
-    '/biscuit-baskets.html': ['basket','amber'], '/realtor-info.html': ['building','blue'],
-    '/suggestions.html': ['idea','violet'], '/settings.html': ['settings','accent'],
+    '/': ['home','accent'], '/kb/': ['book','blue'],
+    '/occupied-runs': ['runs','blue'], '/end-of-day': ['close','rose'], '/tours': ['calendar','violet'],
+    '/training': ['training','amber'], '/potential-training-clients': ['people','amber'],
+    '/follow-up-calls': ['phone','green'], '/grooming-price-list': ['grooming','violet'],
+    '/boarding-base-rates': ['price','accent'], '/gift-cards': ['gift','rose'],
+    '/marketing-initiatives': ['megaphone','amber'], '/dog-licenses': ['shield','blue'],
+    '/k9-cough': ['heart','rose'], '/vet-cheat-sheet': ['vet','green'],
+    '/biscuit-baskets': ['basket','amber'], '/realtor-info': ['building','blue'],
+    '/suggestions': ['idea','violet'], '/settings': ['settings','accent'],
   };
   const knowledgeStyles = {
     'Activity Procedures':['training','green'], 'Administrative Procedures':['file','violet'],
@@ -72,7 +72,8 @@
   let previousBodyOverflow = '';
   const previouslyInert = new Map();
   const normalize = value => value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
-  const normalizePath = href => href === '/' || href === '/index.html' ? '/' : href.replace(/\/$/,'/index.html');
+  const normalizePath = href => new URL(href, location.href).pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '');
+  const isKnowledgeLanding = app => app.href.startsWith('/kb/') && normalizePath(app.href).endsWith('/');
   const currentPath = normalizePath(location.pathname);
   const make = (tag, className, text) => { const el = document.createElement(tag); if (className) el.className=className; if (text != null) el.textContent=text; return el; };
 
@@ -90,7 +91,7 @@
     el.style.setProperty('--app-ink',colors[0]); el.style.setProperty('--app-tint',colors[1]); el.style.setProperty('--app-light',colors[2]);
     el.innerHTML = icon(key); el.setAttribute('aria-hidden','true'); return el;
   }
-  function appStyle(app) { return appStyles[app.href] || (app.quickAccess&&quickStyles[app.section]) || knowledgeStyles[app.section] || ['book','blue']; }
+  function appStyle(app) { return appStyles[normalizePath(app.href)] || (app.quickAccess&&quickStyles[app.section]) || knowledgeStyles[app.section] || ['book','blue']; }
   function tileTone(element,palette) {
     const colors=palettes[palette];
     element.style.setProperty('--tile-ink',colors[0]);element.style.setProperty('--tile-tint',colors[1]);element.style.setProperty('--tile-light',colors[2]);
@@ -110,7 +111,7 @@
     return link;
   }
   function knowledgeLink(app) {
-    const category=app.href.endsWith('/index.html');
+    const category=isKnowledgeLanding(app);
     const link=make('a',`desktop-knowledge-link${category?' is-view-all':''}`);link.href=app.href;
     link.setAttribute('aria-label',category?`View all ${app.section||'Knowledge Base'}`:app.title);
     if(normalizePath(app.href)===currentPath)link.setAttribute('aria-current','page');
@@ -128,8 +129,8 @@
       </div>
       <div class="desktop-launcher-content" id="desktopAppContent"></div>
       <div class="desktop-launcher-footer">
-        <a href="/settings.html" id="desktopAccount" class="desktop-team" aria-label="Account settings"><span class="desktop-team-avatar" aria-hidden="true">${svg(paths.person,17)}</span><span><strong>Paws HQ</strong><small>Your account</small></span></a>
-        <div class="desktop-footer-actions"><button type="button" id="desktopPrint" class="desktop-footer-button" aria-label="Print current page" title="Print current page">${svg(paths.print,18)}</button><button type="button" id="desktopTheme" class="desktop-footer-button" aria-label="Switch to dark mode" title="Switch theme">${svg(paths.moon,18)}</button><a href="/settings.html" class="desktop-footer-button" aria-label="Settings" title="Settings">${svg(paths.settings,18)}</a></div>
+        <a href="/settings" id="desktopAccount" class="desktop-team" aria-label="Account settings"><span class="desktop-team-avatar" aria-hidden="true">${svg(paths.person,17)}</span><span><strong>Paws HQ</strong><small>Your account</small></span></a>
+        <div class="desktop-footer-actions"><button type="button" id="desktopPrint" class="desktop-footer-button" aria-label="Print current page" title="Print current page">${svg(paths.print,18)}</button><button type="button" id="desktopTheme" class="desktop-footer-button" aria-label="Switch to dark mode" title="Switch theme">${svg(paths.moon,18)}</button><a href="/settings" class="desktop-footer-button" aria-label="Settings" title="Settings">${svg(paths.settings,18)}</a></div>
       </div>
     </section>
     <nav class="desktop-taskbar" aria-label="Paws HQ taskbar">
@@ -266,12 +267,12 @@
     back.addEventListener('click',()=>currentCategory?navigate('knowledge',null,currentCategory):navigate('pages'));
     const titleRow=make('div','desktop-browse-title-row');
     const title=make('h3','desktop-view-title',currentCategory||'Knowledge Base');title.tabIndex=-1;titleRow.append(title);
-    const landing=kb.find(app=>currentCategory?app.section===currentCategory&&app.href.endsWith('/index.html'):app.href==='/kb/index.html');
+    const landing=kb.find(app=>currentCategory?app.section===currentCategory&&isKnowledgeLanding(app):normalizePath(app.href)==='/kb/');
     if(landing)titleRow.append(knowledgeLink(landing));
     header.append(back,titleRow);panel.querySelector('.desktop-launcher-top').append(header);
     if(currentCategory){
       const list=make('div','desktop-knowledge-list');list.setAttribute('aria-label',currentCategory);
-      for(const app of kb.filter(app=>app.section===currentCategory&&!app.href.endsWith('/index.html')))list.append(knowledgeLink(app));
+      for(const app of kb.filter(app=>app.section===currentCategory&&!isKnowledgeLanding(app)))list.append(knowledgeLink(app));
       content.append(list);return;
     }
     const grid=make('div','desktop-kb-category-grid');grid.setAttribute('aria-label','Knowledge Base categories');
@@ -454,9 +455,9 @@
   function renderAccount(session) {
     const account=root.querySelector('#desktopAccount'),name=account.querySelector('strong'),detail=account.querySelector('small'),avatar=account.querySelector('.desktop-team-avatar');
     const user=session?.user;
-    if(!user){name.textContent='Sign in';detail.textContent='Paws HQ';account.href='/login.html';avatar.innerHTML=svg(paths.person,17);return;}
+    if(!user){name.textContent='Sign in';detail.textContent='Paws HQ';account.href='/login';avatar.innerHTML=svg(paths.person,17);return;}
     name.textContent=user.user_metadata?.full_name||user.user_metadata?.name||'Account';
-    detail.textContent=user.email||'Account settings';account.href='/settings.html';account.title=user.email||'Account settings';
+    detail.textContent=user.email||'Account settings';account.href='/settings';account.title=user.email||'Account settings';
     const avatarUrl=typeof getSlackAvatar==='function'?getSlackAvatar(session):user.user_metadata?.avatar_url||user.user_metadata?.picture;
     avatar.innerHTML=svg(paths.person,17);
     if(avatarUrl){try{const url=new URL(avatarUrl);if(url.protocol==='https:'){const image=document.createElement('img');image.src=url.href;image.alt='';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>{avatar.innerHTML=svg(paths.person,17);},{once:true});avatar.replaceChildren(image);}}catch{}}
@@ -466,10 +467,10 @@
     supabaseClient.auth.onAuthStateChange((_event,session)=>renderAccount(session));
   }
 
-  fetch('/assets/navigation.json?v=20261017c',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
+  fetch('/assets/navigation.json?v=20261017f',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
     apps=data.apps.filter(app=>{
       if(typeof app.href!=='string')return false;
-      if(app.href.startsWith('/')&&!app.href.startsWith('//'))return app.href!=='/digital-whiteboard.html';
+      if(app.href.startsWith('/')&&!app.href.startsWith('//'))return normalizePath(app.href)!=='/digital-whiteboard';
       if(app.quickAccess&&app.kind==='resource'){try{const url=new URL(app.href);return url.protocol==='https:'&&['drive.google.com','docs.google.com'].includes(url.hostname)&&!url.username&&!url.password;}catch{}}
       return false;
     });

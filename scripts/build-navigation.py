@@ -3,7 +3,7 @@
 from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 import re
 import json
 
@@ -27,7 +27,7 @@ ICON_KEYS = {
     'gift-cards': 'gift', 'suggestions': 'bulb',
 }
 
-DIRECT_ONLY_PAGES = {'/digital-whiteboard.html'}
+DIRECT_ONLY_PAGES = {'/digital-whiteboard'}
 
 QUICK_ACCESS_SECTIONS = {
     'runCardsMenu': 'Run Cards', 'printablesMenu': 'Printables',
@@ -76,12 +76,35 @@ def is_quick_access_resource(href: str) -> bool:
         return bool(re.fullmatch(r'/(?:document|spreadsheets)/d/[A-Za-z0-9_-]+/edit/?', url.path))
     return False
 
-def slug_for(href: str) -> str:
+def clean_page_href(href: str) -> str:
+    """Use GitHub Pages' native HTML aliases, retaining directory slashes."""
+    url = urlsplit(href)
+    if url.scheme or url.netloc:
+        return href
+    path = url.path
+    if path.endswith('/index.html'):
+        path = path.removesuffix('index.html')
+    else:
+        path = path.removesuffix('.html')
+    return urlunsplit(url._replace(path=path))
+
+def page_source(repo: Path, href: str) -> Path:
+    """Resolve public clean routes to the existing source HTML files."""
     path = urlsplit(href).path
-    if path in {'/', '/index.html'}:
+    if path.endswith('/'):
+        return repo / path.lstrip('/') / 'index.html'
+    candidate = repo / path.lstrip('/')
+    return candidate if path.endswith('.html') else Path(str(candidate) + '.html')
+
+def slug_for(href: str) -> str:
+    path = urlsplit(clean_page_href(href)).path
+    if path == '/':
         return 'home'
-    if path == '/kb/index.html':
+    if path == '/kb/':
         return 'kb'
+    # Keep existing category IDs stable after changing their public URLs.
+    if path.endswith('/'):
+        path += 'index.html'
     return re.sub(r'[^a-z0-9]+', '-', path.removesuffix('.html').strip('/').lower()).strip('-')
 
 class SidebarParser(HTMLParser):
@@ -121,19 +144,19 @@ class SidebarParser(HTMLParser):
             if self.details:
                 self.details.pop()
         elif tag == 'a' and self.link is not None:
-            href = self.link['href']
+            href = clean_page_href(self.link['href'])
             title = ' '.join(''.join(self.link['text']).split())
             context = self.link['context']
             category = context[0]['label'] if context else 'Paws HQ'
             section = context[-1]['label'] if len(context) > 1 else None
             if title == 'View all' and section:
                 title = section
-            if href == '/kb/index.html':
+            if href == '/kb/':
                 title = 'Knowledge Base'
                 category = 'Knowledge Base'
             app_id = slug_for(href)
             app = {'id': app_id, 'href': href, 'title': title, 'category': category,
-                   'kind': 'article' if href.startswith('/kb/') and not href.endswith('/index.html') else 'page',
+                   'kind': 'article' if href.startswith('/kb/') and not urlsplit(href).path.endswith('/') else 'page',
                    'iconKey': ICON_KEYS.get(app_id, 'book' if href.startswith('/kb/') else 'app')}
             if section:
                 app['section'] = section
@@ -312,7 +335,7 @@ def manifest_from(repo: Path) -> dict:
         path = urlsplit(app['href']).path
         if path in DIRECT_ONLY_PAGES:
             continue
-        candidate = repo / (path.lstrip('/') or 'index.html')
+        candidate = page_source(repo, app['href'])
         if candidate.is_file() and app['href'] not in seen:
             seen.add(app['href'])
             app['aliases'] = aliases_for(app)

@@ -210,3 +210,21 @@ test('head bootstrap leaves no cover for absent, corrupt, expired, mismatched, o
   assert.equal(reduced.attributes.has('data-paws-transition-pending'), false);
   assert.equal(reduced.values.has(KEY), false);
 });
+
+
+test('clean and legacy page aliases share a transition handoff and never animate same-page navigation', () => {
+  for (const [legacy, clean] of [
+    ['/tours.html', '/tours'],
+    ['/settings.html', '/settings'],
+    ['/kb/activity-procedures/index.html', '/kb/activity-procedures/'],
+    ['/kb/activity-procedures/Group_Playtimes.html', '/kb/activity-procedures/Group_Playtimes'],
+  ]) {
+    const oldHref = 'https://hq.pawspet.com' + legacy;
+    const cleanHref = 'https://hq.pawspet.com' + clean;
+    assert.equal(validHandoff({target: oldHref + '?view=week', startedAt: NOW}, cleanHref + '?view=week', NOW), true);
+    assert.equal(validHandoff({target: cleanHref, startedAt: NOW}, oldHref, NOW), true);
+    assert.equal(eligibleHref(anchor(legacy), click(), cleanHref), null);
+    assert.equal(eligibleHref(anchor(clean), click(), oldHref), null);
+  }
+  assert.equal(eligibleHref(anchor('/tours?view=week'), click(), 'https://hq.pawspet.com/'), 'https://hq.pawspet.com/tours?view=week');
+});

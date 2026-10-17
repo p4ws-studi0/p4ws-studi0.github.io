@@ -15,7 +15,7 @@
     },
     {
       "id": "kb",
-      "href": "/kb/index.html",
+      "href": "/kb/",
       "title": "Knowledge Base",
       "category": "Knowledge Base",
       "kind": "page",
@@ -31,7 +31,7 @@
     },
     {
       "id": "kb-activity-procedures-index",
-      "href": "/kb/activity-procedures/index.html",
+      "href": "/kb/activity-procedures/",
       "title": "Activity Procedures",
       "category": "Knowledge Base",
       "kind": "page",
@@ -41,7 +41,7 @@
     },
     {
       "id": "kb-activity-procedures-evaluating-dogs-for-group-play-evaluations",
-      "href": "/kb/activity-procedures/Evaluating_Dogs_for_Group_Play_Evaluations.html",
+      "href": "/kb/activity-procedures/Evaluating_Dogs_for_Group_Play_Evaluations",
       "title": "Evaluating Dogs For Group Play Evaluations",
       "category": "Knowledge Base",
       "kind": "article",
@@ -57,7 +57,7 @@
     },
     {
       "id": "kb-activity-procedures-group-playtimes",
-      "href": "/kb/activity-procedures/Group_Playtimes.html",
+      "href": "/kb/activity-procedures/Group_Playtimes",
       "title": "Group Playtimes",
       "category": "Knowledge Base",
       "kind": "article",
@@ -73,7 +73,7 @@
     },
     {
       "id": "kb-activity-procedures-individual-custom-playtimes",
-      "href": "/kb/activity-procedures/Individual__Custom_Playtimes.html",
+      "href": "/kb/activity-procedures/Individual__Custom_Playtimes",
       "title": "Individual Custom Playtimes",
       "category": "Knowledge Base",
       "kind": "article",
@@ -89,7 +89,7 @@
     },
     {
       "id": "kb-activity-procedures-managing-group-play-sessions",
-      "href": "/kb/activity-procedures/Managing_Group_Play_Sessions.html",
+      "href": "/kb/activity-procedures/Managing_Group_Play_Sessions",
       "title": "Managing Group Play Sessions",
       "category": "Knowledge Base",
       "kind": "article",
@@ -105,7 +105,7 @@
     },
     {
       "id": "kb-activity-procedures-moving-dog-to-individual-play",
-      "href": "/kb/activity-procedures/Moving_Dog_to_Individual_Play.html",
+      "href": "/kb/activity-procedures/Moving_Dog_to_Individual_Play",
       "title": "Moving Dog To Individual Play",
       "category": "Knowledge Base",
       "kind": "article",
@@ -116,7 +116,7 @@
     },
     {
       "id": "kb-activity-procedures-pack-pro-training-reminders",
-      "href": "/kb/activity-procedures/Pack_Pro_Training_Reminders.html",
+      "href": "/kb/activity-procedures/Pack_Pro_Training_Reminders",
       "title": "Pack Pro Training Reminders",
       "category": "Knowledge Base",
       "kind": "article",
@@ -127,7 +127,7 @@
     },
     {
       "id": "kb-activity-procedures-printing-playlist-and-assigning-play-sessions",
-      "href": "/kb/activity-procedures/Printing_Playlist_and_Assigning_Play_Sessions.html",
+      "href": "/kb/activity-procedures/Printing_Playlist_and_Assigning_Play_Sessions",
       "title": "Printing Playlist And Assigning Play Sessions",
       "category": "Knowledge Base",
       "kind": "article",
@@ -143,7 +143,7 @@
     },
     {
       "id": "kb-administrative-procedures-index",
-      "href": "/kb/administrative-procedures/index.html",
+      "href": "/kb/administrative-procedures/",
       "title": "Administrative Procedures",
       "category": "Knowledge Base",
       "kind": "page",
@@ -153,7 +153,7 @@
     },
     {
       "id": "kb-administrative-procedures-preferred-vendors-list",
-      "href": "/kb/administrative-procedures/Preferred_Vendors_List.html",
+      "href": "/kb/administrative-procedures/Preferred_Vendors_List",
       "title": "Preferred Vendors List",
       "category": "Knowledge Base",
       "kind": "article",
@@ -164,7 +164,7 @@
     },
     {
       "id": "kb-company-policies-index",
-      "href": "/kb/company-policies/index.html",
+      "href": "/kb/company-policies/",
       "title": "Company Policies",
       "category": "Knowledge Base",
       "kind": "page",
@@ -174,7 +174,7 @@
     },
     {
       "id": "kb-company-policies-cultivating-a-pawsitive-culture",
-      "href": "/kb/company-policies/Cultivating_a_Pawsitive_Culture_.html",
+      "href": "/kb/company-policies/Cultivating_a_Pawsitive_Culture_",
       "title": "Cultivating A Pawsitive Culture",
       "category": "Knowledge Base",
       "kind": "article",
@@ -185,7 +185,7 @@
     },
     {
       "id": "kb-customer-service-procedures-index",
-      "href": "/kb/customer-service-procedures/index.html",
+      "href": "/kb/customer-service-procedures/",
       "title": "Customer Service Procedures",
       "category": "Knowledge Base",
       "kind": "page",
@@ -195,7 +195,7 @@
     },
     {
       "id": "kb-customer-service-procedures-adding-a-service-addon-to-an-existing-grooming-service",
-      "href": "/kb/customer-service-procedures/Adding_a_Service_Addon_to_an_Existing_Grooming_Service.html",
+      "href": "/kb/customer-service-procedures/Adding_a_Service_Addon_to_an_Existing_Grooming_Service",
       "title": "Adding A Service Addon To An Existing Grooming Service",
       "category": "Knowledge Base",
       "kind": "article",
@@ -211,7 +211,7 @@
     },
     {
       "id": "kb-customer-service-procedures-bad-words-better-replacements",
-      "href": "/kb/customer-service-procedures/Bad_Words__Better_Replacements.html",
+      "href": "/kb/customer-service-procedures/Bad_Words__Better_Replacements",
       "title": "Bad Words Better Replacements",
       "category": "Knowledge Base",
       "kind": "article",
@@ -222,7 +222,7 @@
     },
     {
       "id": "kb-customer-service-procedures-booking-grooming-appointments",
-      "href": "/kb/customer-service-procedures/Booking_Grooming_Appointments.html",
+      "href": "/kb/customer-service-procedures/Booking_Grooming_Appointments",
       "title": "Booking Grooming Appointments",
       "category": "Knowledge Base",
       "kind": "article",
@@ -238,7 +238,7 @@
     },
     {
       "id": "kb-customer-service-procedures-booking-reservations-boarding-and-daycare",
-      "href": "/kb/customer-service-procedures/Booking_Reservations_Boarding_and_Daycare.html",
+      "href": "/kb/customer-service-procedures/Booking_Reservations_Boarding_and_Daycare",
       "title": "Booking Reservations Boarding And Daycare",
       "category": "Knowledge Base",
       "kind": "article",
@@ -254,7 +254,7 @@
     },
     {
       "id": "kb-customer-service-procedures-booking-a-first-day-of-daycare",
-      "href": "/kb/customer-service-procedures/Booking_a_First_Day_of_Daycare.html",
+      "href": "/kb/customer-service-procedures/Booking_a_First_Day_of_Daycare",
       "title": "Booking A First Day Of Daycare",
       "category": "Knowledge Base",
       "kind": "article",
@@ -268,7 +268,7 @@
     },
     {
       "id": "kb-customer-service-procedures-checking-out-pets",
-      "href": "/kb/customer-service-procedures/Checking_Out_Pets.html",
+      "href": "/kb/customer-service-procedures/Checking_Out_Pets",
       "title": "Checking Out Pets",
       "category": "Knowledge Base",
       "kind": "article",
@@ -288,7 +288,7 @@
     },
     {
       "id": "kb-customer-service-procedures-checking-responding-to-emails-and-updating-immunization-records",
-      "href": "/kb/customer-service-procedures/Checking__Responding_to_Emails_and_Updating_Immunization_Records.html",
+      "href": "/kb/customer-service-procedures/Checking__Responding_to_Emails_and_Updating_Immunization_Records",
       "title": "Checking Responding To Emails And Updating Immunization Records",
       "category": "Knowledge Base",
       "kind": "article",
@@ -304,7 +304,7 @@
     },
     {
       "id": "kb-customer-service-procedures-day-care-arrivals-checkin-at-front-desk",
-      "href": "/kb/customer-service-procedures/Day_Care_Arrivals_CheckIn_at_Front_Desk.html",
+      "href": "/kb/customer-service-procedures/Day_Care_Arrivals_CheckIn_at_Front_Desk",
       "title": "Day Care Arrivals Checkin At Front Desk",
       "category": "Knowledge Base",
       "kind": "article",
@@ -320,7 +320,7 @@
     },
     {
       "id": "kb-customer-service-procedures-dropoff-and-pickup-times",
-      "href": "/kb/customer-service-procedures/DropOff_and_PickUp_Times.html",
+      "href": "/kb/customer-service-procedures/DropOff_and_PickUp_Times",
       "title": "Dropoff And Pickup Times",
       "category": "Knowledge Base",
       "kind": "article",
@@ -331,7 +331,7 @@
     },
     {
       "id": "kb-customer-service-procedures-fecal-test-result-chart",
-      "href": "/kb/customer-service-procedures/Fecal_Test_Result_Chart.html",
+      "href": "/kb/customer-service-procedures/Fecal_Test_Result_Chart",
       "title": "Fecal Test Result Chart",
       "category": "Knowledge Base",
       "kind": "article",
@@ -342,7 +342,7 @@
     },
     {
       "id": "kb-customer-service-procedures-filing-and-pulling-daycare-room-cards",
-      "href": "/kb/customer-service-procedures/Filing_and_Pulling_Daycare_Room_Cards.html",
+      "href": "/kb/customer-service-procedures/Filing_and_Pulling_Daycare_Room_Cards",
       "title": "Filing And Pulling Daycare Room Cards",
       "category": "Knowledge Base",
       "kind": "article",
@@ -356,7 +356,7 @@
     },
     {
       "id": "kb-customer-service-procedures-front-desk-receives-inquiry-and-the-reservation-specialist-in-unavailable",
-      "href": "/kb/customer-service-procedures/Front_Desk_Receives_Inquiry_and_the_Reservation_Specialist_in_Unavailable.html",
+      "href": "/kb/customer-service-procedures/Front_Desk_Receives_Inquiry_and_the_Reservation_Specialist_in_Unavailable",
       "title": "Front Desk Receives Inquiry And The Reservation Specialist In Unavailable",
       "category": "Knowledge Base",
       "kind": "article",
@@ -367,7 +367,7 @@
     },
     {
       "id": "kb-customer-service-procedures-gratuity-tips-overview",
-      "href": "/kb/customer-service-procedures/Gratuity_Tips_Overview.html",
+      "href": "/kb/customer-service-procedures/Gratuity_Tips_Overview",
       "title": "Gratuity Tips Overview",
       "category": "Knowledge Base",
       "kind": "article",
@@ -378,7 +378,7 @@
     },
     {
       "id": "kb-customer-service-procedures-late-checkout-fees",
-      "href": "/kb/customer-service-procedures/Late_Checkout_Fees.html",
+      "href": "/kb/customer-service-procedures/Late_Checkout_Fees",
       "title": "Late Checkout Fees",
       "category": "Knowledge Base",
       "kind": "article",
@@ -394,7 +394,7 @@
     },
     {
       "id": "kb-customer-service-procedures-lodging-arrivals-checkin-at-front-desk",
-      "href": "/kb/customer-service-procedures/Lodging_Arrivals_CheckIn_at_Front_Desk.html",
+      "href": "/kb/customer-service-procedures/Lodging_Arrivals_CheckIn_at_Front_Desk",
       "title": "Lodging Arrivals Checkin At Front Desk",
       "category": "Knowledge Base",
       "kind": "article",
@@ -410,7 +410,7 @@
     },
     {
       "id": "kb-customer-service-procedures-long-term-stays",
-      "href": "/kb/customer-service-procedures/Long_Term_Stays.html",
+      "href": "/kb/customer-service-procedures/Long_Term_Stays",
       "title": "Long Term Stays",
       "category": "Knowledge Base",
       "kind": "article",
@@ -421,7 +421,7 @@
     },
     {
       "id": "kb-customer-service-procedures-making-notes-on-reservation-appointment-or-service",
-      "href": "/kb/customer-service-procedures/Making_Notes_on_Reservation_Appointment_or_Service.html",
+      "href": "/kb/customer-service-procedures/Making_Notes_on_Reservation_Appointment_or_Service",
       "title": "Making Notes On Reservation Appointment Or Service",
       "category": "Knowledge Base",
       "kind": "article",
@@ -432,7 +432,7 @@
     },
     {
       "id": "kb-customer-service-procedures-opg-fecal-processing-guide",
-      "href": "/kb/customer-service-procedures/OPG_Fecal_Processing_Guide.html",
+      "href": "/kb/customer-service-procedures/OPG_Fecal_Processing_Guide",
       "title": "Opg Fecal Processing Guide",
       "category": "Knowledge Base",
       "kind": "article",
@@ -443,7 +443,7 @@
     },
     {
       "id": "kb-customer-service-procedures-phone-calls",
-      "href": "/kb/customer-service-procedures/Phone_Calls.html",
+      "href": "/kb/customer-service-procedures/Phone_Calls",
       "title": "Phone Calls",
       "category": "Knowledge Base",
       "kind": "article",
@@ -458,7 +458,7 @@
     },
     {
       "id": "kb-customer-service-procedures-printing-a-room-card",
-      "href": "/kb/customer-service-procedures/Printing_a_Room_Card.html",
+      "href": "/kb/customer-service-procedures/Printing_a_Room_Card",
       "title": "Printing A Room Card",
       "category": "Knowledge Base",
       "kind": "article",
@@ -469,7 +469,7 @@
     },
     {
       "id": "kb-customer-service-procedures-printing-an-id-collar",
-      "href": "/kb/customer-service-procedures/Printing_an_ID_Collar.html",
+      "href": "/kb/customer-service-procedures/Printing_an_ID_Collar",
       "title": "Printing An Id Collar",
       "category": "Knowledge Base",
       "kind": "article",
@@ -480,7 +480,7 @@
     },
     {
       "id": "kb-customer-service-procedures-providing-excellent-customer-service",
-      "href": "/kb/customer-service-procedures/Providing_Excellent_Customer_Service.html",
+      "href": "/kb/customer-service-procedures/Providing_Excellent_Customer_Service",
       "title": "Providing Excellent Customer Service",
       "category": "Knowledge Base",
       "kind": "article",
@@ -491,7 +491,7 @@
     },
     {
       "id": "kb-customer-service-procedures-reception-tasks-before-opening",
-      "href": "/kb/customer-service-procedures/Reception_Tasks_Before_Opening.html",
+      "href": "/kb/customer-service-procedures/Reception_Tasks_Before_Opening",
       "title": "Reception Tasks Before Opening",
       "category": "Knowledge Base",
       "kind": "article",
@@ -502,7 +502,7 @@
     },
     {
       "id": "kb-customer-service-procedures-review-audit-invoices",
-      "href": "/kb/customer-service-procedures/Review__Audit_Invoices.html",
+      "href": "/kb/customer-service-procedures/Review__Audit_Invoices",
       "title": "Review Audit Invoices",
       "category": "Knowledge Base",
       "kind": "article",
@@ -513,7 +513,7 @@
     },
     {
       "id": "kb-customer-service-procedures-room-assignments-and-size-requirements",
-      "href": "/kb/customer-service-procedures/Room_Assignments_and_Size_Requirements.html",
+      "href": "/kb/customer-service-procedures/Room_Assignments_and_Size_Requirements",
       "title": "Room Assignments And Size Requirements",
       "category": "Knowledge Base",
       "kind": "article",
@@ -524,7 +524,7 @@
     },
     {
       "id": "kb-customer-service-procedures-taking-a-message",
-      "href": "/kb/customer-service-procedures/Taking_a_Message.html",
+      "href": "/kb/customer-service-procedures/Taking_a_Message",
       "title": "Taking A Message",
       "category": "Knowledge Base",
       "kind": "article",
@@ -535,7 +535,7 @@
     },
     {
       "id": "kb-customer-service-procedures-understanding-store-credit-and-deposits",
-      "href": "/kb/customer-service-procedures/Understanding_Store_Credit_and_Deposits.html",
+      "href": "/kb/customer-service-procedures/Understanding_Store_Credit_and_Deposits",
       "title": "Understanding Store Credit And Deposits",
       "category": "Knowledge Base",
       "kind": "article",
@@ -546,7 +546,7 @@
     },
     {
       "id": "kb-facility-maintenance-procedures-index",
-      "href": "/kb/facility-maintenance-procedures/index.html",
+      "href": "/kb/facility-maintenance-procedures/",
       "title": "Facility Maintenance Procedures",
       "category": "Knowledge Base",
       "kind": "page",
@@ -556,7 +556,7 @@
     },
     {
       "id": "kb-facility-maintenance-procedures-approved-cleaners-chemicals",
-      "href": "/kb/facility-maintenance-procedures/Approved_Cleaners__Chemicals.html",
+      "href": "/kb/facility-maintenance-procedures/Approved_Cleaners__Chemicals",
       "title": "Approved Cleaners Chemicals",
       "category": "Knowledge Base",
       "kind": "article",
@@ -571,7 +571,7 @@
     },
     {
       "id": "kb-gingr-procedures-index",
-      "href": "/kb/gingr-procedures/index.html",
+      "href": "/kb/gingr-procedures/",
       "title": "Gingr Procedures",
       "category": "Knowledge Base",
       "kind": "page",
@@ -581,7 +581,7 @@
     },
     {
       "id": "kb-gingr-procedures-adding-new-client-or-pet-to-gingr",
-      "href": "/kb/gingr-procedures/Adding_New_Client_or_Pet_to_Gingr.html",
+      "href": "/kb/gingr-procedures/Adding_New_Client_or_Pet_to_Gingr",
       "title": "Adding New Client Or Pet To Gingr",
       "category": "Knowledge Base",
       "kind": "article",
@@ -592,7 +592,7 @@
     },
     {
       "id": "kb-gingr-procedures-daycare-punchcards-overview",
-      "href": "/kb/gingr-procedures/Daycare_Punchcards_Overview.html",
+      "href": "/kb/gingr-procedures/Daycare_Punchcards_Overview",
       "title": "Daycare Punchcards Overview",
       "category": "Knowledge Base",
       "kind": "article",
@@ -606,7 +606,7 @@
     },
     {
       "id": "kb-gingr-procedures-deactivating-a-pet",
-      "href": "/kb/gingr-procedures/Deactivating_a_Pet.html",
+      "href": "/kb/gingr-procedures/Deactivating_a_Pet",
       "title": "Deactivating A Pet",
       "category": "Knowledge Base",
       "kind": "article",
@@ -617,7 +617,7 @@
     },
     {
       "id": "kb-gingr-procedures-editing-or-entering-information-on-a-profile-including-feeding-and-medication-instructions",
-      "href": "/kb/gingr-procedures/Editing_or_Entering_Information_on_a_Profile_Including_Feeding_and_Medication_Instructions.html",
+      "href": "/kb/gingr-procedures/Editing_or_Entering_Information_on_a_Profile_Including_Feeding_and_Medication_Instructions",
       "title": "Editing Or Entering Information On A Profile Including Feeding And Medication Instructions",
       "category": "Knowledge Base",
       "kind": "article",
@@ -638,7 +638,7 @@
     },
     {
       "id": "kb-gingr-procedures-facility-calendar-overview",
-      "href": "/kb/gingr-procedures/Facility_Calendar_Overview.html",
+      "href": "/kb/gingr-procedures/Facility_Calendar_Overview",
       "title": "Facility Calendar Overview",
       "category": "Knowledge Base",
       "kind": "article",
@@ -653,7 +653,7 @@
     },
     {
       "id": "kb-gingr-procedures-gingr-dashboard-overview",
-      "href": "/kb/gingr-procedures/Gingr__Dashboard_Overview.html",
+      "href": "/kb/gingr-procedures/Gingr__Dashboard_Overview",
       "title": "Gingr Dashboard Overview",
       "category": "Knowledge Base",
       "kind": "article",
@@ -664,7 +664,7 @@
     },
     {
       "id": "kb-gingr-procedures-gingr-email-confirmations-and-reminders-overview",
-      "href": "/kb/gingr-procedures/Gingr__Email_Confirmations_and_Reminders_Overview.html",
+      "href": "/kb/gingr-procedures/Gingr__Email_Confirmations_and_Reminders_Overview",
       "title": "Gingr Email Confirmations And Reminders Overview",
       "category": "Knowledge Base",
       "kind": "article",
@@ -675,7 +675,7 @@
     },
     {
       "id": "kb-gingr-procedures-gingr-viewing-user-history-and-outgoing-email-log",
-      "href": "/kb/gingr-procedures/Gingr__Viewing_User_History_and_Outgoing_Email_Log.html",
+      "href": "/kb/gingr-procedures/Gingr__Viewing_User_History_and_Outgoing_Email_Log",
       "title": "Gingr Viewing User History And Outgoing Email Log",
       "category": "Knowledge Base",
       "kind": "article",
@@ -686,7 +686,7 @@
     },
     {
       "id": "kb-gingr-procedures-icons-gingr",
-      "href": "/kb/gingr-procedures/Icons__Gingr.html",
+      "href": "/kb/gingr-procedures/Icons__Gingr",
       "title": "Icons Gingr",
       "category": "Knowledge Base",
       "kind": "article",
@@ -697,7 +697,7 @@
     },
     {
       "id": "kb-gingr-procedures-lodging-calendar-overview",
-      "href": "/kb/gingr-procedures/Lodging_Calendar_Overview.html",
+      "href": "/kb/gingr-procedures/Lodging_Calendar_Overview",
       "title": "Lodging Calendar Overview",
       "category": "Knowledge Base",
       "kind": "article",
@@ -712,7 +712,7 @@
     },
     {
       "id": "kb-gingr-procedures-making-animal-or-owner-notes",
-      "href": "/kb/gingr-procedures/Making_Animal_or_Owner_Notes.html",
+      "href": "/kb/gingr-procedures/Making_Animal_or_Owner_Notes",
       "title": "Making Animal Or Owner Notes",
       "category": "Knowledge Base",
       "kind": "article",
@@ -723,7 +723,7 @@
     },
     {
       "id": "kb-gingr-procedures-making-recurring-or-multiple-reservations-or-appointments-at-once",
-      "href": "/kb/gingr-procedures/Making_Recurring_or_Multiple_Reservations_or_Appointments_at_Once.html",
+      "href": "/kb/gingr-procedures/Making_Recurring_or_Multiple_Reservations_or_Appointments_at_Once",
       "title": "Making Recurring Or Multiple Reservations Or Appointments At Once",
       "category": "Knowledge Base",
       "kind": "article",
@@ -734,7 +734,7 @@
     },
     {
       "id": "kb-gingr-procedures-pulling-up-daycare-list-and-arrival-and-departure-reports",
-      "href": "/kb/gingr-procedures/Pulling_Up_Daycare_List_and_Arrival_and_Departure_Reports.html",
+      "href": "/kb/gingr-procedures/Pulling_Up_Daycare_List_and_Arrival_and_Departure_Reports",
       "title": "Pulling Up Daycare List And Arrival And Departure Reports",
       "category": "Knowledge Base",
       "kind": "article",
@@ -756,7 +756,7 @@
     },
     {
       "id": "kb-gingr-procedures-pulling-up-service-reports",
-      "href": "/kb/gingr-procedures/Pulling_Up_Service_Reports.html",
+      "href": "/kb/gingr-procedures/Pulling_Up_Service_Reports",
       "title": "Pulling Up Service Reports",
       "category": "Knowledge Base",
       "kind": "article",
@@ -767,7 +767,7 @@
     },
     {
       "id": "kb-health-first-aid-index",
-      "href": "/kb/health-first-aid/index.html",
+      "href": "/kb/health-first-aid/",
       "title": "Health First Aid",
       "category": "Knowledge Base",
       "kind": "page",
@@ -777,7 +777,7 @@
     },
     {
       "id": "kb-health-first-aid-acute-colitis-in-dogs",
-      "href": "/kb/health-first-aid/Acute_Colitis_in_Dogs.html",
+      "href": "/kb/health-first-aid/Acute_Colitis_in_Dogs",
       "title": "Acute Colitis In Dogs",
       "category": "Knowledge Base",
       "kind": "article",
@@ -788,7 +788,7 @@
     },
     {
       "id": "kb-health-first-aid-dog-stool-chart",
-      "href": "/kb/health-first-aid/Dog_Stool_Chart.html",
+      "href": "/kb/health-first-aid/Dog_Stool_Chart",
       "title": "Dog Stool Chart",
       "category": "Knowledge Base",
       "kind": "article",
@@ -803,7 +803,7 @@
     },
     {
       "id": "kb-health-first-aid-signs-of-bloat",
-      "href": "/kb/health-first-aid/Signs_of_Bloat.html",
+      "href": "/kb/health-first-aid/Signs_of_Bloat",
       "title": "Signs Of Bloat",
       "category": "Knowledge Base",
       "kind": "article",
@@ -814,7 +814,7 @@
     },
     {
       "id": "kb-other-index",
-      "href": "/kb/other/index.html",
+      "href": "/kb/other/",
       "title": "Other",
       "category": "Knowledge Base",
       "kind": "page",
@@ -824,7 +824,7 @@
     },
     {
       "id": "kb-other-2026-peak-rate-calendar",
-      "href": "/kb/other/2026_Peak_Rate_Calendar.html",
+      "href": "/kb/other/2026_Peak_Rate_Calendar",
       "title": "2026 Peak Rate Calendar",
       "category": "Knowledge Base",
       "kind": "article",
@@ -839,7 +839,7 @@
     },
     {
       "id": "kb-other-2027-peak-rate-calendar",
-      "href": "/kb/other/2027_Peak_Rate_Calendar.html",
+      "href": "/kb/other/2027_Peak_Rate_Calendar",
       "title": "2027 Peak Rate Calendar",
       "category": "Knowledge Base",
       "kind": "article",
@@ -854,7 +854,7 @@
     },
     {
       "id": "kb-other-common-dog-breeds",
-      "href": "/kb/other/Common_Dog_Breeds.html",
+      "href": "/kb/other/Common_Dog_Breeds",
       "title": "Common Dog Breeds",
       "category": "Knowledge Base",
       "kind": "article",
@@ -865,7 +865,7 @@
     },
     {
       "id": "kb-other-lodging-area-map",
-      "href": "/kb/other/Lodging_Area_Map.html",
+      "href": "/kb/other/Lodging_Area_Map",
       "title": "Lodging Area Map",
       "category": "Knowledge Base",
       "kind": "article",
@@ -881,7 +881,7 @@
     },
     {
       "id": "kb-other-our-mission",
-      "href": "/kb/other/Our_Mission.html",
+      "href": "/kb/other/Our_Mission",
       "title": "Our Mission",
       "category": "Knowledge Base",
       "kind": "article",
@@ -892,7 +892,7 @@
     },
     {
       "id": "kb-other-paws-terminology",
-      "href": "/kb/other/Paws_Terminology.html",
+      "href": "/kb/other/Paws_Terminology",
       "title": "Paws Terminology",
       "category": "Knowledge Base",
       "kind": "article",
@@ -903,7 +903,7 @@
     },
     {
       "id": "kb-other-pet-handling-basics",
-      "href": "/kb/other/Pet_Handling_Basics.html",
+      "href": "/kb/other/Pet_Handling_Basics",
       "title": "Pet Handling Basics",
       "category": "Knowledge Base",
       "kind": "article",
@@ -914,7 +914,7 @@
     },
     {
       "id": "kb-other-staff-scheduling",
-      "href": "/kb/other/Staff_Scheduling.html",
+      "href": "/kb/other/Staff_Scheduling",
       "title": "Staff Scheduling",
       "category": "Knowledge Base",
       "kind": "article",
@@ -925,7 +925,7 @@
     },
     {
       "id": "kb-petcare-procedures-index",
-      "href": "/kb/petcare-procedures/index.html",
+      "href": "/kb/petcare-procedures/",
       "title": "Petcare Procedures",
       "category": "Knowledge Base",
       "kind": "page",
@@ -935,7 +935,7 @@
     },
     {
       "id": "kb-petcare-procedures-bedtime-story-tuckin",
-      "href": "/kb/petcare-procedures/Bedtime_Story_Tuckin.html",
+      "href": "/kb/petcare-procedures/Bedtime_Story_Tuckin",
       "title": "Bedtime Story Tuckin",
       "category": "Knowledge Base",
       "kind": "article",
@@ -946,7 +946,7 @@
     },
     {
       "id": "kb-petcare-procedures-cleaning-up-diarrhea-andor-vomit",
-      "href": "/kb/petcare-procedures/Cleaning_Up_Diarrhea_andor_Vomit.html",
+      "href": "/kb/petcare-procedures/Cleaning_Up_Diarrhea_andor_Vomit",
       "title": "Cleaning Up Diarrhea Andor Vomit",
       "category": "Knowledge Base",
       "kind": "article",
@@ -967,7 +967,7 @@
     },
     {
       "id": "kb-petcare-procedures-completing-eliminations-and-walks",
-      "href": "/kb/petcare-procedures/Completing_Eliminations_and_Walks.html",
+      "href": "/kb/petcare-procedures/Completing_Eliminations_and_Walks",
       "title": "Completing Eliminations And Walks",
       "category": "Knowledge Base",
       "kind": "article",
@@ -978,7 +978,7 @@
     },
     {
       "id": "kb-petcare-procedures-completing-laundry",
-      "href": "/kb/petcare-procedures/Completing_Laundry.html",
+      "href": "/kb/petcare-procedures/Completing_Laundry",
       "title": "Completing Laundry",
       "category": "Knowledge Base",
       "kind": "article",
@@ -989,7 +989,7 @@
     },
     {
       "id": "kb-petcare-procedures-creating-an-incident-report",
-      "href": "/kb/petcare-procedures/Creating_an_Incident_Report.html",
+      "href": "/kb/petcare-procedures/Creating_an_Incident_Report",
       "title": "Creating An Incident Report",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1000,7 +1000,7 @@
     },
     {
       "id": "kb-petcare-procedures-daily-cleaning-for-east-west-outside-west-and-inbetween",
-      "href": "/kb/petcare-procedures/Daily_Cleaning_for_East_West_Outside_West_and_InBetween.html",
+      "href": "/kb/petcare-procedures/Daily_Cleaning_for_East_West_Outside_West_and_InBetween",
       "title": "Daily Cleaning For East West Outside West And Inbetween",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1015,7 +1015,7 @@
     },
     {
       "id": "kb-petcare-procedures-daycare-and-boarding-lunches-gourmet-treats",
-      "href": "/kb/petcare-procedures/Daycare_and_Boarding_Lunches__Gourmet_Treats.html",
+      "href": "/kb/petcare-procedures/Daycare_and_Boarding_Lunches__Gourmet_Treats",
       "title": "Daycare And Boarding Lunches Gourmet Treats",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1031,7 +1031,7 @@
     },
     {
       "id": "kb-petcare-procedures-departure-assessment",
-      "href": "/kb/petcare-procedures/Departure_Assessment.html",
+      "href": "/kb/petcare-procedures/Departure_Assessment",
       "title": "Departure Assessment",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1047,7 +1047,7 @@
     },
     {
       "id": "kb-petcare-procedures-dilution-of-cleaning-solutions",
-      "href": "/kb/petcare-procedures/Dilution_of_Cleaning_Solutions.html",
+      "href": "/kb/petcare-procedures/Dilution_of_Cleaning_Solutions",
       "title": "Dilution Of Cleaning Solutions",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1062,7 +1062,7 @@
     },
     {
       "id": "kb-petcare-procedures-filling-out-room-cards",
-      "href": "/kb/petcare-procedures/Filling_Out_Room_Cards.html",
+      "href": "/kb/petcare-procedures/Filling_Out_Room_Cards",
       "title": "Filling Out Room Cards",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1073,7 +1073,7 @@
     },
     {
       "id": "kb-petcare-procedures-group-play-restrictions",
-      "href": "/kb/petcare-procedures/Group_Play_Restrictions.html",
+      "href": "/kb/petcare-procedures/Group_Play_Restrictions",
       "title": "Group Play Restrictions",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1089,7 +1089,7 @@
     },
     {
       "id": "kb-petcare-procedures-guest-restrictions",
-      "href": "/kb/petcare-procedures/Guest_Restrictions.html",
+      "href": "/kb/petcare-procedures/Guest_Restrictions",
       "title": "Guest Restrictions",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1100,7 +1100,7 @@
     },
     {
       "id": "kb-petcare-procedures-handling-stool",
-      "href": "/kb/petcare-procedures/Handling_Stool.html",
+      "href": "/kb/petcare-procedures/Handling_Stool",
       "title": "Handling Stool",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1115,7 +1115,7 @@
     },
     {
       "id": "kb-petcare-procedures-looking-tour-ready",
-      "href": "/kb/petcare-procedures/Looking_Tour_Ready.html",
+      "href": "/kb/petcare-procedures/Looking_Tour_Ready",
       "title": "Looking Tour Ready",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1126,7 +1126,7 @@
     },
     {
       "id": "kb-petcare-procedures-performing-a-wellness-check",
-      "href": "/kb/petcare-procedures/Performing_a_Wellness_Check.html",
+      "href": "/kb/petcare-procedures/Performing_a_Wellness_Check",
       "title": "Performing A Wellness Check",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1137,7 +1137,7 @@
     },
     {
       "id": "kb-petcare-procedures-place-soiled-bedding-in-laundry",
-      "href": "/kb/petcare-procedures/Place_Soiled_Bedding_in_Laundry.html",
+      "href": "/kb/petcare-procedures/Place_Soiled_Bedding_in_Laundry",
       "title": "Place Soiled Bedding In Laundry",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1148,7 +1148,7 @@
     },
     {
       "id": "kb-petcare-procedures-preparing-am-pm-feeds",
-      "href": "/kb/petcare-procedures/Preparing_AM__PM_Feeds.html",
+      "href": "/kb/petcare-procedures/Preparing_AM__PM_Feeds",
       "title": "Preparing Am Pm Feeds",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1165,7 +1165,7 @@
     },
     {
       "id": "kb-petcare-procedures-preparing-suites-for-arrivals",
-      "href": "/kb/petcare-procedures/Preparing_Suites_for_Arrivals.html",
+      "href": "/kb/petcare-procedures/Preparing_Suites_for_Arrivals",
       "title": "Preparing Suites For Arrivals",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1181,7 +1181,7 @@
     },
     {
       "id": "kb-petcare-procedures-pull-luggage-for-departing-guests-aka-appointment-notes",
-      "href": "/kb/petcare-procedures/Pull_Luggage_for_Departing_Guests_aka_Appointment_Notes.html",
+      "href": "/kb/petcare-procedures/Pull_Luggage_for_Departing_Guests_aka_Appointment_Notes",
       "title": "Pull Luggage For Departing Guests Aka Appointment Notes",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1192,7 +1192,7 @@
     },
     {
       "id": "kb-petcare-procedures-required-vaccinations-policy",
-      "href": "/kb/petcare-procedures/Required_Vaccinations_Policy.html",
+      "href": "/kb/petcare-procedures/Required_Vaccinations_Policy",
       "title": "Required Vaccinations Policy",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1207,7 +1207,7 @@
     },
     {
       "id": "kb-petcare-procedures-sanitize-outdoor-areas",
-      "href": "/kb/petcare-procedures/Sanitize_Outdoor_Areas.html",
+      "href": "/kb/petcare-procedures/Sanitize_Outdoor_Areas",
       "title": "Sanitize Outdoor Areas",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1222,7 +1222,7 @@
     },
     {
       "id": "kb-petcare-procedures-serving-food-and-medications-to-guests-and-refilling-water",
-      "href": "/kb/petcare-procedures/Serving_Food_and_Medications_to_Guests_and_Refilling_Water.html",
+      "href": "/kb/petcare-procedures/Serving_Food_and_Medications_to_Guests_and_Refilling_Water",
       "title": "Serving Food And Medications To Guests And Refilling Water",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1243,7 +1243,7 @@
     },
     {
       "id": "kb-petcare-procedures-social-media-posts",
-      "href": "/kb/petcare-procedures/Social_Media_Posts.html",
+      "href": "/kb/petcare-procedures/Social_Media_Posts",
       "title": "Social Media Posts",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1254,7 +1254,7 @@
     },
     {
       "id": "kb-petcare-procedures-taking-and-sending-pictures",
-      "href": "/kb/petcare-procedures/Taking_and_Sending_Pictures.html",
+      "href": "/kb/petcare-procedures/Taking_and_Sending_Pictures",
       "title": "Taking And Sending Pictures",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1265,7 +1265,7 @@
     },
     {
       "id": "kb-petcare-procedures-washing-dishes",
-      "href": "/kb/petcare-procedures/Washing_Dishes.html",
+      "href": "/kb/petcare-procedures/Washing_Dishes",
       "title": "Washing Dishes",
       "category": "Knowledge Base",
       "kind": "article",
@@ -1276,7 +1276,7 @@
     },
     {
       "id": "occupied-runs",
-      "href": "/occupied-runs.html",
+      "href": "/occupied-runs",
       "title": "Occupied Runs",
       "category": "Front Desk",
       "kind": "page",
@@ -1291,7 +1291,7 @@
     },
     {
       "id": "tours",
-      "href": "/tours.html",
+      "href": "/tours",
       "title": "Tours",
       "category": "Front Desk",
       "kind": "page",
@@ -1305,7 +1305,7 @@
     },
     {
       "id": "follow-up-calls",
-      "href": "/follow-up-calls.html",
+      "href": "/follow-up-calls",
       "title": "Client Follow-Up Calls",
       "category": "Front Desk",
       "kind": "page",
@@ -1319,7 +1319,7 @@
     },
     {
       "id": "grooming-price-list",
-      "href": "/grooming-price-list.html",
+      "href": "/grooming-price-list",
       "title": "Grooming Price List",
       "category": "Front Desk",
       "kind": "page",
@@ -1334,7 +1334,7 @@
     },
     {
       "id": "boarding-base-rates",
-      "href": "/boarding-base-rates.html",
+      "href": "/boarding-base-rates",
       "title": "Dog Boarding Base Rates",
       "category": "Front Desk",
       "kind": "page",
@@ -1349,7 +1349,7 @@
     },
     {
       "id": "training",
-      "href": "/training.html",
+      "href": "/training",
       "title": "Dog Training",
       "category": "Pet Care & Training",
       "kind": "page",
@@ -1363,7 +1363,7 @@
     },
     {
       "id": "potential-training-clients",
-      "href": "/potential-training-clients.html",
+      "href": "/potential-training-clients",
       "title": "Potential Training Clients",
       "category": "Pet Care & Training",
       "kind": "page",
@@ -1377,7 +1377,7 @@
     },
     {
       "id": "dog-licenses",
-      "href": "/dog-licenses.html",
+      "href": "/dog-licenses",
       "title": "Dog Licenses",
       "category": "Pet Care & Training",
       "kind": "page",
@@ -1393,7 +1393,7 @@
     },
     {
       "id": "k9-cough",
-      "href": "/k9-cough.html",
+      "href": "/k9-cough",
       "title": "K9 Cough",
       "category": "Pet Care & Training",
       "kind": "page",
@@ -1408,7 +1408,7 @@
     },
     {
       "id": "vet-cheat-sheet",
-      "href": "/vet-cheat-sheet.html",
+      "href": "/vet-cheat-sheet",
       "title": "Vet Cheat Sheet",
       "category": "Pet Care & Training",
       "kind": "page",
@@ -1422,7 +1422,7 @@
     },
     {
       "id": "marketing-initiatives",
-      "href": "/marketing-initiatives.html",
+      "href": "/marketing-initiatives",
       "title": "Marketing Initiatives",
       "category": "Marketing & Outreach",
       "kind": "page",
@@ -1436,7 +1436,7 @@
     },
     {
       "id": "biscuit-baskets",
-      "href": "/biscuit-baskets.html",
+      "href": "/biscuit-baskets",
       "title": "Biscuit Baskets",
       "category": "Marketing & Outreach",
       "kind": "page",
@@ -1450,7 +1450,7 @@
     },
     {
       "id": "realtor-info",
-      "href": "/realtor-info.html",
+      "href": "/realtor-info",
       "title": "Realtor Info",
       "category": "Marketing & Outreach",
       "kind": "page",
@@ -1463,7 +1463,7 @@
     },
     {
       "id": "end-of-day",
-      "href": "/end-of-day.html",
+      "href": "/end-of-day",
       "title": "End Of Day",
       "category": "Office & Team",
       "kind": "page",
@@ -1483,7 +1483,7 @@
     },
     {
       "id": "gift-cards",
-      "href": "/gift-cards.html",
+      "href": "/gift-cards",
       "title": "Gift Cards",
       "category": "Office & Team",
       "kind": "page",
@@ -1498,7 +1498,7 @@
     },
     {
       "id": "suggestions",
-      "href": "/suggestions.html",
+      "href": "/suggestions",
       "title": "Suggestions",
       "category": "Office & Team",
       "kind": "page",
@@ -1512,7 +1512,7 @@
     },
     {
       "id": "settings",
-      "href": "/settings.html",
+      "href": "/settings",
       "title": "Settings",
       "category": "Paws HQ",
       "kind": "page",

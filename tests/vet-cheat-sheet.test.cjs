@@ -273,8 +273,8 @@ test('deleted vet details preserve all seven values and can be restored after th
 });
 
 test('entry page is linked only in the sidebar and includes clear search, table and saving instructions',()=>{
- assert.equal((fs.readFileSync(path.join(root,'partials/sidebar.html'),'utf8').match(/href="\/vet-cheat-sheet.html"/g)||[]).length,1);
- assert.doesNotMatch(fs.readFileSync(path.join(root,'index.html'),'utf8'),/vet-cheat-sheet\.html|vet-cheat-sheet\.js/);
+ assert.equal((fs.readFileSync(path.join(root,'partials/sidebar.html'),'utf8').match(/href="\/vet-cheat-sheet"/g)||[]).length,1);
+ assert.doesNotMatch(fs.readFileSync(path.join(root,'index.html'),'utf8'),/href="\/vet-cheat-sheet(?:\.html)?"|vet-cheat-sheet\.js/);
  assert.match(html,/Changes save when you leave a cell/);assert.match(html,/Alphabetical by veterinarian/);assert.match(html,/scroll horizontally to see all columns/);
  assert.equal((html.match(/<th scope="col">/g)||[]).length,8);
 });

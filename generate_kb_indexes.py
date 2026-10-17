@@ -29,7 +29,7 @@ def generate_index(folder_path):
     for file in files:
         title = titleize(file.replace(".html", ""))
         cards.append(f"""
-        <a href="{file}"
+        <a href="{file.removesuffix('.html')}"
            class="
              p-5 rounded-2xl
              bg-white/40 dark:bg-white/10
@@ -78,7 +78,7 @@ def generate_sidebar():
         for file in files:
             title = titleize(file.replace(".html", ""))
             file_links.append(f"""
-            <a href="/kb/{cat}/{file}"
+            <a href="/kb/{cat}/{file.removesuffix('.html')}"
                class="block px-4 py-2 rounded-md
                       text-base
                       hover:bg-black/5 dark:hover:bg-white/10 transition">
@@ -110,7 +110,7 @@ def generate_sidebar():
             "
           >
             <div class="overflow-hidden">
-              <a href="/kb/{cat}/index.html"
+              <a href="/kb/{cat}/"
                  class="block px-4 py-1.5 text-sm opacity-60 hover:opacity-100 transition">
                 View all
               </a>
@@ -157,13 +157,13 @@ def generate_sidebar():
 
 
 
-    <a href="/occupied-runs.html"
+    <a href="/occupied-runs"
      class="block px-4 py-2.5 rounded-lg font-semibold
             hover:bg-black/5 dark:hover:bg-white/10 transition">
     🏘 Occupied Runs
   </a>
   
-  <a href="/settings.html"
+  <a href="/settings"
      class="block px-4 py-2.5 rounded-lg font-semibold
             hover:bg-black/5 dark:hover:bg-white/10 transition">
     ⚙️ Settings

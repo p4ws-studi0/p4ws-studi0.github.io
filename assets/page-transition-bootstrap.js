@@ -9,7 +9,7 @@
     const pending = JSON.parse(raw);
     if (!pending || typeof pending.target !== 'string' || !Number.isFinite(pending.startedAt)) return;
     const target = new URL(pending.target), current = new URL(location.href);
-    const path = value => value.replace(/\/index\.html$/, '/').replace(/\/+$/, '') || '/';
+    const path = value => value.replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/\/+$/, '') || '/';
     const age = Date.now() - pending.startedAt;
     if (age < 0 || age > 8000 || target.origin !== current.origin || path(target.pathname) !== path(current.pathname) || target.search !== current.search) return;
     document.documentElement.setAttribute('data-paws-transition-pending', '');
