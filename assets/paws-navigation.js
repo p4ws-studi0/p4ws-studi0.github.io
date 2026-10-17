@@ -133,7 +133,7 @@
       </div>
     </section>
     <nav class="desktop-taskbar" aria-label="Paws HQ taskbar">
-      <a href="/" id="desktopHome" class="desktop-dock-item desktop-start" aria-label="Home"${currentPath==='/'?' aria-current="page"':''}><img src="/paws-crown.png?v=20261017c" alt=""><span class="desktop-dock-tooltip" aria-hidden="true">Home</span></a>
+      <a href="/" id="desktopHome" class="desktop-dock-item desktop-start" aria-label="Home"${currentPath==='/'?' aria-current="page"':''}><img src="/paws-crown.png?v=20261017d" alt=""><span class="desktop-dock-tooltip" aria-hidden="true">Home</span></a>
       <button type="button" id="desktopSearchOpen" class="desktop-dock-item" aria-label="Open Paws menu" aria-expanded="false" aria-haspopup="dialog" aria-controls="desktopLauncher">${svg(paths.menu,24)}<span class="desktop-dock-tooltip" aria-hidden="true">Menu</span></button>
     </nav>
     <div class="desktop-toast" id="desktopToast" role="status" hidden></div>

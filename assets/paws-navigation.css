@@ -64,8 +64,7 @@ body.paws-desktop-navigation #footer { display: none !important; }
 #pawsDesktopRoot #desktopSearchOpen:hover { color: var(--desktop-accent); }
 .desktop-dock-item .desktop-app-symbol { width: 28px; height: 28px; border-radius: 7px; }
 .desktop-dock-item .desktop-app-symbol svg { width: 19px; height: 19px; }
-.desktop-start img { display: block; width: 33px; height: 33px; align-self: center; flex-shrink: 0; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); transition: transform 150ms ease-out; }
-.dark .desktop-start img { filter: drop-shadow(0 1px 1px rgba(0,0,0,.18)); }
+.desktop-start img { display: block; width: 33px; height: 33px; align-self: center; flex-shrink: 0; object-fit: contain; transition: transform 150ms ease-out; }
 .desktop-start:hover img { transform: scale(1.02); }
 .desktop-dock-item[aria-current="page"]::after { content: ""; position: absolute; bottom: 1px; height: 3px; width: 14px; border-radius: 2px; background: var(--desktop-accent); }
 .desktop-dock-tooltip { pointer-events: none; position: absolute; left: 50%; bottom: calc(100% + 10px); white-space: nowrap; transform: translate(-50%, 4px); padding: 6px 10px; border: 1px solid var(--desktop-line); border-radius: 6px; background: var(--desktop-surface); color: var(--desktop-text); box-shadow: 0 5px 20px rgba(0,0,0,.08); opacity: 0; transition: opacity 140ms, transform 140ms; font-size: 12px; }

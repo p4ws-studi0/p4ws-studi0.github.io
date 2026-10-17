@@ -725,14 +725,14 @@ document.addEventListener('click', e => {
 if (window.location.pathname !== '/login.html') {
   const navigationStyle = document.createElement('link')
   navigationStyle.rel = 'stylesheet'
-  navigationStyle.href = '/assets/paws-navigation.css?v=20261017c'
+  navigationStyle.href = '/assets/paws-navigation.css?v=20261017d'
   document.head.append(navigationStyle)
   const loadNavigation = () => {
     const transitionScript = document.createElement('script')
-    transitionScript.src = '/assets/page-transition.js?v=20261017c'
+    transitionScript.src = '/assets/page-transition.js?v=20261017d'
     document.body.append(transitionScript)
     const navigationScript = document.createElement('script')
-    navigationScript.src = '/assets/paws-navigation.js?v=20261017c'
+    navigationScript.src = '/assets/paws-navigation.js?v=20261017d'
     document.body.append(navigationScript)
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadNavigation, {once:true})

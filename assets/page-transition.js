@@ -71,7 +71,7 @@
     const logo = doc.createElement('div');
     logo.className = 'paws-page-transition-logo';
     const image = doc.createElement('img');
-    image.src = '/paws-crown.png?v=20261017c';
+    image.src = '/assets/page-transition-crown.png?v=20261017d';
     image.alt = '';
     image.width = 320;
     image.height = 203;
