@@ -63,6 +63,7 @@ QUICK_ACCESS_ALIASES = {
     'OPG Fecal Processing Guide': ['opg', 'fecal processing', 'poop sample', 'stool sample'],
     'Dog Space Requirements': ['dog space requirements', 'kennel sizes', 'room sizes', 'space guide'],
     '2027 Peak Calendar': ['2027 peak calendar', '2027 holiday dates', 'peak dates'],
+    'Career Advancement Chart': ['career chart', 'career advancement', 'career progression', 'employee levels', 'promotions', 'career ladder'],
 }
 
 def is_quick_access_resource(href: str) -> bool:
@@ -72,7 +73,7 @@ def is_quick_access_resource(href: str) -> bool:
     if url.netloc == 'drive.google.com':
         return bool(re.fullmatch(r'/file/d/[A-Za-z0-9_-]+/view/?', url.path))
     if url.netloc == 'docs.google.com':
-        return bool(re.fullmatch(r'/document/d/[A-Za-z0-9_-]+/edit/?', url.path))
+        return bool(re.fullmatch(r'/(?:document|spreadsheets)/d/[A-Za-z0-9_-]+/edit/?', url.path))
     return False
 
 def slug_for(href: str) -> str:

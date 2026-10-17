@@ -725,11 +725,11 @@ document.addEventListener('click', e => {
 if (window.location.pathname !== '/login.html') {
   const navigationStyle = document.createElement('link')
   navigationStyle.rel = 'stylesheet'
-  navigationStyle.href = '/assets/paws-navigation.css?v=20261017a'
+  navigationStyle.href = '/assets/paws-navigation.css?v=20261017b'
   document.head.append(navigationStyle)
   const loadNavigation = () => {
     const navigationScript = document.createElement('script')
-    navigationScript.src = '/assets/paws-navigation.js?v=20261017a'
+    navigationScript.src = '/assets/paws-navigation.js?v=20261017b'
     document.body.append(navigationScript)
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadNavigation, {once:true})

@@ -35,6 +35,7 @@
 html:has(body.paws-desktop-navigation) { scrollbar-gutter: stable; scroll-padding-bottom: 100px; }
 body.paws-desktop-navigation { padding-bottom: calc(var(--desktop-bar-height) + env(safe-area-inset-bottom) + 22px); }
 .paws-desktop-navigation #header, .paws-desktop-navigation #sideMenu { display: none !important; }
+body.paws-desktop-navigation #footer { display: none !important; }
 .paws-desktop-navigation > .pt-16 { padding-top: 0 !important; }
 .paws-desktop-navigation main { padding-top: 40px !important; }
 .dark body.paws-desktop-navigation { background: linear-gradient(135deg, #111315, #202226) !important; }
@@ -343,40 +344,37 @@ body.paws-desktop-navigation.wb-focus #pawsDesktopRoot { display: none; }
 .desktop-team-avatar { overflow: hidden; }
 .desktop-team-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 
-/* Match homepage tour actions to the measured Quick Access tile geometry. */
+/* Compact, identical white actions for the homepage tour schedule. */
 body.paws-desktop-navigation .home-tours-heading { flex-wrap: wrap; }
 body.paws-desktop-navigation .home-tours-heading-actions {
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
-  width: calc(var(--desktop-quick-tile-width,173px) * 2 + 8px);
+  width: 280px;
   max-width: 100%;
   gap: 8px;
   margin-left: auto;
 }
-body.paws-desktop-navigation .home-tours-heading-actions > * {
+body.paws-desktop-navigation .home-tours-heading-actions > :is(a,button) {
   width: 100%;
-  height: 46px;
-  min-height: 46px;
+  height: 36px;
+  min-height: 36px;
   min-width: 0;
   padding: 4px 8px;
+  border: 1px solid var(--desktop-tile-line);
   border-radius: 7px;
+  background: #fff;
+  color: #17212d;
   font: 500 12px/15px Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   text-align: center;
-}
-body.paws-desktop-navigation .home-tours-open { background: var(--desktop-tile); border-color: var(--desktop-tile-line); }
-body.paws-desktop-navigation .home-tours-add {
-  background: hsl(224 24% 86%);
-  border-color: hsl(224 24% 78%);
-  color: #334363;
   transition: background 150ms ease-out, border-color 150ms ease-out;
 }
-.dark body.paws-desktop-navigation .home-tours-add { background: hsl(224 18% 24%); border-color: hsl(224 22% 36%); color: #dce5ff; }
-@media (hover: hover) and (pointer: fine) {
-  body.paws-desktop-navigation .home-tours-add:hover:not(:disabled) { background: hsl(224 70% 76%); border-color: hsl(224 64% 68%); }
-  .dark body.paws-desktop-navigation .home-tours-add:hover:not(:disabled) { background: hsl(224 44% 34%); border-color: hsl(224 46% 48%); }
+body.paws-desktop-navigation .home-tours-heading-actions > :is(a,button):hover {
+  background: #fff;
+  color: #17212d;
+  border-color: #bfc6d1;
 }
 @media (max-width: 620px) {
-  body.paws-desktop-navigation .home-tours-heading-actions { max-width: calc(100% + 12px); margin-inline: -6px; }
+  body.paws-desktop-navigation .home-tours-heading-actions { width: 100%; max-width: 100%; margin-inline: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   body.paws-desktop-navigation .home-tours-add { transition: none; }

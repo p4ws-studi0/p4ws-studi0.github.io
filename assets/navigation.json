@@ -1957,6 +1957,26 @@
       "category": "Quick Access",
       "section": "Info Sheets",
       "quickAccess": true
+    },
+    {
+      "id": "quick-access-info-sheets-career-advancement-chart",
+      "href": "https://docs.google.com/spreadsheets/d/1_Y2wKwY1z2cbr2CVOmFpKPcpBvAszQyCpQNRy3CUTAo/edit?gid=1607750651#gid=1607750651",
+      "title": "Career Advancement Chart",
+      "kind": "resource",
+      "iconKey": "book",
+      "aliases": [
+        "career chart",
+        "career advancement",
+        "career progression",
+        "employee levels",
+        "promotions",
+        "career ladder",
+        "info sheets",
+        "quick access"
+      ],
+      "category": "Quick Access",
+      "section": "Info Sheets",
+      "quickAccess": true
     }
   ],
   "categories": [

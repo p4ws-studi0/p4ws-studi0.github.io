@@ -466,7 +466,7 @@
     supabaseClient.auth.onAuthStateChange((_event,session)=>renderAccount(session));
   }
 
-  fetch('/assets/navigation.json?v=20261017a',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
+  fetch('/assets/navigation.json?v=20261017b',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
     apps=data.apps.filter(app=>{
       if(typeof app.href!=='string')return false;
       if(app.href.startsWith('/')&&!app.href.startsWith('//'))return app.href!=='/digital-whiteboard.html';
