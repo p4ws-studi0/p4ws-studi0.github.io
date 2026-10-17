@@ -729,7 +729,7 @@ if (window.location.pathname !== '/login.html') {
   document.head.append(navigationStyle)
   const loadNavigation = () => {
     const transitionScript = document.createElement('script')
-    transitionScript.src = '/assets/page-transition.js?v=20261017d'
+    transitionScript.src = '/assets/page-transition.js?v=20261017e'
     document.body.append(transitionScript)
     const navigationScript = document.createElement('script')
     navigationScript.src = '/assets/paws-navigation.js?v=20261017d'

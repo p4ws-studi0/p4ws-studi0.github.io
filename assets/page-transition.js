@@ -155,10 +155,6 @@
           const frame = revealFrame(now - revealAt); draw(frame);
           if (frame.done) {
             reset();
-            if (doc.activeElement === doc.body || doc.activeElement === doc.documentElement) {
-              const title = doc.querySelector('main h1');
-              if (title) { if (!title.hasAttribute('tabindex')) title.setAttribute('tabindex', '-1'); title.focus({preventScroll: true}); }
-            }
             doc.dispatchEvent(new win.Event('paws-page-transition-end'));
           } else raf = win.requestAnimationFrame(tick);
         }
