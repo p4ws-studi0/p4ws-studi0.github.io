@@ -133,7 +133,7 @@
       </div>
     </section>
     <nav class="desktop-taskbar" aria-label="Paws HQ taskbar">
-      <a href="/" id="desktopHome" class="desktop-dock-item desktop-start" aria-label="Home"${currentPath==='/'?' aria-current="page"':''}><img src="/paws-crown.png" alt=""><span class="desktop-dock-tooltip" aria-hidden="true">Home</span></a>
+      <a href="/" id="desktopHome" class="desktop-dock-item desktop-start" aria-label="Home"${currentPath==='/'?' aria-current="page"':''}><img src="/paws-crown.png?v=20261017c" alt=""><span class="desktop-dock-tooltip" aria-hidden="true">Home</span></a>
       <button type="button" id="desktopSearchOpen" class="desktop-dock-item" aria-label="Open Paws menu" aria-expanded="false" aria-haspopup="dialog" aria-controls="desktopLauncher">${svg(paths.menu,24)}<span class="desktop-dock-tooltip" aria-hidden="true">Menu</span></button>
     </nav>
     <div class="desktop-toast" id="desktopToast" role="status" hidden></div>
@@ -466,7 +466,7 @@
     supabaseClient.auth.onAuthStateChange((_event,session)=>renderAccount(session));
   }
 
-  fetch('/assets/navigation.json?v=20261017b',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
+  fetch('/assets/navigation.json?v=20261017c',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
     apps=data.apps.filter(app=>{
       if(typeof app.href!=='string')return false;
       if(app.href.startsWith('/')&&!app.href.startsWith('//'))return app.href!=='/digital-whiteboard.html';

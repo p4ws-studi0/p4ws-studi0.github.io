@@ -1,0 +1,63 @@
+/* Paws HQ pendulum page transition, scoped to its overlay. */
+.paws-page-transition {
+  --wipe-x: -110%;
+  --rotate: 28deg;
+
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.paws-page-transition[hidden] {
+  display: none !important;
+}
+
+.paws-page-transition-slab {
+  position: absolute;
+  top: -50vh;
+  left: 0;
+  width: 200vw;
+  height: 200vh;
+  min-height: 1000px;
+  background: rgb(118, 118, 118);
+  transform: translateX(var(--wipe-x)) rotate(var(--rotate));
+  transform-origin: 50% -150%;
+  will-change: transform;
+}
+
+.paws-page-transition-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 140px;
+  max-width: 36vw;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+.paws-page-transition-logo img,
+.paws-page-transition-logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Cover the first paint while the next document prepares its reveal. */
+html[data-paws-transition-pending]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgb(118, 118, 118);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paws-page-transition,
+  html[data-paws-transition-pending]::before {
+    display: none !important;
+  }
+}
