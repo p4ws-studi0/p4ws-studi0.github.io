@@ -2,6 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const root=path.resolve(process.env.END_OF_DAY_TEST_ROOT||path.join(__dirname,'..'));
 const html=fs.readFileSync(path.join(root,'end-of-day.html'),'utf8'),source=fs.readFileSync(path.join(root,'assets/end-of-day.js'),'utf8');
+const reportUtility=require(path.join(root,'assets/end-of-day-report.js'));
 const allFields=['staff_name','cash_received','checks_received','card_tips_received','card_tips_paid','receipts_paid','receipt_description','drawer_total','cash_replaced','cash_deposit','check_deposit','total_deposit','notes','additional_note','bills_100','bills_50','bills_20','bills_10','bills_5','bills_1','quarters','dimes','nickels','pennies'];
 const computed=['drawer_total','total_deposit'],fields=allFields.filter(key=>!computed.includes(key)),denoms=['bills_100','bills_50','bills_20','bills_10','bills_5','bills_1','quarters','dimes','nickels','pennies'];
 const clone=x=>JSON.parse(JSON.stringify(x)),uuid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
@@ -9,22 +10,23 @@ const record=(extra={})=>({id:uuid(11),entry_date:'2026-10-13',...Object.fromEnt
 const deferred=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 async function until(check){for(let index=0;index<800&&!check();index++)await Promise.resolve();assert.ok(check(),'expected asynchronous condition');}
 const decode=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
-function environment({records=[record()],active=true,intercept=null,now='2026-10-13T16:00:00Z',reducedMotion=false}={}) {
-  const api={records:clone(records),active,session:{user:{id:uuid(900)}},calls:[],callbacks:[],intercept};
+function environment({records=[record()],active=true,intercept=null,now='2026-10-13T16:00:00Z',reducedMotion=false,smallScreen=false}={}) {
+  const api={records:clone(records),active,session:{user:{id:uuid(900)}},calls:[],callbacks:[],intercept,downloads:[],urls:new Map(),revoked:[],prints:[]};
   const nodes=new Map(),inputs=new Map(),buttons=[],timers=new Map();let timer=0,nextID=10000,day=null;
-  const document={readyState:'loading',hidden:false,activeElement:null,getElementById:id=>nodes.get(id),addEventListener(){},querySelectorAll(selector){if(selector==='#dayFields [data-field]')return [...inputs.values()];if(selector==='[data-restore-date],[data-week-end],[data-open-date]')return buttons.filter(button=>button.dataset.restoreDate||button.dataset.weekEnd||button.dataset.openDate);return [];}};
+  const document={readyState:'loading',hidden:false,activeElement:null,getElementById:id=>nodes.get(id),addEventListener(){},body:{appendChild(child){child.appended=true;}},createElement(tag){const child=node();child.tagName=tag;return child;},querySelectorAll(selector){if(selector==='#dayFields [data-field]')return [...inputs.values()];if(selector==='[data-restore-date],[data-week-end],[data-open-date]')return buttons.filter(button=>button.dataset.restoreDate||button.dataset.weekEnd||button.dataset.openDate);return [];}};
   function node(id='') {
-    const n={id,dataset:{},style:{},events:{},disabled:false,hidden:false,textContent:'',value:'',attrs:{},classes:new Set(),children:[],
+    const n={id,dataset:{},style:{},events:{},disabled:false,hidden:false,open:false,textContent:'',value:'',attrs:{},classes:new Set(),children:[],
       addEventListener(type,fn){(this.events[type]||=[]).push(fn);},async emit(type,event={}){for(const fn of this.events[type]||[])await fn(event);},
       setAttribute(key,value){this.attrs[key]=value;},matches(selector){return selector==='[data-field]'?Boolean(this.dataset.field):selector==='[data-money]'?Boolean(this.money):false;},
       closest(selector){if(selector==='#dayFields')return this.day||null;if(selector==='[data-day-date]')return this.day||null;const match=selector.match(/^\[data-([a-z-]+)(?:="([^"]+)")?\]$/);if(!match)return null;const key=match[1].replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase());return this.dataset[key]&&(match[2]===undefined||this.dataset[key]===match[2])?this:null;},
-      focus(){document.activeElement=this;},blur(){document.activeElement=null;},select(){this.selected=true;},scrollIntoView(options){this.scrolled=options;}};
+      focus(){document.activeElement=this;},blur(){document.activeElement=null;},select(){this.selected=true;},scrollIntoView(options){this.scrolled=options;},
+      showModal(){this.open=true;},close(){this.open=false;for(const fn of this.events.close||[])fn({target:this});},click(){if(this.tagName==='a')api.downloads.push({href:this.href,filename:this.download,blob:api.urls.get(this.href)});},remove(){this.removed=true;}};
     n.classList={toggle(key,on){if(on)n.classes.add(key);else n.classes.delete(key);},add(key){n.classes.add(key);},remove(key){n.classes.delete(key);}};
-    let markup='';Object.defineProperty(n,'innerHTML',{get(){return markup;},set(value){markup=value;if(id==='dayContent')parseDay(value);if(['weekRows','historyList','deletedList','attentionList'].includes(id))parseButtons(value,id);}});return n;
+    let markup='';Object.defineProperty(n,'innerHTML',{get(){return markup;},set(value){markup=value;if(id==='dayContent')parseDay(value);if(['weekRows','historyList','deletedList','attentionList','reportCalendar'].includes(id))parseButtons(value,id);}});return n;
   }
   function parseButtons(markup,parent) {
-    for(let index=buttons.length-1;index>=0;index--)if(buttons[index].parent===parent)buttons.splice(index,1);
-    for(const match of markup.matchAll(/<button\b([^>]*)>/g)) {const button=node();button.parent=parent;for(const attr of match[1].matchAll(/data-([a-z-]+)="([^"]+)"/g)){const key=attr[1].replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase());button.dataset[key]=decode(attr[2]);}buttons.push(button);}
+    for(let index=buttons.length-1;index>=0;index--)if(buttons[index].parent===parent){if(buttons[index].id)nodes.delete(buttons[index].id);buttons.splice(index,1);}
+    for(const match of markup.matchAll(/<button\b([^>]*)>/g)) {const id=match[1].match(/\bid="([^"]+)"/)?.[1]||'',button=node(id);button.parent=parent;for(const attr of match[1].matchAll(/data-([a-z-]+)="([^"]+)"/g)){const key=attr[1].replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase());button.dataset[key]=decode(attr[2]);}buttons.push(button);if(id)nodes.set(id,button);}
   }
   function parseDay(markup) {
     inputs.clear();day=null;for(const key of [...nodes.keys()])if(key.startsWith('field-')||key.startsWith('error-')||['dayFields','dayError','dayErrorText','retryDay','deleteDay','drawerTotal','depositTotal','drawerBalance','drawerRecorded','depositRecorded'].includes(key))nodes.delete(key);
@@ -53,12 +55,13 @@ function environment({records=[record()],active=true,intercept=null,now='2026-10
     if(call.columns==='entry_date')rows=rows.map(row=>({entry_date:row.entry_date}));return {data:call.single?clone(rows[0]||null):clone(rows),error:null};
   }
   const client={auth:{async getSession(){return {data:{session:api.session},error:null};},onAuthStateChange(fn){api.callbacks.push(fn);}},from(table){const call={table,op:'select',filters:[]};const run=()=>complete(call);const chain={select(columns){call.columns=columns;return chain;},eq(key,value){call.filters.push(['eq',key,value]);return chain;},gte(key,value){call.filters.push(['gte',key,value]);return chain;},lte(key,value){call.filters.push(['lte',key,value]);return chain;},not(key,op,value){call.filters.push(['not',key,value]);return chain;},order(key,{ascending=true}={}){call.order={key,ascending};return chain;},limit(value){call.limit=value;return chain;},range(start,end){call.range=[start,end];return run();},update(patch){call.op='update';call.payload=clone(patch);return chain;},insert(patch){call.op='insert';call.payload=clone(patch);return chain;},single(){call.single=true;return run();},maybeSingle(){call.single=true;return run();}};return chain;}};
-  const window={events:{},matchMedia:()=>({matches:reducedMotion}),addEventListener(type,fn){(this.events[type]||=[]).push(fn);}};
+  const window={PawsEodReport:reportUtility,events:{},matchMedia:query=>({matches:query.includes('max-width')?smallScreen:reducedMotion}),addEventListener(type,fn){(this.events[type]||=[]).push(fn);},print(){api.prints.push({content:nodes.get('weekReportContent').innerHTML,calls:api.calls.length});}};
+  const objectURL={createObjectURL(blob){const url=`blob:fixture-${api.urls.size+1}`;api.urls.set(url,blob);return url;},revokeObjectURL(url){api.revoked.push(url);}};
   class TestDate extends Date{constructor(...args){super(...(args.length?args:[now]));}static now(){return Date.parse(now);}}
-  const context=vm.createContext({document,window,supabaseClient:client,Date:TestDate,Intl,console,crypto:{randomUUID:()=>uuid(nextID++)},setInterval(){},setTimeout(fn,delay){timers.set(++timer,{fn,delay});return timer;},clearTimeout(id){timers.delete(id);}});
+  const context=vm.createContext({document,window,supabaseClient:client,Date:TestDate,Intl,Blob,URL:objectURL,console,crypto:{randomUUID:()=>uuid(nextID++)},setInterval(){},setTimeout(fn,delay){timers.set(++timer,{fn,delay});return timer;},clearTimeout(id){timers.delete(id);}});
   const marker="  if (document.readyState==='loading')";assert.equal(source.split(marker).length,2);
-  vm.runInContext(source.replace(marker,`  window.hooks={state,init,easternToday,validDate,shiftDate,weekDates,rangeLabel,parseMoney,centsText,currency,sumMoney,hasActivity,dirty,unfinished,editorForDate,render,renderForm,renderWeek,renderCalculations,takeInput,changedPatch,selectDate,loadWeek,saveEditor,deleteDay,restoreDay,reloadDay,resetAuth};\n${marker}`),context);app=window.hooks;
-  return {app,api,nodes,inputs,buttons,document,timers,get:id=>nodes.get(id),async start(){app.init();await until(()=>!app.state.loading);},input(key,value){const input=inputs.get(key);assert.ok(input,`input ${key} exists`);input.focus();input.value=value;app.takeInput(input);return input;},save(date=app.state.selectedDate){return app.saveEditor(app.state.editors.get(date));},signOut(){api.session=null;for(const fn of api.callbacks)fn('SIGNED_OUT',null);},runTimers(delay){for(const [id,item]of [...timers])if(item.delay===delay){timers.delete(id);item.fn();}}};
+  vm.runInContext(source.replace(marker,`  window.hooks={state,reportState,init,easternToday,validDate,shiftDate,weekDates,rangeLabel,parseMoney,centsText,currency,sumMoney,hasActivity,dirty,unfinished,editorForDate,render,renderForm,renderWeek,renderCalculations,takeInput,changedPatch,selectDate,loadWeek,saveEditor,deleteDay,restoreDay,reloadDay,resetAuth,openReport,prepareReport,outputReport,closeReport,chooseReportDate,calendarKey,reportRangeError,renderCalendar,toggleReportDates};\n${marker}`),context);app=window.hooks;
+  return {app,api,nodes,inputs,buttons,document,window,timers,get:id=>nodes.get(id),async start(){app.init();await until(()=>!app.state.loading);},input(key,value){const input=inputs.get(key);assert.ok(input,`input ${key} exists`);input.focus();input.value=value;app.takeInput(input);return input;},save(date=app.state.selectedDate){return app.saveEditor(app.state.editors.get(date));},signOut(){api.session=null;for(const fn of api.callbacks)fn('SIGNED_OUT',null);},runTimers(delay){for(const [id,item]of [...timers])if(item.delay===delay){timers.delete(id);item.fn();}}};
 }
 
 test('default range is today and the previous six Eastern calendar dates, including around midnight',async()=>{
@@ -181,4 +184,96 @@ test('all literal values are escaped in forms, staff suggestions and deleted ent
 });
 test('End Of Day has sidebar and homepage links without loading daily financial records on the homepage',()=>{
   const sidebar=fs.readFileSync(path.join(root,'partials/sidebar.html'),'utf8'),home=fs.readFileSync(path.join(root,'index.html'),'utf8');assert.equal((sidebar.match(/href="\/end-of-day"/g)||[]).length,1);assert.equal((home.match(/href="\/end-of-day"/g)||[]).length,1);assert.doesNotMatch(home,/end-of-day\.js|hq_end_of_day/);assert.doesNotMatch(html+source,/preview-client|Fixture Staff|Annaella|53\.04/);assert.match(html,/Browse earlier weeks/);assert.match(html,/Drawer target/);
+});
+
+test('Print / export opens the selected seven days and custom calendar accepts forward, backward and single-day ranges',async()=>{
+  const h=environment();await h.start();await h.app.selectDate('2026-10-06',{week:true});h.get('openWeekReport').focus();await h.get('openWeekReport').emit('click');
+  assert.equal(h.get('weekReport').open,true);assert.equal(h.app.reportState.start,'2026-09-30');assert.equal(h.app.reportState.end,'2026-10-06');assert.equal(h.app.reportState.model.days.length,7);
+  for(const [first,last,expectedStart,expectedEnd]of [['2026-10-01','2026-10-03','2026-10-01','2026-10-03'],['2026-10-08','2026-10-02','2026-10-02','2026-10-08'],['2026-10-04','2026-10-04','2026-10-04','2026-10-04']]){
+    await h.get('selectReportDates').emit('click');assert.equal(h.get('reportDatePicker').hidden,false);h.app.chooseReportDate(first);assert.equal(h.get('applyReportDates').disabled,true);h.app.chooseReportDate(last);assert.equal(h.app.reportState.pendingStart,expectedStart);assert.equal(h.app.reportState.pendingEnd,expectedEnd);assert.equal(h.get('applyReportDates').disabled,false);await h.get('applyReportDates').emit('click');assert.equal(h.app.reportState.model.start,expectedStart);assert.equal(h.app.reportState.model.end,expectedEnd);assert.equal(h.get('reportDatePicker').hidden,true);
+  }
+  h.app.closeReport();assert.equal(h.get('weekReport').open,false);assert.equal(h.app.reportState.model,null);assert.equal(h.document.activeElement,h.get('openWeekReport'));
+});
+
+test('date inputs, month navigation and Last 7 days change the range without changing the editing week',async()=>{
+  const h=environment();await h.start();await h.app.selectDate('2026-09-29',{week:true});await h.app.openReport();h.app.toggleReportDates(true);
+  h.get('reportStartDate').value='2026-11-01';await h.get('reportStartDate').emit('change');h.get('reportEndDate').value='2026-11-05';await h.get('reportEndDate').emit('change');await h.get('applyReportDates').emit('click');assert.equal(h.app.reportState.model.days.length,5);assert.equal(h.app.reportState.start,'2026-11-01');assert.equal(h.app.state.weekEnd,'2026-09-29');
+  h.app.toggleReportDates(true);const next=h.buttons.find(button=>button.parent==='reportCalendar'&&button.dataset.calendarStep==='1');await h.get('reportCalendar').emit('click',{target:next});assert.equal(h.app.reportState.month,'2026-12-01');
+  await h.get('reportLastSeven').emit('click');assert.equal(h.get('reportStartDate').value,'2026-10-07');assert.equal(h.get('reportEndDate').value,'2026-10-13');await h.get('applyReportDates').emit('click');assert.equal(h.app.reportState.model.days.length,7);assert.equal(h.app.reportState.end,'2026-10-13');assert.equal(h.app.state.weekEnd,'2026-09-29');
+});
+
+test('calendar keyboard moves by days, weeks and months with clamped month-end dates',async()=>{
+  const h=environment({smallScreen:true});await h.start();await h.app.openReport();h.app.toggleReportDates(true);
+  function press(date,key){h.app.reportState.month=date.slice(0,7)+'-01';h.app.reportState.focusDate=date;h.app.renderCalendar();let prevented=false;h.app.calendarKey({target:h.get(`eod-calendar-${date}`),key,preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(h.document.activeElement?.id,`eod-calendar-${h.app.reportState.focusDate}`);return h.app.reportState.focusDate;}
+  assert.equal(press('2026-10-13','ArrowLeft'),'2026-10-12');assert.equal(press('2026-10-13','ArrowDown'),'2026-10-20');assert.equal(press('2026-10-13','Home'),'2026-10-12');assert.equal(press('2026-10-13','End'),'2026-10-18');assert.equal(press('2026-01-31','PageDown'),'2026-02-28');assert.equal(press('2024-03-31','PageUp'),'2024-02-29');assert.equal(press('2026-12-31','ArrowRight'),'2027-01-01');assert.equal(h.app.reportState.month,'2027-01-01');
+});
+
+test('invalid and over-year report ranges are explained without fetching records',async()=>{
+  const h=environment();await h.start();await h.app.openReport();const count=h.api.calls.length;
+  for(const [start,end]of [['','2026-10-13'],['2026-02-29','2026-03-01'],['2026-10-14','2026-10-13'],['2024-01-01','2025-01-01']]){assert.ok(h.app.reportRangeError(start,end));assert.equal(await h.app.prepareReport(start,end),null);assert.equal(h.get('reportMessage').classes.has('is-error'),true);}
+  assert.equal(h.api.calls.length,count);assert.equal(h.app.reportRangeError('2024-01-01','2024-12-31'),'');assert.equal(h.app.reportRangeError('2024-02-29','2024-02-29'),'');
+});
+
+test('report waits for an in-flight draft save before a fresh narrow saved-record query',async()=>{
+  const h=environment();await h.start();const gate=deferred();let pending;
+  h.api.intercept=call=>{if(call.op==='update'){pending=call;return gate.promise;}};
+  h.input('notes','Recently typed draft');const saving=h.save();await until(()=>pending);const baseline=h.api.calls.length,opening=h.app.openReport();await Promise.resolve();await Promise.resolve();assert.equal(h.app.reportState.busy,true);assert.equal(h.app.reportState.model,null);assert.equal(h.api.calls.slice(baseline).filter(call=>call.table==='hq_end_of_day').length,0);
+  h.api.records[0]={...h.api.records[0],...pending.payload,revision:2};gate.resolve({data:clone(h.api.records[0]),error:null});await saving;await opening;
+  assert.equal(h.app.reportState.model.days.at(-1).values.notes,'Recently typed draft');const reads=h.api.calls.slice(baseline).filter(call=>call.table==='hq_end_of_day');assert.equal(reads.length,1);assert.equal(reads[0].op,'select');assert.deepEqual(reads[0].filters,[['gte','entry_date','2026-10-07'],['lte','entry_date','2026-10-13']]);assert.deepEqual(reads[0].range,[0,499]);
+});
+
+test('invalid or conflicting entries prevent printing and CSV instead of exporting stale saved data',async()=>{
+  for(const mode of ['invalid','conflict']){
+    const h=environment();await h.start();h.input(mode==='invalid'?'cash_received':'notes',mode==='invalid'?'12.345':'Conflicting draft');if(mode==='conflict'){const editor=h.app.state.editors.get(h.app.state.selectedDate);editor.conflict=true;editor.error='This day changed on another device.';}
+    const baseline=h.api.calls.length;await h.app.openReport();assert.equal(h.app.reportState.model,null);assert.match(h.get('reportMessage').textContent,/Finish saving/);assert.equal(h.get('printReport').disabled,true);assert.equal(h.get('downloadReport').disabled,true);await h.app.outputReport('print');await h.app.outputReport('csv');assert.equal(h.api.prints.length,0);assert.equal(h.api.downloads.length,0);assert.equal(h.api.calls.slice(baseline).filter(call=>call.table==='hq_end_of_day').length,0);
+  }
+});
+
+test('a clean report preserves imported totals, blanks deleted details and never writes records',async()=>{
+  const h=environment({records:[record({drawer_total:'199.99',bills_20:'200',cash_deposit:'10',check_deposit:'20',total_deposit:'29.50',notes:'Saved note'}),record({id:uuid(12),entry_date:'2026-10-12',staff_name:'Deleted closer',cash_received:'987.65',notes:'Deleted secret',deleted_at:'2026-10-13T12:00:00Z'})]});await h.start();const before=clone(h.api.records),baseline=h.api.calls.length;await h.app.openReport();
+  const days=h.app.reportState.model.days,active=days.at(-1),deleted=days.at(-2);assert.equal(active.values.drawer_total,'199.99');assert.equal(active.values.total_deposit,'29.50');assert.equal(deleted.status,'Deleted');assert.ok(Object.values(deleted.values).every(value=>value===''));assert.doesNotMatch(h.get('weekReportContent').innerHTML,/Deleted closer|987\.65|Deleted secret/);assert.equal(days[0].status,'No entry');assert.deepEqual(h.api.records,before);assert.ok(h.api.calls.slice(baseline).every(call=>call.op==='select'));
+});
+
+test('a failed report fetch clears an earlier preview and cannot print or download stale content',async()=>{
+  const h=environment();await h.start();await h.app.openReport();assert.ok(h.app.reportState.model);h.api.intercept=call=>call.table==='hq_end_of_day'?{data:null,error:{code:'NETWORK'}}:undefined;
+  await h.app.outputReport('print');assert.equal(h.app.reportState.model,null);assert.equal(h.get('weekReportContent').innerHTML,'');assert.match(h.get('reportMessage').textContent,/Could not load/);assert.equal(h.api.prints.length,0);await h.app.outputReport('csv');assert.equal(h.api.downloads.length,0);assert.equal(h.app.reportState.busy,false);
+});
+
+test('sign-out or closing the dialog while fetching discards private results and pending outputs',async()=>{
+  for(const action of ['sign-out','close']){
+    const h=environment();await h.start();await h.app.openReport();const gate=deferred();let pending=false;h.api.intercept=call=>{if(call.table==='hq_end_of_day'){pending=true;return gate.promise;}};const output=h.app.outputReport(action==='sign-out'?'csv':'print');await until(()=>pending);if(action==='sign-out')h.signOut();else h.app.closeReport();gate.resolve({data:[record({notes:'Late private financial note'})],error:null});await output;
+    assert.equal(h.app.reportState.model,null);assert.equal(h.app.reportState.busy,false);assert.equal(h.get('weekReportContent').innerHTML,'');assert.equal(h.get('weekReport').open,false);assert.equal(h.api.downloads.length,0);assert.equal(h.api.prints.length,0);
+  }
+});
+
+test('Print report rechecks workspace access and saved data on every click',async()=>{
+  const h=environment();await h.start();await h.app.openReport();const baseline=h.api.calls.length;h.api.records[0].notes='Saved from another device';await h.app.outputReport('print');assert.equal(h.api.prints.length,1);assert.match(h.api.prints[0].content,/Saved from another device/);const fresh=h.api.calls.slice(baseline);assert.equal(fresh[0].table,'hq_tour_staff');assert.equal(fresh.at(-1).table,'hq_end_of_day');assert.equal(h.api.prints[0].calls,h.api.calls.length);
+  h.api.active=false;await h.app.outputReport('print');assert.equal(h.api.prints.length,1);assert.equal(h.app.reportState.model,null);assert.equal(h.app.state.ready,false);assert.match(h.get('reportMessage').textContent,/workspace access/);
+});
+
+test('CSV filename and content reflect the chosen range and object URLs are promptly revoked',async()=>{
+  const h=environment({records:[record({notes:'CSV fixture, "quoted"\nSecond line',cash_received:'0',checks_received:'',total_deposit:'29.50'})]});await h.start();await h.app.openReport();await h.app.prepareReport('2026-10-12','2026-10-13');await h.app.outputReport('csv');
+  assert.equal(h.api.downloads.length,1);const download=h.api.downloads[0];assert.equal(download.filename,'paws-end-of-day_2026-10-12_to_2026-10-13.csv');assert.equal(download.blob.type,'text/csv;charset=utf-8;');const bytes=new Uint8Array(await download.blob.arrayBuffer());assert.deepEqual([...bytes.slice(0,3)],[239,187,191]);const output=await download.blob.text();assert.match(output,/"2026-10-12","No entry"/);assert.match(output,/"2026-10-13","Recorded"/);assert.match(output,/CSV fixture, ""quoted""\nSecond line/);assert.match(output,/29\.50/);assert.doesNotMatch(output,/source_values|created_by/);assert.equal(h.app.reportState.urls.size,1);
+  h.runTimers(1000);assert.ok(h.api.revoked.includes(download.href));assert.equal(h.app.reportState.urls.size,0);await h.app.outputReport('csv');const next=h.api.downloads.at(-1);h.app.closeReport();assert.ok(h.api.revoked.includes(next.href));assert.equal(h.app.reportState.urls.size,0);
+});
+
+test('an unrelated unsaved week does not block another date range from being exported',async()=>{
+  const h=environment({records:[record(),record({id:uuid(12),entry_date:'2026-10-06',notes:'Prior saved week'})]});await h.start();h.input('cash_received','invalid');await h.app.selectDate('2026-10-06',{week:true});const baseline=h.api.calls.length;await h.app.openReport();assert.equal(h.app.reportState.model.start,'2026-09-30');assert.match(h.get('weekReportContent').innerHTML,/Prior saved week/);await h.app.outputReport('csv');assert.equal(h.api.downloads.length,1);assert.equal(h.app.state.editors.get('2026-10-13').values.cash_received,'invalid');assert.ok(h.api.calls.slice(baseline).every(call=>call.op==='select'));
+});
+
+test('workspace revocation and leaving the page discard delayed report outputs without signing out or clearing drafts',async()=>{
+  for(const event of ['paws-access-revoked','pagehide'])for(const kind of ['print','csv']){
+    const h=environment({records:[record({notes:'Initially private report details'})]});await h.start();await h.app.openReport();await h.app.outputReport('csv');const previousURL=h.api.downloads[0].href;
+    h.input('notes','Operational draft to preserve');const gate=deferred();let pending=false;h.api.intercept=call=>{if(call.table==='hq_end_of_day'&&call.op==='select'){pending=true;return gate.promise;}};
+    const output=h.app.outputReport(kind);await until(()=>pending);const request=h.app.reportState.request,session=h.api.session;
+    assert.ok(h.window.events[event]?.length,`${event} is handled`);for(const handler of h.window.events[event])handler({detail:{status:'revoked'}});
+    assert.equal(h.get('weekReport').open,false);assert.equal(h.app.reportState.model,null);assert.equal(h.get('weekReportContent').innerHTML,'');assert.ok(h.app.reportState.request>request);assert.equal(h.app.reportState.busy,false);assert.ok(h.api.revoked.includes(previousURL));assert.equal(h.app.reportState.urls.size,0);assert.equal(h.api.session,session);assert.equal(h.app.state.editors.get('2026-10-13').values.notes,'Operational draft to preserve');
+    gate.resolve({data:[record({notes:'Late private data must be discarded'})],error:null});await output;assert.equal(h.app.reportState.model,null);assert.equal(h.get('weekReportContent').innerHTML,'');assert.equal(h.api.prints.length,0);assert.equal(h.api.downloads.length,1);
+  }
+});
+
+test('browser print after workspace revocation cannot reveal the earlier report',async()=>{
+  const h=environment({records:[record({notes:'Formerly visible financial details',cash_received:'123456.78'})]});await h.start();await h.app.openReport();assert.match(h.get('weekReportContent').innerHTML,/Formerly visible financial details/);
+  for(const handler of h.window.events['paws-access-revoked'])handler({detail:{status:'revoked'}});for(const handler of h.window.events.beforeprint)handler({});
+  assert.equal(h.app.reportState.model,null);assert.doesNotMatch(h.get('weekReportContent').innerHTML,/Formerly visible financial details|123456\.78/);assert.match(h.get('weekReportContent').innerHTML,/Open Print \/ export/);assert.equal(h.api.prints.length,0);
 });

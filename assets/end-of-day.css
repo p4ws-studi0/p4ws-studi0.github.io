@@ -110,3 +110,114 @@
 @media(max-width:850px) {.eod-entry-grid {grid-template-columns:1fr;grid-template-areas:"money" "count" "deposit";}.eod-week-toolbar {align-items:flex-start;flex-direction:column;gap:15px;}.eod-week-navigation {width:100%;}.eod-date-jump {margin-left:auto;}.eod-fields-three {grid-template-columns:repeat(3,minmax(0,1fr));}.eod-count-grid .eod-field {grid-template-columns:1fr minmax(0,150px);}.eod-history-list {grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:600px) {#endOfDayPage {padding-top:25px;}.eod-heading {align-items:flex-start;gap:10px;}.eod-heading h1 {font-size:31px;}.eod-heading > div > p:last-child {font-size:11px;}.eod-target {flex-direction:column;gap:3px;padding:8px 11px;font-size:9px;}.eod-target strong {font-size:18px;}.eod-week-toolbar {padding:15px;}.eod-range h2 {font-size:15px;}.eod-date-jump {margin-left:auto;gap:5px;}.eod-date-jump > span {display:none;}.eod-date-jump input {width:136px;font-size:16px;}.eod-week-footer {padding-inline:15px;align-items:flex-start;}.eod-week-footer > span {padding-block:12px;}.eod-day-heading h2 {font-size:21px;}.eod-card {padding:18px 16px;}.eod-fields-three {grid-template-columns:repeat(2,minmax(0,1fr));}.eod-field input,.eod-field textarea {font-size:16px;}.eod-count-grid .eod-field {grid-template-columns:1fr;gap:6px;}.eod-count-grid .eod-field input {width:100%;}.eod-total-block output {font-size:24px;}.eod-day-actions {align-items:flex-start;}.eod-day-actions > span {padding-top:10px;}.eod-history-list {grid-template-columns:1fr;}.eod-history-hint {font-size:9px;}}
 @media(prefers-reduced-motion:reduce) {#endOfDayPage * {transition:none!important;}}
+
+/* A separate, read-only workspace for the bookkeeper. */
+.eod-week-actions {display:flex;align-items:center;gap:15px;flex-shrink:0;}
+.eod-report-open {display:flex;align-items:center;gap:7px;min-height:40px;padding:0;border:0;background:transparent;color:var(--tr-text);font:inherit;font-size:11px;font-weight:600;cursor:pointer;}
+.eod-report-open svg {width:16px;height:16px;color:var(--tr-muted);}
+.eod-report-open:hover:not(:disabled) {color:var(--tr-focus);}
+.eod-report-dialog {--tr-text:#172033;--tr-muted:#5b6a7e;--tr-line:rgba(43,59,85,.12);--tr-soft:rgba(75,101,139,.04);--tr-surface:rgba(255,255,255,.67);--tr-input:rgba(255,255,255,.77);--tr-focus:#2563eb;--tr-menu:#f7f9fc;width:min(1230px,calc(100vw - 40px));max-height:calc(100dvh - 50px);margin:auto;padding:0;border:1px solid var(--tr-line);border-radius:20px;background:var(--tr-menu);color:var(--tr-text);font-family:Inter,sans-serif;box-shadow:0 32px 100px #0004;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;color-scheme:light;}
+.eod-report-dialog * {box-sizing:border-box;}
+.eod-report-dialog button {font-family:inherit;cursor:pointer;}
+.dark .eod-report-dialog {--tr-text:#f3f6fb;--tr-muted:#a6b1c3;--tr-line:rgba(255,255,255,.10);--tr-soft:rgba(255,255,255,.025);--tr-surface:rgba(255,255,255,.045);--tr-input:rgba(255,255,255,.055);--tr-focus:#84b4ff;--tr-menu:#171e28;color-scheme:dark;}
+.eod-report-dialog::backdrop {background:rgba(15,23,42,.4);backdrop-filter:blur(7px);}
+.eod-report-dialog[open] {animation:eod-report-enter 160ms ease-out;}
+@keyframes eod-report-enter {from {opacity:0;transform:translateY(7px) scale(.995);}to {opacity:1;transform:none;}}
+.eod-report-toolbar {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:20px 27px 16px;}
+.eod-report-toolbar h2 {margin:0;font-size:25px;font-weight:650;letter-spacing:-.035em;}
+.eod-report-toolbar p:last-child {margin:6px 0 0;color:var(--tr-muted);font-size:12px;}
+.eod-report-close {display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;border:1px solid var(--tr-line);border-radius:9px;background:transparent;color:var(--tr-muted);font-size:25px;line-height:1;cursor:pointer;}
+.eod-report-close:hover {background:var(--tr-soft);color:var(--tr-text);}
+.eod-report-tools {display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 27px 13px;}
+.eod-report-date-button {display:flex;align-items:center;gap:12px;min-height:56px;min-width:280px;padding:9px 13px;border:1px solid var(--tr-line);border-radius:11px;background:var(--tr-surface);color:var(--tr-text);text-align:left;cursor:pointer;transition:background 120ms,border-color 120ms;}
+.eod-report-date-button:hover,.eod-report-date-button[aria-expanded="true"] {border-color:var(--tr-focus);background:var(--tr-soft);}
+.eod-report-date-button svg {width:21px;height:21px;color:var(--tr-focus);flex-shrink:0;}
+.eod-report-date-button small {display:block;margin-bottom:3px;font-size:10px;color:var(--tr-muted);}
+.eod-report-date-button strong {display:block;font-size:12px;font-weight:600;}
+.eod-report-chevron {margin-left:auto;color:var(--tr-muted);}
+.eod-report-date-button[aria-expanded="true"] .eod-report-chevron {transform:rotate(180deg);}
+.eod-report-output-actions {display:flex;align-items:center;gap:8px;}
+.eod-report-dialog button:disabled {opacity:.45;cursor:default;}
+.eod-report-dialog button:focus-visible,.eod-calendar-inputs input:focus-visible {outline:2px solid var(--tr-focus);outline-offset:3px;}
+.eod-report-message {margin:0;padding:0 27px 17px;color:var(--tr-muted);font-size:11px;line-height:1.65;}
+.eod-report-message.is-error {color:#b72d37;}.dark .eod-report-message.is-error {color:#ffadb3;}
+.eod-report-date-picker {margin:0 27px 17px;padding:14px;border:1px solid var(--tr-line);border-radius:14px;background:var(--tr-surface);animation:eod-report-enter 140ms ease-out;}
+.eod-report-date-picker[hidden] {display:none;}
+.eod-calendar-inputs {display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--tr-line);}
+.eod-calendar-inputs label {display:flex;flex-direction:column;gap:6px;font-size:10px;color:var(--tr-muted);}
+.eod-calendar-inputs input {min-height:37px;width:155px;padding:7px 10px;border:1px solid var(--tr-line);border-radius:8px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:12px;}
+.eod-calendar-inputs > span {align-self:flex-end;padding-bottom:8px;color:var(--tr-muted);font-size:14px;}
+.eod-calendar-inputs > button {margin-left:auto;align-self:flex-end;min-height:37px;padding:7px 11px;border:1px solid var(--tr-line);border-radius:8px;background:transparent;color:var(--tr-focus);font-size:11px;font-weight:600;}
+.eod-calendar {max-width:760px;margin:auto;}
+.eod-calendar-navigation {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 0;color:var(--tr-muted);font-size:10px;}
+.eod-calendar-navigation > div {display:flex;gap:6px;}
+.eod-calendar-navigation button {width:32px;height:32px;border:1px solid var(--tr-line);border-radius:8px;background:var(--tr-input);color:var(--tr-text);font-size:21px;}
+.eod-calendar-months {display:grid;grid-template-columns:1fr 1fr;gap:30px;}
+.eod-calendar-month h3 {margin:4px 0 10px;text-align:center;font-size:13px;font-weight:650;}
+.eod-calendar-weekdays,.eod-calendar-row {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;}
+.eod-calendar-weekdays {margin-bottom:7px;color:var(--tr-muted);font-size:10px;text-align:center;}
+.eod-calendar-row {margin-bottom:3px;}
+.eod-calendar-row button,.eod-calendar-empty {display:grid;place-items:center;min-height:32px;}
+.eod-calendar-row button {position:relative;padding:5px 0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--tr-text);font-size:12px;font-variant-numeric:tabular-nums;cursor:pointer;transition:background 110ms,color 110ms,border-color 110ms;}
+.eod-calendar-row button:hover {border-color:var(--tr-focus);background:rgba(59,130,246,.1);}
+.eod-calendar-row button.is-in-range {background:rgba(59,130,246,.11);border-radius:4px;}
+.eod-calendar-row button.is-range-edge {background:#2563eb;border-color:#2563eb;border-radius:8px;color:#fff;font-weight:650;}
+.eod-calendar-row button.is-today::after {position:absolute;bottom:3px;left:calc(50% - 2px);width:4px;height:4px;border-radius:50%;background:currentColor;content:'';}
+.eod-calendar-footer {display:flex;align-items:center;justify-content:space-between;gap:18px;padding-top:10px;margin-top:10px;border-top:1px solid var(--tr-line);}
+.eod-calendar-footer > span {color:var(--tr-muted);font-size:10px;line-height:1.6;}
+.eod-calendar-footer > div {display:flex;gap:7px;flex-shrink:0;}
+.eod-report-content {padding:23px 27px 28px;border-top:1px solid var(--tr-line);background:var(--tr-soft);overflow-x:auto;scrollbar-width:thin;}
+.eod-report-content:empty {display:none;}
+.eod-report-summary h2 {margin:0 0 6px;font-size:23px;font-weight:700;letter-spacing:-.03em;}
+.eod-report-summary p {margin:5px 0;color:var(--tr-muted);font-size:11px;line-height:1.6;}
+.eod-report-summary p:first-of-type {color:var(--tr-text);font-size:13px;font-weight:600;}
+.eod-report-sheet {margin-top:24px;}
+.eod-report-sheet h3 {margin:0 0 10px;font-size:12px;font-weight:650;}
+.eod-report-table {width:100%;min-width:920px;table-layout:fixed;border-collapse:collapse;background:var(--tr-input);font-size:11px;line-height:1.55;}
+.eod-report-table th,.eod-report-table td {padding:7px 8px;border:1px solid var(--tr-line);vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap;}
+.eod-report-table th {text-align:left;font-weight:550;}
+.eod-report-table tr > :first-child {width:175px;}
+.eod-report-table td {font-variant-numeric:tabular-nums;}
+.eod-report-table thead th {background:var(--tr-surface);font-weight:650;}
+.eod-report-column-header > span {display:block;}
+.eod-report-column-header > span:last-child {margin-top:3px;font-size:9px;color:var(--tr-muted);font-weight:400;}
+.eod-report-group th {padding-block:6px;background:var(--tr-soft);font-size:10px;font-weight:700;letter-spacing:.02em;}
+.eod-report-entry-row {color:var(--tr-muted);font-size:9px;}
+.eod-report-table .is-total {background:rgba(59,130,246,.055);font-weight:650;}
+.eod-report-table .is-total th {font-weight:650;}
+.eod-report-table .is-notes td {font-size:10px;line-height:1.6;}
+@media(max-width:700px) {
+  .eod-report-dialog {width:calc(100vw - 16px);max-height:calc(100dvh - 20px);border-radius:15px;}
+  .eod-report-toolbar {padding:19px 17px 16px;}.eod-report-toolbar h2 {font-size:22px;}
+  .eod-report-tools {padding:0 17px 14px;flex-wrap:wrap;gap:11px;}.eod-report-date-button {width:100%;min-width:0;}
+  .eod-report-output-actions {width:100%;}.eod-report-output-actions > button {flex:1;}
+  .eod-report-message {padding:0 17px 14px;}.eod-report-content {padding:19px 17px;}
+  .eod-report-date-picker {margin:0 17px 15px;padding:13px;}.eod-calendar-inputs {flex-wrap:wrap;gap:7px;}
+  .eod-calendar-inputs label {flex:1;min-width:0;}.eod-calendar-inputs input {width:100%;font-size:16px;padding-inline:6px;}.eod-calendar-inputs > button {margin:3px 0 0;width:100%;min-height:32px;}
+  .eod-calendar-months {grid-template-columns:1fr;}.eod-calendar-month + .eod-calendar-month {display:none;}
+  .eod-calendar-row button {min-height:37px;}.eod-calendar-footer {flex-wrap:wrap;gap:10px;}.eod-calendar-footer > div {width:100%;}.eod-calendar-footer > div > button {flex:1;}
+}
+@media(max-width:600px) {.eod-week-footer {flex-wrap:wrap;gap:0;padding-bottom:2px;}.eod-week-actions {margin-left:auto;}}
+@media(prefers-reduced-motion:reduce) {.eod-report-dialog,.eod-report-date-picker {animation:none;}.eod-calendar-row button,.eod-report-date-button {transition:none;}}
+@media print {
+  @page {size:letter landscape;margin:10mm;}
+  html,body {height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important;color:#111!important;opacity:1!important;}
+  body > *:not(#weekReport) {display:none!important;}
+  #weekReport {display:block!important;position:static!important;inset:auto!important;width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#fff!important;color:#111!important;box-shadow:none!important;overflow:visible!important;transform:none!important;animation:none!important;font-family:Inter,Arial,sans-serif;}
+  #weekReport::backdrop {display:none!important;}
+  #weekReport > :not(.eod-report-content) {display:none!important;}
+  #weekReportContent {display:block!important;margin:0;padding:0;border:0;background:#fff;color:#111;overflow:visible;}
+  .eod-report-summary h2 {font-size:17pt;}.eod-report-summary p {color:#444;font-size:8pt;}.eod-report-summary p:first-of-type {color:#111;font-size:10pt;}
+  .eod-report-sheet {margin-top:12pt;break-inside:auto;}.eod-report-sheet + .eod-report-sheet {break-before:page;}
+  .eod-report-sheet h3 {font-size:9pt;break-after:avoid;}
+  .eod-report-table {min-width:0;width:100%;background:#fff;font-size:8pt;line-height:1.35;}
+  .eod-report-table th,.eod-report-table td {padding:4pt;border-color:#bbb;color:#111;}
+  .eod-report-table tr > :first-child {width:20%;}
+  .eod-report-table thead {display:table-header-group;}.eod-report-table thead th {background:#f3f4f6;}
+  .eod-report-table tr {break-inside:avoid;}.eod-report-table .is-notes {break-inside:auto;}
+  .eod-report-table .is-notes td {font-size:8pt;line-height:1.4;}
+  .eod-report-column-header > span:last-child {font-size:7pt;color:#444;}
+  .eod-report-group {break-after:avoid;}.eod-report-group th {background:#eee;font-size:8pt;}
+  .eod-report-entry-row {font-size:7pt;color:#444;}.eod-report-table .is-total {background:#f7f7f7;}
+  .eod-report-print-help {font-size:12pt;color:#111;}
+}
