@@ -5,3 +5,8 @@ entrypoint = "./functions/hq-slack-general/index.ts"
 [functions.hq-gingr-whiteboard]
 verify_jwt = true
 entrypoint = "./functions/hq-gingr-whiteboard/index.ts"
+
+# Server-only Cron trigger: dedicated secret is verified inside this new handler.
+[functions.hq-slack-access-sync]
+verify_jwt = false
+entrypoint = "./functions/hq-slack-access-sync/index.ts"

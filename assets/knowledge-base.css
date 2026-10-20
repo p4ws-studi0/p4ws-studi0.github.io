@@ -1,0 +1,8 @@
+.paws-knowledge-page[aria-busy="true"] { min-height: 5rem; }
+.paws-knowledge-notice { padding: 1.25rem; border: 1px solid rgb(128 156 236 / .25); border-radius: 12px; background: rgb(255 255 255 / .48); color: inherit; }
+.dark .paws-knowledge-notice { background: rgb(255 255 255 / .05); }
+.paws-knowledge-notice p { margin: 0 0 .75rem; }
+.paws-knowledge-retry { border: 1px solid rgb(128 156 236 / .5); border-radius: 7px; padding: .45rem .8rem; font: inherit; font-size: .875rem; color: inherit; background: transparent; cursor: pointer; }
+.paws-knowledge-retry:hover { background: rgb(128 156 236 / .12); }
+.paws-knowledge-page img[data-knowledge-image] { max-width: 100%; }
+.paws-knowledge-image-error { outline: 1px solid rgb(128 156 236 / .4); }

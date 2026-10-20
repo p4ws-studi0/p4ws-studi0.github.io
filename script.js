@@ -11,7 +11,8 @@
  *************************************************/
 const supabaseClient = supabase.createClient(
   'https://dppjgglaeieevsfwsbii.supabase.co',
-  'sb_publishable_PtLQ22zTKhRlWiAX1lQ1Ew_Z5HHnKYy'
+  'sb_publishable_PtLQ22zTKhRlWiAX1lQ1Ew_Z5HHnKYy',
+  {auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true}}
 )
 
 function signInWithSlack() {
@@ -167,27 +168,97 @@ function isProtectedPage() {
     sidebarPath(window.location.href).startsWith(path)
   )
 }
+let hqAccessController = null
+let hqAccessNotice = null
+let hqPreviousAccess = null
+let hqAccessInvalidated = false
+let hqConnectionPanel = null
+
+function clearPrivateKnowledgeSearch() {
+  SEARCH_INDEX = []
+  SEARCH_READY = false
+  SEARCH_GENERATION++
+  SEARCH_FLIGHT = null
+  clearTimeout(DEBOUNCE_TIMER)
+  document.getElementById('searchResults')?.replaceChildren()
+  document.getElementById('searchResults')?.classList.add('hidden')
+}
+
+function accessConnectionPanel(show, retry = false) {
+  if (!show) {
+    hqConnectionPanel?.remove()
+    hqConnectionPanel = null
+    return
+  }
+  if (!hqConnectionPanel) {
+    hqConnectionPanel = document.createElement('section')
+    hqConnectionPanel.className = 'hq-access-connection'
+    hqConnectionPanel.setAttribute('role', 'status')
+    const title = document.createElement('h2')
+    title.textContent = 'Connecting to Paws HQ'
+    const message = document.createElement('p')
+    message.textContent = 'Checking your existing sign-in. Your work on this page is kept.'
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = 'Try again'
+    button.addEventListener('click', () => { void enforceAuthGate() })
+    hqConnectionPanel.append(title, message, button)
+    // Separate from the body opacity gate; existing forms are never replaced.
+    document.documentElement.append(hqConnectionPanel)
+  }
+  hqConnectionPanel.querySelector('p').textContent = retry
+    ? 'Your connection could not be checked. Your sign-in and work on this page are kept. Please try again.'
+    : 'Checking your existing sign-in. Your work on this page is kept.'
+  hqConnectionPanel.querySelector('button').hidden = !retry
+}
+
+function receiveHqAccess(state) {
+  const previous = hqPreviousAccess
+  const changedIdentity = state.reason === 'identity-changed'
+  const confirmedDenied = state.confirmed && ['revoked', 'unapproved', 'session-missing'].includes(state.status)
+  if (changedIdentity || (confirmedDenied && (!previous || previous.status !== state.status || previous.userId !== state.userId))) {
+    clearPrivateKnowledgeSearch()
+    hqAccessInvalidated = true
+    window.dispatchEvent(new CustomEvent('paws-access-revoked', {detail: state}))
+  }
+  hqPreviousAccess = state
+  if (state.status === 'allowed' || state.allowed) {
+    accessConnectionPanel(false)
+    hqAccessNotice?.render(state)
+    document.body.style.opacity = '1'
+    document.body.dataset.auth = 'ok'
+    if (state.status === 'allowed' && hqAccessInvalidated) {
+      hqAccessInvalidated = false
+      window.dispatchEvent(new CustomEvent('paws-access-restored', {detail: state}))
+    }
+  } else if (confirmedDenied || ['revoked', 'unapproved', 'session-missing'].includes(state.lastConfirmedStatus)) {
+    accessConnectionPanel(false)
+    document.body.style.opacity = '1'
+    document.body.dataset.auth = 'restricted'
+    hqAccessNotice?.render(state)
+  } else {
+    if (hqAccessNotice?.element.open) hqAccessNotice.element.close()
+    accessConnectionPanel(true, state.status === 'unavailable')
+  }
+}
+
 async function enforceAuthGate() {
   const isLoginPage = sidebarPath(window.location.href) === '/login'
-  const body = document.body
-
-  // Always show login page immediately
   if (isLoginPage) {
-    body.style.opacity = '1'
-    body.dataset.auth = 'login'
+    document.body.style.opacity = '1'
+    document.body.dataset.auth = 'login'
     return
   }
-
-  const { data } = await supabaseClient.auth.getSession()
-
-  if (!data.session) {
-    window.location.replace('/login')
-    return
+  try {
+    const controller = await ensureHqAccessController()
+    const state = await controller.check()
+    // A truly absent session keeps the existing login flow. Connection failures
+    // never navigate away, clear credentials, or change session duration.
+    if (state.confirmed && state.status === 'session-missing') window.location.replace('/login')
+  } catch (error) {
+    console.warn('Paws HQ access check could not connect', error)
+    accessConnectionPanel(true, true)
   }
-
-  // Logged in → reveal protected page
-  body.style.opacity = '1'
-  body.dataset.auth = 'ok'
 }
 
 window.addEventListener('load', enforceAuthGate)
@@ -203,7 +274,8 @@ document.addEventListener('header:ready', updateHeaderAuthUI)
 
 // react to login/logout
 supabaseClient.auth.onAuthStateChange(() => {
-  updateHeaderAuthUI()
+  // Run outside Supabase's auth callback lock; getSession must not be awaited here.
+  setTimeout(() => { void updateHeaderAuthUI() }, 0)
 })
 
 
@@ -553,6 +625,8 @@ window.addEventListener('load', injectWelcomeMessageOnce)
 let SEARCH_INDEX = []
 let SEARCH_READY = false
 let DEBOUNCE_TIMER = null
+let SEARCH_GENERATION = 0
+let SEARCH_FLIGHT = null
 
 /* -----------------------------
    LOAD INDEX
@@ -560,14 +634,25 @@ let DEBOUNCE_TIMER = null
 
 async function loadSearchIndex() {
   if (SEARCH_READY) return
-
-  try {
-    const res = await fetch('/search/index.json')
-    SEARCH_INDEX = await res.json()
-    SEARCH_READY = true
-  } catch (err) {
-    console.error('Search index failed to load', err)
-  }
+  if (SEARCH_FLIGHT) return SEARCH_FLIGHT
+  const generation = SEARCH_GENERATION
+  const pending = (async () => {
+    try {
+      await loadHqSecurityAssets()
+      const rows = await window.PawsKnowledgeBase.loadSearchIndex()
+      if (generation !== SEARCH_GENERATION) return
+      SEARCH_INDEX = rows.map(row => ({url: row.path, title: row.title, content: row.search_text}))
+      SEARCH_READY = true
+    } catch (err) {
+      if (generation === SEARCH_GENERATION) {
+        SEARCH_INDEX = []
+        SEARCH_READY = false
+      }
+      console.warn('Knowledgebase search could not load', err)
+    }
+  })().finally(() => { if (SEARCH_FLIGHT === pending) SEARCH_FLIGHT = null })
+  SEARCH_FLIGHT = pending
+  return pending
 }
 
 /* -----------------------------
@@ -624,7 +709,7 @@ function searchKB(query) {
 ----------------------------- */
 
 function highlight(text, words) {
-  let out = text
+  let out = String(text).replace(/[&<>"\']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]))
 
   words.forEach(w => {
     if (w.length < 3) return
@@ -705,8 +790,9 @@ async function initSearch() {
       return
     }
 
-    DEBOUNCE_TIMER = setTimeout(() => {
-      renderResults(searchKB(query), query)
+    DEBOUNCE_TIMER = setTimeout(async () => {
+      await loadSearchIndex()
+      if (input.value.trim() === query && SEARCH_READY) renderResults(searchKB(query), query)
     }, 120)
   })
 }
@@ -721,20 +807,78 @@ document.addEventListener('click', e => {
   }
 })
 
-// Shared taskbar navigation, after the existing auth and page initialization.
+// Shared security code reuses this exact Supabase client and loads before navigation.
+const HQ_ASSET_VERSION = '20261020a'
+let hqSecurityAssets = null
+
+function loadHqSharedScript(path, globalName) {
+  if (window[globalName]) return Promise.resolve(window[globalName])
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = `${path}?v=${HQ_ASSET_VERSION}`
+    script.onload = () => window[globalName] ? resolve(window[globalName]) : reject(new Error('Paws HQ feature did not initialize'))
+    script.onerror = () => { script.remove(); reject(new Error('Paws HQ feature could not load')) }
+    document.body.append(script)
+  })
+}
+
+function loadHqSharedStyle(path) {
+  if ([...document.querySelectorAll('link[rel="stylesheet"]')].some(link => link.getAttribute('href') === `${path}?v=${HQ_ASSET_VERSION}`)) return
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = `${path}?v=${HQ_ASSET_VERSION}`
+  document.head.append(link)
+}
+
+function loadHqSecurityAssets() {
+  if (hqSecurityAssets) return hqSecurityAssets
+  loadHqSharedStyle('/assets/hq-access.css')
+  loadHqSharedStyle('/assets/knowledge-base.css')
+  hqSecurityAssets = loadHqSharedScript('/assets/hq-access.js', 'PawsHqAccess')
+    .then(() => loadHqSharedScript('/assets/knowledge-base.js', 'PawsKnowledgeBase'))
+    .catch(error => { hqSecurityAssets = null; throw error })
+  return hqSecurityAssets
+}
+
+async function ensureHqAccessController() {
+  await loadHqSecurityAssets()
+  if (!hqAccessController) {
+    hqAccessController = window.PawsHqAccess.createController({client: supabaseClient, onChange: receiveHqAccess})
+    hqAccessNotice = window.PawsHqAccess.createNotice({controller: hqAccessController})
+    hqAccessController.start()
+  }
+  prepareHqNavigation()
+  return hqAccessController
+}
+
+let hqNavigationScript = null
+function prepareHqNavigation() {
+  if (hqNavigationScript) return
+  hqNavigationScript = document.createElement('script')
+  hqNavigationScript.src = `/assets/paws-navigation.js?v=${HQ_ASSET_VERSION}`
+  hqNavigationScript.onerror = () => { hqNavigationScript.remove(); hqNavigationScript = null }
+  document.body.append(hqNavigationScript)
+}
+
+window.addEventListener('paws-knowledge-access-denied', () => {
+  clearPrivateKnowledgeSearch()
+  if (hqAccessController) void hqAccessController.check()
+})
+
+// Shared taskbar navigation, after existing auth and page initialization.
 if (sidebarPath(window.location.href) !== '/login') {
-  const navigationStyle = document.createElement('link')
-  navigationStyle.rel = 'stylesheet'
-  navigationStyle.href = '/assets/paws-navigation.css?v=20261017f'
-  document.head.append(navigationStyle)
-  const loadNavigation = () => {
+  loadHqSharedStyle('/assets/paws-navigation.css')
+  const loadNavigation = async () => {
     const transitionScript = document.createElement('script')
-    transitionScript.src = '/assets/page-transition.js?v=20261017f'
+    transitionScript.src = `/assets/page-transition.js?v=${HQ_ASSET_VERSION}`
     document.body.append(transitionScript)
-    const navigationScript = document.createElement('script')
-    navigationScript.src = '/assets/paws-navigation.js?v=20261017f'
-    document.body.append(navigationScript)
+    try {
+      await ensureHqAccessController()
+    } catch (error) {
+      console.warn('Paws HQ navigation could not initialize', error)
+      accessConnectionPanel(true, true)
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadNavigation, {once:true})
-  else loadNavigation()
+  else void loadNavigation()
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build navigation metadata from existing public links and KB prose."""
+"""Build public destination metadata; Knowledge Base prose stays in Supabase."""
 from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
@@ -339,10 +339,7 @@ def manifest_from(repo: Path) -> dict:
         if candidate.is_file() and app['href'] not in seen:
             seen.add(app['href'])
             app['aliases'] = aliases_for(app)
-            if app['kind'] == 'article' and path.startswith('/kb/'):
-                text = ArticleSearchText()
-                text.feed(candidate.read_text())
-                app['searchText'] = text.result()
+            # Article bodies are private Supabase data, never static assets.
             apps.append(app)
     for app in quick_access_from(repo):
         if app['href'] not in seen:

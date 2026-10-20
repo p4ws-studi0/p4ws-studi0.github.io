@@ -68,6 +68,7 @@
   const quickStyles = { 'Run Cards':['file','accent'], 'Printables':['print','violet'], 'Price Sheets':['price','green'], 'Info Sheets':['info','amber'] };
   let apps = [], query = '', opened = false, closeTimer, toastTimer;
   let navigationView = 'pages', knowledgeCategory = null;
+  let privateSearchGeneration = 0;
   let mainMenuSnapshot = null;
   let previousBodyOverflow = '';
   const previouslyInert = new Map();
@@ -467,14 +468,45 @@
     supabaseClient.auth.onAuthStateChange((_event,session)=>renderAccount(session));
   }
 
-  fetch('/assets/navigation.json?v=20261017f',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
+  function indexDestinations() {
+    for(const app of apps){const title=normalize(app.title),aliases=normalize((app.aliases||[]).join(' ')),context=normalize([app.category,app.section].filter(Boolean).join(' ')),body=normalize(app.searchText||'');app._searchIndex={title,aliases,body,all:[title,aliases,context,body].join(' '),compact:(title+' '+aliases).replace(/ /g,''),shortWords:[...new Set((title+' '+aliases).split(' ').filter(Boolean))]};delete app._searchSnippet;}
+  }
+  function clearPrivateSearch() {
+    privateSearchGeneration++;
+    for(const app of apps){delete app.searchText;delete app._searchSnippet;}
+    indexDestinations();
+    if(opened)render();
+  }
+  async function refreshPrivateSearch() {
+    if(!apps.length||!window.PawsKnowledgeBase)return;
+    const generation=++privateSearchGeneration;
+    try {
+      const rows=await window.PawsKnowledgeBase.loadSearchIndex();
+      if(generation!==privateSearchGeneration)return;
+      const byPath=new Map(rows.map(row=>[normalizePath(row.path),row.search_text]));
+      for(const app of apps)if(app.href.startsWith('/kb/'))app.searchText=byPath.get(normalizePath(app.href))||'';
+      indexDestinations();
+      if(opened&&query)render();
+    } catch { if(generation===privateSearchGeneration)clearPrivateSearch(); }
+  }
+  window.addEventListener('paws-access-revoked',clearPrivateSearch);
+  window.addEventListener('paws-knowledge-access-denied',clearPrivateSearch);
+  window.addEventListener('paws-access-restored',refreshPrivateSearch);
+  window.addEventListener('pagehide',clearPrivateSearch);
+  window.addEventListener('pageshow',event=>{if(event.persisted)refreshPrivateSearch();});
+
+  fetch('/assets/navigation.json?v=20261020a',{cache:'no-store'}).then(response=>{if(!response.ok)throw new Error('Navigation unavailable');return response.json();}).then(data=>{
     apps=data.apps.filter(app=>{
       if(typeof app.href!=='string')return false;
       if(app.href.startsWith('/')&&!app.href.startsWith('//'))return normalizePath(app.href)!=='/digital-whiteboard';
       if(app.quickAccess&&app.kind==='resource'){try{const url=new URL(app.href);return url.protocol==='https:'&&['drive.google.com','docs.google.com'].includes(url.hostname)&&!url.username&&!url.password;}catch{}}
       return false;
     });
-    for(const app of apps){const title=normalize(app.title),aliases=normalize((app.aliases||[]).join(' ')),context=normalize([app.category,app.section].filter(Boolean).join(' ')),body=normalize(app.searchText||'');app._searchIndex={title,aliases,body,all:[title,aliases,context,body].join(' '),compact:(title+' '+aliases).replace(/ /g,''),shortWords:[...new Set((title+' '+aliases).split(' ').filter(Boolean))]};}
+    // Public navigation contains destination metadata only. Private prose is
+    // fetched with the existing staff session and held in memory for this page.
+    for(const app of apps) delete app.searchText;
+    indexDestinations();
     render();
+    refreshPrivateSearch();
   }).catch(()=>{heading.textContent='Navigation unavailable';content.append(make('div','desktop-empty','The local navigation could not load. Refresh to try again.'));});
 })();
