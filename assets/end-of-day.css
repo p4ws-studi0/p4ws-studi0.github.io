@@ -132,11 +132,11 @@
 
 /* A separate, read-only workspace for the bookkeeper. */
 .eod-week-actions {display:flex;align-items:center;gap:15px;flex-shrink:0;}
-.eod-report-open {display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:44px;margin-block:9px;padding:10px 17px;border:1px solid #2563eb;border-radius:9px;background:#2563eb;color:#fff;font:inherit;font-size:13px;font-weight:650;line-height:1.5;white-space:nowrap;cursor:pointer;box-shadow:0 2px 5px rgba(37,99,235,.12);transition:background 120ms,border-color 120ms,box-shadow 120ms;}
+.eod-report-open {display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:38px;margin-block:8px;padding:8px 17px;border:1px solid #21815b;border-radius:9px;background:#21815b;color:#fff;font:inherit;font-size:13px;font-weight:650;line-height:1.5;white-space:nowrap;cursor:pointer;box-shadow:0 2px 5px rgba(33,129,91,.12);transition:background 120ms,border-color 120ms,box-shadow 120ms;}
 .eod-report-open svg {width:19px;height:19px;color:inherit;}
-.eod-report-open:hover:not(:disabled) {border-color:#1d4ed8;background:#1d4ed8;box-shadow:0 3px 9px rgba(37,99,235,.2);}
-.dark .eod-report-open {border-color:#7199ed;background:#7199ed;color:#101b31;}
-.dark .eod-report-open:hover:not(:disabled) {border-color:#87a9f1;background:#87a9f1;}
+.eod-report-open:hover:not(:disabled) {border-color:#1b6c4c;background:#1b6c4c;box-shadow:0 3px 9px rgba(33,129,91,.2);}
+.dark .eod-report-open {border-color:#80c6a3;background:#80c6a3;color:#0e2c1e;}
+.dark .eod-report-open:hover:not(:disabled) {border-color:#95d3b5;background:#95d3b5;}
 .eod-report-dialog {--tr-text:#172033;--tr-muted:#5b6a7e;--tr-line:rgba(43,59,85,.12);--tr-soft:rgba(75,101,139,.04);--tr-surface:rgba(255,255,255,.67);--tr-input:rgba(255,255,255,.77);--tr-focus:#2563eb;--tr-menu:#f7f9fc;width:min(1230px,calc(100vw - 40px));max-height:calc(100dvh - 50px);margin:auto;padding:0;border:1px solid var(--tr-line);border-radius:20px;background:var(--tr-menu);color:var(--tr-text);font-family:Inter,sans-serif;box-shadow:0 32px 100px #0004;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;color-scheme:light;}
 .eod-report-dialog * {box-sizing:border-box;}
 .eod-report-dialog button {font-family:inherit;cursor:pointer;}
