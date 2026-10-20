@@ -195,8 +195,8 @@
     for(const id of ['previousWeek','nextWeek','goToday','jumpDate','openDateCalendar','loadOlderWeeks'])$(id).disabled=blocked;
     $('refreshLogs').disabled=state.loading||state.undoSaving||reportState.busy;
     $('openWeekReport').disabled=blocked;
-    for(const id of ['selectReportDates','reportStartDate','reportEndDate','reportLastSeven','cancelReportDates'])$(id).disabled=reportState.busy;
-    for(const id of ['printReport','downloadReport'])$(id).disabled=blocked||!reportState.model||!$('reportDatePicker').hidden;
+    for(const id of ['selectReportDates','reportLastSeven'])$(id).disabled=reportState.busy;
+    for(const id of ['downloadReport'])$(id).disabled=blocked||Boolean(reportRangeError(reportState.start,reportState.end))||!$('reportDatePicker').hidden;
     document.querySelectorAll('[data-restore-date],[data-week-end],[data-open-date]').forEach(button=>{button.disabled=blocked;});
     const editor=editorForDate(state.selectedDate,{create:false});
     $('saveStatus').textContent=state.loading?'Loading…':editor?.deleting||editor?.saving||state.undoSaving?'Saving…':editor?.error?'Changes not saved':editor&&dirty(editor)?'Unsaved changes':!state.ready?'':editor?.base?'All changes saved':'Ready for today’s entry';
@@ -387,21 +387,26 @@
   function reportMessage(value,error=false) {
     $('reportMessage').textContent=value;$('reportMessage').classList.toggle('is-error',error);
   }
+  function updateReportRange(start,end) {
+    if(reportState.busy)return false;
+    const error=reportRangeError(start,end);if(error){reportMessage(error,true);return false;}
+    reportState.request++;reportState.model=null;reportState.start=start;reportState.end=end;reportState.pendingStart=start;reportState.pendingEnd=end;reportState.selecting=false;
+    $('reportDateLabel').textContent=reportRangeLabel(start,end);reportMessage('');controls();return true;
+  }
   function toggleReportDates(open) {
+    if(open&&(reportState.busy))return;
     $('reportDatePicker').hidden=!open;$('selectReportDates').setAttribute('aria-expanded',String(open));
     if(open) {
-      reportState.pendingStart=reportState.start;reportState.pendingEnd=reportState.end;reportState.selecting=false;reportState.month=monthStart(reportState.start);reportState.focusDate=reportState.start;renderCalendar();
+      reportState.pendingStart=reportState.start;reportState.pendingEnd=reportState.end;reportState.selecting=false;reportState.month=monthStart(reportState.start);reportState.focusDate=reportState.start;renderCalendar();$(`eod-calendar-${reportState.start}`)?.focus();
     }
     controls();
   }
   function renderCalendar() {
-    if(reportState.month>'9999-11-01')reportState.month='9999-11-01';
+    if(reportState.month>'9999-12-01')reportState.month='9999-12-01';
     if(reportState.month<'1000-01-01')reportState.month='1000-01-01';
-    const {pendingStart:start,pendingEnd:end}=reportState,months=[reportState.month,shiftMonth(reportState.month,1)],focus=reportState.focusDate||start||months[0];
-    $('reportStartDate').value=start;$('reportEndDate').value=end;
-    const error=reportRangeError(start,end);$('applyReportDates').disabled=Boolean(error)||reportState.busy;
-    $('reportDateHint').textContent=reportState.selecting?'Now choose the end date. Select the same day for a single-day report.':error||`${reportRangeLabel(start,end)} · select a day to start a new range`;
-    $('reportCalendar').innerHTML=`<div class="eod-calendar-navigation"><span>Choose a start date, then an end date</span><div><button type="button" data-calendar-step="-1" aria-label="Previous month"${months[0]<='1000-01-01'?' disabled':''}>‹</button><button type="button" data-calendar-step="1" aria-label="Next month"${months[1]>='9999-12-01'?' disabled':''}>›</button></div></div><div class="eod-calendar-months">${months.map(month=>{
+    const {pendingStart:start,pendingEnd:end}=reportState,months=[reportState.month],focus=reportState.focusDate||start||months[0];
+    $('reportDateHint').textContent=reportState.selecting?'Choose an end date. Select the same day for a one-day report.':'Choose a start date, then an end date.';
+    $('reportCalendar').innerHTML=`<div class="eod-calendar-navigation"><span>${escape(formatDate(months[0],{month:'long',year:'numeric'}))}</span><div><button type="button" data-calendar-step="-1" aria-label="Previous month"${months[0]<='1000-01-01'?' disabled':''}>‹</button><button type="button" data-calendar-step="1" aria-label="Next month"${months[0]>='9999-12-01'?' disabled':''}>›</button></div></div><div class="eod-calendar-months">${months.map(month=>{
       const first=new Date(`${month}T12:00:00Z`),offset=(first.getUTCDay()+6)%7,last=shiftDate(shiftMonth(month,1),-1),count=Number(last.slice(-2)),cells=[];
       for(let index=0;index<Math.ceil((offset+count)/7)*7;index++) {
         const day=index-offset+1;if(day<1||day>count){cells.push('<span role="gridcell" class="eod-calendar-empty"></span>');continue;}
@@ -409,13 +414,16 @@
         cells.push(`<button id="eod-calendar-${date}" type="button" role="gridcell" data-calendar-date="${date}" tabindex="${date===focus?'0':'-1'}" aria-label="${escape(formatDate(date,{weekday:'long',month:'long',day:'numeric',year:'numeric'}))}" aria-selected="${selected||date===start}"${date===state.today?' aria-current="date"':''} class="${selected?'is-in-range ':''}${edge?'is-range-edge ':''}${date===state.today?'is-today':''}">${day}</button>`);
       }
       const rows=[];for(let index=0;index<cells.length;index+=7)rows.push(`<div role="row" class="eod-calendar-row">${cells.slice(index,index+7).join('')}</div>`);
-      return `<div class="eod-calendar-month"><h3>${escape(formatDate(month,{month:'long',year:'numeric'}))}</h3><div role="grid" aria-label="${escape(formatDate(month,{month:'long',year:'numeric'}))}"><div role="row" class="eod-calendar-weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day=>`<span role="columnheader" aria-label="${day}">${day.slice(0,1)}</span>`).join('')}</div>${rows.join('')}</div></div>`;
+      return `<div class="eod-calendar-month"><div role="grid" aria-label="${escape(formatDate(month,{month:'long',year:'numeric'}))}"><div role="row" class="eod-calendar-weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day=>`<span role="columnheader" aria-label="${day}">${day.slice(0,1)}</span>`).join('')}</div>${rows.join('')}</div></div>`;
     }).join('')}</div>`;
   }
   function chooseReportDate(date) {
     if(!validDate(date)||reportState.busy)return;
-    if(!reportState.selecting){reportState.pendingStart=date;reportState.pendingEnd='';reportState.selecting=true;}
-    else {reportState.pendingEnd=date;if(date<reportState.pendingStart)[reportState.pendingStart,reportState.pendingEnd]=[date,reportState.pendingStart];reportState.selecting=false;}
+    if(!reportState.selecting){reportState.pendingStart=date;reportState.pendingEnd='';reportState.selecting=true;reportMessage('');}
+    else {
+      const start=date<reportState.pendingStart?date:reportState.pendingStart,end=date<reportState.pendingStart?reportState.pendingStart:date;
+      if(updateReportRange(start,end)){reportState.pendingStart=start;reportState.pendingEnd=end;reportState.selecting=false;toggleReportDates(false);$('selectReportDates').focus();return;}
+    }
     reportState.focusDate=date;renderCalendar();$(`eod-calendar-${date}`)?.focus();
   }
   function calendarKey(event) {
@@ -427,14 +435,13 @@
       const month=shiftMonth(date,event.key==='PageUp'?-1:1),last=Number(shiftDate(shiftMonth(month,1),-1).slice(-2));next=`${month.slice(0,7)}-${String(Math.min(Number(date.slice(-2)),last)).padStart(2,'0')}`;
     }else return;
     if(!validDate(next))return;event.preventDefault();reportState.focusDate=next;
-    const visibleMonths=window.matchMedia?.('(max-width: 700px)')?.matches?1:2;
-    if(next<reportState.month||next>=shiftMonth(reportState.month,visibleMonths))reportState.month=monthStart(next);
+    if(monthStart(next)!==reportState.month)reportState.month=monthStart(next);
     renderCalendar();$(`eod-calendar-${next}`)?.focus();
   }
   function clearReport() {
     reportState.request++;reportState.busy=false;reportState.model=null;
     for(const url of reportState.urls)URL.revokeObjectURL(url);reportState.urls.clear();
-    $('weekReportContent').innerHTML='';reportMessage('');$('reportDatePicker').hidden=true;$('selectReportDates').setAttribute('aria-expanded','false');controls();
+    reportMessage('');$('reportDatePicker').hidden=true;$('selectReportDates').setAttribute('aria-expanded','false');controls();
   }
   function closeReport() {
     const focus=reportState.returnFocus;clearReport();if($('weekReport').open)$('weekReport').close();focus?.focus?.();
@@ -443,7 +450,7 @@
     const error=reportRangeError(start,end);if(error){reportMessage(error,true);return null;}
     if(!state.ready||state.loading||reportState.busy||state.undoSaving)return null;
     const epoch=state.epoch,request=++reportState.request,valid=()=>current(epoch)&&request===reportState.request&&$('weekReport').open;
-    reportState.busy=true;reportState.model=null;$('weekReportContent').innerHTML='';reportMessage('Preparing saved entries…');controls();
+    reportState.busy=true;reportState.model=null;reportMessage('Preparing your export…');controls();
     try {
       const editors=[...state.editors.values()].filter(editor=>editor.date>=start&&editor.date<=end);
       await Promise.all(editors.map(editor=>saveEditor(editor)));if(!valid())return null;
@@ -452,25 +459,22 @@
       const result=await supabaseClient.from(TABLE).select('*').gte('entry_date',start).lte('entry_date',end).order('entry_date',{ascending:true}).range(0,499);
       if(!valid())return null;if(result.error)throw result.error;
       const report=window.PawsEodReport.createReport({start,end,rows:result.data||[],fields:FIELDS});
-      reportState.model=report;reportState.start=start;reportState.end=end;$('reportDateLabel').textContent=reportRangeLabel(start,end);$('weekReportContent').innerHTML=window.PawsEodReport.html(report);
-      reportMessage('Every date in the selected range is included. Days without an entry are shown with blank fields.');return report;
+      reportState.model=report;reportMessage('');return report;
     }catch(error) {
       if(!valid())return null;
       if(['AUTH','ACCESS','42501'].includes(error?.code)) {state.ready=false;state.logs=[];state.deletedRows=[];state.editors.clear();state.loadedDates.clear();render();}
-      reportMessage(error?.code==='REPORT_UNSAVED'?'Finish saving or retry the unsaved entries in this date range, then try again.':error?.code==='AUTH'?'Sign in to Paws HQ to print or export entries.':error?.code==='ACCESS'||error?.code==='42501'?'Your workspace access could not be confirmed. Refresh Paws HQ and try again.':'Could not load the report. Check your connection and try again.',true);return null;
+      reportMessage(error?.code==='REPORT_UNSAVED'?'Finish saving or retry the unsaved entries in this date range, then try again.':error?.code==='AUTH'?'Sign in to Paws HQ to export entries.':error?.code==='ACCESS'||error?.code==='42501'?'Your workspace access could not be confirmed. Refresh Paws HQ and try again.':'Could not load the report. Check your connection and try again.',true);return null;
     }finally {if(valid()){reportState.busy=false;controls();}}
   }
   async function openReport() {
     if(!state.ready||state.loading||reportState.busy)return;
-    reportState.returnFocus=document.activeElement;reportState.start=shiftDate(state.weekEnd,-6);reportState.end=state.weekEnd;$('reportDateLabel').textContent=reportRangeLabel(reportState.start,reportState.end);
-    $('weekReport').showModal();await prepareReport(reportState.start,reportState.end);
+    reportState.returnFocus=document.activeElement;updateReportRange(shiftDate(state.weekEnd,-6),state.weekEnd);$('weekReport').showModal();
   }
-  async function outputReport(kind) {
-    const report=await prepareReport(reportState.start,reportState.end);if(!report)return;
-    if(kind==='print'){window.print();return;}
+  async function outputReport() {
+    const report=await prepareReport(reportState.start,reportState.end);if(!report||!state.ready||!$('weekReport').open||reportState.model!==report)return;
     const blob=new Blob([window.PawsEodReport.csv(report)],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),link=document.createElement('a');reportState.urls.add(url);
     link.href=url;link.download=`paws-end-of-day_${report.start}_to_${report.end}.csv`;document.body.appendChild(link);link.click();link.remove();
-    setTimeout(()=>{URL.revokeObjectURL(url);reportState.urls.delete(url);},1000);reportMessage('CSV downloaded. Every date in the selected range is included, with blank fields for days without an entry.');
+    reportState.model=null;setTimeout(()=>{URL.revokeObjectURL(url);reportState.urls.delete(url);},1000);reportMessage('CSV downloaded.');
   }
   function resetAuth(userId) {
     state.epoch++;state.request++;state.userId=userId;state.ready=false;state.loading=false;state.logs=[];state.deletedRows=[];state.editors.clear();state.loadedDates.clear();state.firstDate=null;state.metadataLoaded=false;state.undo=null;state.undoSaving=false;state.today=easternToday();state.weekEnd=state.today;state.selectedDate=state.today;state.historyVisible=12;
@@ -492,21 +496,14 @@
     $('openWeekReport').addEventListener('click',openReport);$('closeWeekReport').addEventListener('click',closeReport);
     $('weekReport').addEventListener('close',clearReport);$('weekReport').addEventListener('click',event=>{if(event.target===$('weekReport'))closeReport();});
     $('weekReport').addEventListener('cancel',event=>{if(!$('reportDatePicker').hidden){event.preventDefault();toggleReportDates(false);$('selectReportDates').focus();}});
-    $('selectReportDates').addEventListener('click',()=>toggleReportDates($('reportDatePicker').hidden));$('cancelReportDates').addEventListener('click',()=>{toggleReportDates(false);$('selectReportDates').focus();});
-    $('reportLastSeven').addEventListener('click',()=>{const today=easternToday();reportState.pendingStart=shiftDate(today,-6);reportState.pendingEnd=today;reportState.month=monthStart(reportState.pendingStart);reportState.focusDate=reportState.pendingStart;reportState.selecting=false;renderCalendar();});
-    for(const id of ['reportStartDate','reportEndDate'])$(id).addEventListener('change',()=>{
-      reportState.pendingStart=$('reportStartDate').value;reportState.pendingEnd=$('reportEndDate').value;reportState.selecting=false;
-      if(validDate($(id).value)){reportState.month=monthStart($(id).value);reportState.focusDate=$(id).value;}renderCalendar();
-    });
+    $('selectReportDates').addEventListener('click',()=>toggleReportDates($('reportDatePicker').hidden));
+    $('reportLastSeven').addEventListener('click',()=>{const today=easternToday();if(updateReportRange(shiftDate(today,-6),today))toggleReportDates(false);});
     $('reportCalendar').addEventListener('click',event=>{
       const date=event.target.closest('[data-calendar-date]');if(date){chooseReportDate(date.dataset.calendarDate);return;}
-      const step=event.target.closest('[data-calendar-step]');if(step&&!reportState.busy){reportState.month=shiftMonth(reportState.month,Number(step.dataset.calendarStep));reportState.focusDate=reportState.month;renderCalendar();}
+      const step=event.target.closest('[data-calendar-step]');if(step&&!reportState.busy&&!step.disabled){const month=shiftMonth(reportState.month,Number(step.dataset.calendarStep));if(validDate(month)){reportState.month=month;reportState.focusDate=month;renderCalendar();}}
     });$('reportCalendar').addEventListener('keydown',calendarKey);
-    $('applyReportDates').addEventListener('click',async()=>{const {pendingStart:start,pendingEnd:end}=reportState;if(reportRangeError(start,end)||reportState.busy)return;toggleReportDates(false);await prepareReport(start,end);});
-    $('printReport').addEventListener('click',()=>outputReport('print'));$('downloadReport').addEventListener('click',()=>outputReport('csv'));
+    $('downloadReport').addEventListener('click',outputReport);
     window.addEventListener('paws-access-revoked',closeReport);window.addEventListener('pagehide',closeReport);
-    window.addEventListener('beforeprint',()=>{if(!state.ready||!reportState.model)$('weekReportContent').innerHTML='<p class="eod-report-print-help">Select Export as CSV in End Of Day, choose dates, then select Print report.</p>';});
-    window.addEventListener('afterprint',()=>{if(!$('weekReport').open)$('weekReportContent').innerHTML='';});
     $('previousWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,-7),{week:true}));$('nextWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,7),{week:true}));
     $('goToday').addEventListener('click',()=>{state.today=easternToday();return openDay(state.today,{week:true});});
     $('weekRows').addEventListener('click',event=>{const button=event.target.closest('[data-open-date]');if(button)return openDay(button.dataset.openDate);});

@@ -17,7 +17,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
   <link rel="stylesheet" href="/assets/training.css?v=3" />
-  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261020j" />
+  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261020l" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
@@ -85,20 +85,19 @@
   <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
   <dialog id="weekReport" class="eod-report-dialog" aria-labelledby="reportTitle">
     <div class="eod-report-toolbar">
-      <div><p class="eod-eyebrow">PRINT &amp; EXPORT</p><h2 id="reportTitle">End Of Day report</h2><p>All daily details, side by side.</p></div>
+      <div><p class="eod-eyebrow">EXPORT</p><h2 id="reportTitle">End Of Day report</h2></div>
       <button id="closeWeekReport" type="button" class="eod-report-close" aria-label="Close report">×</button>
     </div>
     <div class="eod-report-tools">
       <button id="selectReportDates" type="button" class="eod-report-date-button" aria-expanded="false" aria-controls="reportDatePicker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 3v4m10-4v4M4 10h16M4 5h16v16H4z"/><path d="M8 14h2m4 0h2M8 17h2"/></svg><span><small>Select dates</small><strong id="reportDateLabel"></strong></span><span class="eod-report-chevron" aria-hidden="true">⌄</span></button>
-      <div class="eod-report-output-actions"><button id="downloadReport" class="eod-secondary-button" type="button" disabled>Download CSV</button><button id="printReport" class="eod-today-button" type="button" disabled>Print report</button></div>
+      <button id="reportLastSeven" class="eod-report-shortcut" type="button">Last 7 days</button>
     </div>
     <section id="reportDatePicker" class="eod-report-date-picker" aria-label="Select report dates" hidden>
-      <div class="eod-calendar-inputs"><label>Start date<input id="reportStartDate" type="date" required /></label><span aria-hidden="true">→</span><label>End date<input id="reportEndDate" type="date" required /></label><button id="reportLastSeven" type="button">Last 7 days</button></div>
       <div id="reportCalendar" class="eod-calendar" role="group" aria-label="Date range calendar"></div>
-      <div class="eod-calendar-footer"><span id="reportDateHint" role="status" aria-live="polite">Choose a start date, then an end date.</span><div><button id="cancelReportDates" type="button" class="eod-secondary-button">Cancel</button><button id="applyReportDates" type="button" class="eod-today-button">Apply dates</button></div></div>
+      <p id="reportDateHint" class="eod-calendar-hint" role="status" aria-live="polite">Choose a start date, then an end date.</p>
     </section>
+    <div class="eod-report-output-actions"><button id="downloadReport" class="eod-secondary-button" type="button" disabled>Download CSV</button></div>
     <p id="reportMessage" class="eod-report-message" role="status" aria-live="polite"></p>
-    <div id="weekReportContent" class="eod-report-content"></div>
   </dialog>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/script.js?v=20261020c"></script>
@@ -115,6 +114,6 @@
     }
   </script>
   <script src="/assets/end-of-day-report.js?v=20261020k" defer></script>
-  <script src="/assets/end-of-day.js?v=20261020k" defer></script>
+  <script src="/assets/end-of-day.js?v=20261020l" defer></script>
 </body>
 </html>
