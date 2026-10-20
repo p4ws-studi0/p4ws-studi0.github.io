@@ -11,7 +11,7 @@
 .dark .eod-message.is-error {color:#ffadb3;}
 .eod-attention {display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:16px;padding:10px 14px;border:1px solid rgba(217,146,50,.3);border-radius:10px;background:rgba(217,146,50,.055);font-size:11px;}
 .eod-attention button {padding:6px 9px;border:1px solid var(--tr-line);border-radius:7px;background:var(--tr-input);color:var(--tr-text);font-size:11px;}
-.eod-week {border:1px solid var(--tr-line);border-radius:16px;background:var(--tr-surface);overflow:hidden;scroll-margin-top:85px;}
+.eod-week {border:1px solid var(--tr-line);border-radius:16px;background:var(--tr-surface);overflow:visible;scroll-margin-top:85px;}
 .eod-week-toolbar {display:flex;align-items:center;justify-content:space-between;gap:20px;padding:17px 20px 16px;}
 .eod-range > span {display:block;margin-bottom:5px;font-size:10px;color:var(--tr-muted);}
 .eod-range h2 {margin:0;font-size:16px;font-weight:650;letter-spacing:-.025em;}
@@ -22,8 +22,27 @@
 .eod-today-button:hover:not(:disabled) {background:#1d4ed8;}
 .eod-secondary-button {padding:9px 14px;background:transparent;}
 .eod-icon-button:hover:not(:disabled),.eod-secondary-button:hover:not(:disabled),.eod-open-day:hover:not(:disabled) {border-color:var(--tr-focus);background:var(--tr-soft);}
-.eod-date-jump {display:flex;align-items:center;gap:8px;margin-left:8px;font-size:10px;color:var(--tr-muted);}
-.eod-date-jump input {width:144px;min-height:40px;padding:8px 10px;border:1px solid var(--tr-line);border-radius:8px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:12px;}
+.eod-date-jump {position:relative;display:flex;align-items:center;gap:8px;margin-left:8px;font-size:10px;color:var(--tr-muted);}
+.eod-jump-input {position:relative;}
+.eod-date-jump input {width:155px;min-height:40px;padding:8px 42px 8px 10px;border:1px solid var(--tr-line);border-radius:8px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:12px;}
+.eod-date-jump input[aria-invalid="true"] {border-color:#d94850;}
+#openDateCalendar {position:absolute;right:5px;top:5px;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:6px;background:var(--tr-soft);color:var(--tr-focus);}
+#openDateCalendar svg {width:18px;height:18px;}
+#openDateCalendar:hover:not(:disabled),#openDateCalendar[aria-expanded="true"] {background:rgba(59,130,246,.12);}
+.eod-jump-picker {position:absolute;right:0;top:calc(100% + 9px);z-index:50;width:min(310px,calc(100vw - 42px));padding:14px;border:1px solid var(--tr-line);border-radius:13px;background:var(--tr-menu);color:var(--tr-text);box-shadow:0 14px 45px rgba(15,23,42,.17),0 2px 8px rgba(15,23,42,.05);animation:eod-report-enter 130ms ease-out;}
+.eod-jump-picker[hidden] {display:none;}
+.eod-jump-picker-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;}
+.eod-jump-picker-heading strong {font-size:12px;font-weight:650;}
+#closeDateCalendar {display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--tr-muted);font-size:20px;}
+#closeDateCalendar:hover {background:var(--tr-soft);}
+.eod-jump-month-navigation {display:flex;align-items:center;gap:7px;margin-bottom:15px;}
+.eod-jump-month-navigation > button {flex-shrink:0;width:29px;height:32px;padding:0;border:1px solid var(--tr-line);border-radius:7px;background:var(--tr-input);color:var(--tr-text);font-size:21px;}
+.eod-jump-month-navigation > div {display:flex;flex:1;gap:5px;min-width:0;}
+.eod-jump-month-navigation select {min-width:0;max-width:100%;min-height:32px;padding:5px 4px;border:1px solid var(--tr-line);border-radius:6px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:11px;}
+#jumpMonth {flex:1;}#jumpYear {width:66px;}
+.eod-jump-month-navigation select option {background:var(--tr-menu);color:var(--tr-text);}
+.eod-jump-today {width:100%;min-height:33px;margin-top:10px;border:1px solid var(--tr-line);border-radius:7px;background:var(--tr-soft);color:var(--tr-focus);font-size:11px;font-weight:600;}
+.eod-jump-today:hover {background:rgba(59,130,246,.1);}
 .eod-overview-scroll {width:100%;overflow:auto;overscroll-behavior-x:contain;scrollbar-width:thin;}
 .eod-overview {width:100%;min-width:680px;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:12px;}
 .eod-date-col {width:172px;}.eod-staff-col {width:auto;}.eod-total-col {width:124px;}.eod-state-col {width:116px;}.eod-open-col {width:88px;}
@@ -108,7 +127,7 @@
 .eod-history-list .is-selected {border-color:var(--tr-focus);background:rgba(59,130,246,.055);}
 @media(max-width:1050px) {.eod-fields-three {grid-template-columns:repeat(2,minmax(0,1fr));}.eod-count-grid .eod-field {grid-template-columns:1fr;gap:6px;}.eod-count-grid .eod-field input {width:100%;}}
 @media(max-width:850px) {.eod-entry-grid {grid-template-columns:1fr;grid-template-areas:"money" "count" "deposit";}.eod-week-toolbar {align-items:flex-start;flex-direction:column;gap:15px;}.eod-week-navigation {width:100%;}.eod-date-jump {margin-left:auto;}.eod-fields-three {grid-template-columns:repeat(3,minmax(0,1fr));}.eod-count-grid .eod-field {grid-template-columns:1fr minmax(0,150px);}.eod-history-list {grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:600px) {#endOfDayPage {padding-top:25px;}.eod-heading {align-items:flex-start;gap:10px;}.eod-heading h1 {font-size:31px;}.eod-heading > div > p:last-child {font-size:11px;}.eod-target {flex-direction:column;gap:3px;padding:8px 11px;font-size:9px;}.eod-target strong {font-size:18px;}.eod-week-toolbar {padding:15px;}.eod-range h2 {font-size:15px;}.eod-date-jump {margin-left:auto;gap:5px;}.eod-date-jump > span {display:none;}.eod-date-jump input {width:136px;font-size:16px;}.eod-week-footer {padding-inline:15px;align-items:flex-start;}.eod-week-footer > span {padding-block:12px;}.eod-day-heading h2 {font-size:21px;}.eod-card {padding:18px 16px;}.eod-fields-three {grid-template-columns:repeat(2,minmax(0,1fr));}.eod-field input,.eod-field textarea {font-size:16px;}.eod-count-grid .eod-field {grid-template-columns:1fr;gap:6px;}.eod-count-grid .eod-field input {width:100%;}.eod-total-block output {font-size:24px;}.eod-day-actions {align-items:flex-start;}.eod-day-actions > span {padding-top:10px;}.eod-history-list {grid-template-columns:1fr;}.eod-history-hint {font-size:9px;}}
+@media(max-width:600px) {#endOfDayPage {padding-top:25px;}.eod-heading {align-items:flex-start;gap:10px;}.eod-heading h1 {font-size:31px;}.eod-heading > div > p:last-child {font-size:11px;}.eod-target {flex-direction:column;gap:3px;padding:8px 11px;font-size:9px;}.eod-target strong {font-size:18px;}.eod-week-toolbar {padding:15px;}.eod-range h2 {font-size:15px;}.eod-date-jump {margin-left:auto;gap:5px;}.eod-date-jump > label {display:none;}.eod-date-jump input {width:155px;font-size:16px;}.eod-week-footer {padding-inline:15px;align-items:flex-start;}.eod-week-footer > span {padding-block:12px;}.eod-day-heading h2 {font-size:21px;}.eod-card {padding:18px 16px;}.eod-fields-three {grid-template-columns:repeat(2,minmax(0,1fr));}.eod-field input,.eod-field textarea {font-size:16px;}.eod-count-grid .eod-field {grid-template-columns:1fr;gap:6px;}.eod-count-grid .eod-field input {width:100%;}.eod-total-block output {font-size:24px;}.eod-day-actions {align-items:flex-start;}.eod-day-actions > span {padding-top:10px;}.eod-history-list {grid-template-columns:1fr;}.eod-history-hint {font-size:9px;}}
 @media(prefers-reduced-motion:reduce) {#endOfDayPage * {transition:none!important;}}
 
 /* A separate, read-only workspace for the bookkeeper. */
@@ -200,7 +219,8 @@
   .eod-calendar-row button {min-height:37px;}.eod-calendar-footer {flex-wrap:wrap;gap:10px;}.eod-calendar-footer > div {width:100%;}.eod-calendar-footer > div > button {flex:1;}
 }
 @media(max-width:600px) {.eod-week-footer {flex-wrap:wrap;gap:0;padding-bottom:2px;}.eod-week-footer > span {padding-bottom:3px;}.eod-week-actions {width:100%;margin-left:0;}.eod-report-open {flex:1;}}
-@media(prefers-reduced-motion:reduce) {.eod-report-dialog,.eod-report-date-picker {animation:none;}.eod-calendar-row button,.eod-report-date-button {transition:none;}}
+@media(max-width:600px) {.eod-jump-month-navigation select {font-size:16px;}}
+@media(prefers-reduced-motion:reduce) {.eod-report-dialog,.eod-report-date-picker,.eod-jump-picker {animation:none;}.eod-calendar-row button,.eod-report-date-button {transition:none;}}
 @media print {
   @page {size:letter landscape;margin:10mm;}
   html,body {height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important;color:#111!important;opacity:1!important;}

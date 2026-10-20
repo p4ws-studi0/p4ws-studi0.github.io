@@ -13,16 +13,16 @@ const decode=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"
 function environment({records=[record()],active=true,intercept=null,now='2026-10-13T16:00:00Z',reducedMotion=false,smallScreen=false}={}) {
   const api={records:clone(records),active,session:{user:{id:uuid(900)}},calls:[],callbacks:[],intercept,downloads:[],urls:new Map(),revoked:[],prints:[]};
   const nodes=new Map(),inputs=new Map(),buttons=[],timers=new Map();let timer=0,nextID=10000,day=null;
-  const document={readyState:'loading',hidden:false,activeElement:null,getElementById:id=>nodes.get(id),addEventListener(){},body:{appendChild(child){child.appended=true;}},createElement(tag){const child=node();child.tagName=tag;return child;},querySelectorAll(selector){if(selector==='#dayFields [data-field]')return [...inputs.values()];if(selector==='[data-restore-date],[data-week-end],[data-open-date]')return buttons.filter(button=>button.dataset.restoreDate||button.dataset.weekEnd||button.dataset.openDate);return [];}};
+  const document={readyState:'loading',hidden:false,activeElement:null,events:{},getElementById:id=>nodes.get(id),addEventListener(type,fn){(this.events[type]||=[]).push(fn);},async emit(type,event={}){for(const fn of this.events[type]||[])await fn(event);},body:{appendChild(child){child.appended=true;}},createElement(tag){const child=node();child.tagName=tag;return child;},querySelectorAll(selector){if(selector==='#dayFields [data-field]')return [...inputs.values()];if(selector==='[data-restore-date],[data-week-end],[data-open-date]')return buttons.filter(button=>button.dataset.restoreDate||button.dataset.weekEnd||button.dataset.openDate);return [];}};
   function node(id='') {
     const n={id,dataset:{},style:{},events:{},disabled:false,hidden:false,open:false,textContent:'',value:'',attrs:{},classes:new Set(),children:[],
       addEventListener(type,fn){(this.events[type]||=[]).push(fn);},async emit(type,event={}){for(const fn of this.events[type]||[])await fn(event);},
-      setAttribute(key,value){this.attrs[key]=value;},matches(selector){return selector==='[data-field]'?Boolean(this.dataset.field):selector==='[data-money]'?Boolean(this.money):false;},
+      setAttribute(key,value){this.attrs[key]=value;},getAttribute(key){return this.attrs[key];},removeAttribute(key){delete this.attrs[key];},contains(target){return target===this||target?.parent===this.id;},matches(selector){return selector==='[data-field]'?Boolean(this.dataset.field):selector==='[data-money]'?Boolean(this.money):false;},
       closest(selector){if(selector==='#dayFields')return this.day||null;if(selector==='[data-day-date]')return this.day||null;const match=selector.match(/^\[data-([a-z-]+)(?:="([^"]+)")?\]$/);if(!match)return null;const key=match[1].replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase());return this.dataset[key]&&(match[2]===undefined||this.dataset[key]===match[2])?this:null;},
       focus(){document.activeElement=this;},blur(){document.activeElement=null;},select(){this.selected=true;},scrollIntoView(options){this.scrolled=options;},
       showModal(){this.open=true;},close(){this.open=false;for(const fn of this.events.close||[])fn({target:this});},click(){if(this.tagName==='a')api.downloads.push({href:this.href,filename:this.download,blob:api.urls.get(this.href)});},remove(){this.removed=true;}};
     n.classList={toggle(key,on){if(on)n.classes.add(key);else n.classes.delete(key);},add(key){n.classes.add(key);},remove(key){n.classes.delete(key);}};
-    let markup='';Object.defineProperty(n,'innerHTML',{get(){return markup;},set(value){markup=value;if(id==='dayContent')parseDay(value);if(['weekRows','historyList','deletedList','attentionList','reportCalendar'].includes(id))parseButtons(value,id);}});return n;
+    let markup='';Object.defineProperty(n,'innerHTML',{get(){return markup;},set(value){markup=value;if(id==='dayContent')parseDay(value);if(['weekRows','historyList','deletedList','attentionList','reportCalendar','jumpCalendar'].includes(id))parseButtons(value,id);}});return n;
   }
   function parseButtons(markup,parent) {
     for(let index=buttons.length-1;index>=0;index--)if(buttons[index].parent===parent){if(buttons[index].id)nodes.delete(buttons[index].id);buttons.splice(index,1);}
@@ -37,7 +37,7 @@ function environment({records=[record()],active=true,intercept=null,now='2026-10
     }
     const retry=nodes.get('retryDay');if(retry)retry.dataset.dayAction='retry';const remove=nodes.get('deleteDay');if(remove)remove.dataset.dayAction='delete';parseButtons(markup,'dayContent');
   }
-  for(const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)){assert.ok(!nodes.has(match[1]),'unique initial IDs');const n=node(match[1]);n.hidden=/\bhidden\b/.test(match[0]);nodes.set(n.id,n);}
+  for(const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)){assert.ok(!nodes.has(match[1]),'unique initial IDs');const n=node(match[1]);n.hidden=/\bhidden\b/.test(match[0]);for(const attr of match[0].matchAll(/([\w-]+)="([^"]*)"/g)){n.attrs[attr[1]]=decode(attr[2]);if(attr[1].startsWith('data-'))n.dataset[attr[1].slice(5).replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=decode(attr[2]);}nodes.set(n.id,n);}
   let app;
   function serverTotals(row,patch,insert=false) {
     for(const [total,parts]of [['drawer_total',denoms],['total_deposit',['cash_deposit','check_deposit']]])if(insert||parts.some(key=>key in patch&&patch[key]!==row[key])){const values={...row,...patch},sum=app.sumMoney(values,parts);assert.equal(sum.valid,true);patch[total]=sum.cents===null?'':app.centsText(sum.cents);}
@@ -60,7 +60,7 @@ function environment({records=[record()],active=true,intercept=null,now='2026-10
   class TestDate extends Date{constructor(...args){super(...(args.length?args:[now]));}static now(){return Date.parse(now);}}
   const context=vm.createContext({document,window,supabaseClient:client,Date:TestDate,Intl,Blob,URL:objectURL,console,crypto:{randomUUID:()=>uuid(nextID++)},setInterval(){},setTimeout(fn,delay){timers.set(++timer,{fn,delay});return timer;},clearTimeout(id){timers.delete(id);}});
   const marker="  if (document.readyState==='loading')";assert.equal(source.split(marker).length,2);
-  vm.runInContext(source.replace(marker,`  window.hooks={state,reportState,init,easternToday,validDate,shiftDate,weekDates,rangeLabel,parseMoney,centsText,currency,sumMoney,hasActivity,dirty,unfinished,editorForDate,render,renderForm,renderWeek,renderCalculations,takeInput,changedPatch,selectDate,loadWeek,saveEditor,deleteDay,restoreDay,reloadDay,resetAuth,openReport,prepareReport,outputReport,closeReport,chooseReportDate,calendarKey,reportRangeError,renderCalendar,toggleReportDates};\n${marker}`),context);app=window.hooks;
+  vm.runInContext(source.replace(marker,`  window.hooks={state,reportState,jumpState,init,easternToday,validDate,shiftDate,weekDates,rangeLabel,parseJumpDate,formatJumpDate,toggleJumpCalendar,renderJumpCalendar,jumpCalendarKey,commitJumpDate,parseMoney,centsText,currency,sumMoney,hasActivity,dirty,unfinished,editorForDate,render,renderForm,renderWeek,renderCalculations,takeInput,changedPatch,selectDate,loadWeek,saveEditor,deleteDay,restoreDay,reloadDay,resetAuth,openReport,prepareReport,outputReport,closeReport,chooseReportDate,calendarKey,reportRangeError,renderCalendar,toggleReportDates};\n${marker}`),context);app=window.hooks;
   return {app,api,nodes,inputs,buttons,document,window,timers,get:id=>nodes.get(id),async start(){app.init();await until(()=>!app.state.loading);},input(key,value){const input=inputs.get(key);assert.ok(input,`input ${key} exists`);input.focus();input.value=value;app.takeInput(input);return input;},save(date=app.state.selectedDate){return app.saveEditor(app.state.editors.get(date));},signOut(){api.session=null;for(const fn of api.callbacks)fn('SIGNED_OUT',null);},runTimers(delay){for(const [id,item]of [...timers])if(item.delay===delay){timers.delete(id);item.fn();}}};
 }
 
@@ -161,6 +161,44 @@ test('periodic refresh fetches just the visible week and preserves focus or unsa
 test('history expands twelve date ranges at a time and date jump reaches explicit future dates',async()=>{
   const h=environment({records:[record(),record({id:uuid(12),entry_date:'2023-06-11'})]});await h.start();assert.equal((h.get('historyList').innerHTML.match(/data-week-end=/g)||[]).length,12);await h.get('loadOlderWeeks').emit('click');assert.equal((h.get('historyList').innerHTML.match(/data-week-end=/g)||[]).length,24);h.get('jumpDate').value='2026-11-06';await h.get('jumpDate').emit('change');await until(()=>!h.app.state.loading);assert.equal(h.app.state.weekEnd,'2026-11-06');assert.equal(h.app.state.selectedDate,'2026-11-06');assert.equal(h.app.weekDates(h.app.state.weekEnd)[6],'2026-10-31');
 });
+test('Go to date accepts typed US and ISO dates while rejecting invalid calendar dates',async()=>{
+  const h=environment();await h.start();
+  for(const [value,date]of [['2026-10-02','2026-10-02'],['10/2/2026','2026-10-02'],[' 1-3-2027 ','2027-01-03'],['2.29.2024','2024-02-29'],['12/31/9999','9999-12-31']])assert.equal(h.app.parseJumpDate(value),date,value);
+  for(const value of ['', '10/2/26','2/29/2026','4/31/2026','13/1/2026','0/1/2026','1/0/2026','2026-02-30','1/1/0999','1/1/10000','next Tuesday'])assert.equal(h.app.parseJumpDate(value),'',value);
+  assert.equal(h.app.formatJumpDate('2026-10-02'),'10/02/2026');assert.match(html,/<input\b[^>]*id="jumpDate"[^>]*type="text"/);assert.ok(h.get('openDateCalendar'));assert.ok(h.get('jumpDatePicker'));
+});
+test('Go to date preserves direct typing using change or Enter and normalizes the displayed date',async()=>{
+  const h=environment();await h.start();assert.equal(h.get('jumpDate').value,'10/13/2026');
+  h.get('jumpDate').value='11/6/2026';await h.get('jumpDate').emit('change');assert.equal(h.app.state.weekEnd,'2026-11-06');assert.equal(h.app.state.selectedDate,'2026-11-06');assert.equal(h.get('jumpDate').value,'11/06/2026');
+  let prevented=false;h.get('jumpDate').value='2027-01-03';await h.get('jumpDate').emit('keydown',{key:'Enter',preventDefault(){prevented=true;}});await until(()=>!h.app.state.loading);assert.equal(prevented,true);assert.equal(h.app.state.weekEnd,'2027-01-03');assert.equal(h.app.state.selectedDate,'2027-01-03');assert.equal(h.get('jumpDate').value,'01/03/2027');assert.equal(h.get('dayPanel').scrolled.block,'start');
+});
+test('Go to date opens a graphical calendar at the current date with month and year controls',async()=>{
+  const h=environment();await h.start();h.get('openDateCalendar').focus();await h.get('openDateCalendar').emit('click');assert.equal(h.get('jumpDatePicker').hidden,false);assert.equal(h.get('openDateCalendar').attrs['aria-expanded'],'true');assert.equal(h.app.jumpState.month,'2026-10-01');assert.equal(h.app.jumpState.focusDate,'2026-10-13');assert.equal(h.document.activeElement?.id,'eod-jump-2026-10-13');assert.match(h.get('jumpCalendar').innerHTML,/<button[^>]*data-jump-date="2026-10-13"[^>]*aria-selected="true"/);assert.equal(h.get('jumpMonth').value,'10');assert.equal(h.get('jumpYear').value,'2026');
+  h.get('jumpMonth').value='02';await h.get('jumpMonth').emit('change');assert.equal(h.app.jumpState.month,'2026-02-01');h.get('jumpYear').value='2024';await h.get('jumpYear').emit('change');assert.equal(h.app.jumpState.month,'2024-02-01');assert.ok(h.get('eod-jump-2024-02-29'));
+  const next=h.get('jumpNextMonth');assert.ok(next);await h.get('jumpDatePicker').emit('click',{target:next});assert.equal(h.app.jumpState.month,'2024-03-01');
+});
+test('choosing a calendar day navigates and closes the calendar without discarding another day’s invalid draft',async()=>{
+  const h=environment();await h.start();h.input('cash_received','bad amount');await h.save();h.document.activeElement=null;await h.get('openDateCalendar').emit('click');const day=h.get('eod-jump-2026-10-06');assert.ok(day);await h.get('jumpDatePicker').emit('click',{target:day});await until(()=>!h.app.state.loading);assert.equal(h.app.state.weekEnd,'2026-10-06');assert.equal(h.app.state.selectedDate,'2026-10-06');assert.equal(h.get('jumpDatePicker').hidden,true);assert.equal(h.get('jumpDate').value,'10/06/2026');assert.equal(h.app.state.editors.get('2026-10-13').values.cash_received,'bad amount');assert.equal(h.api.calls.filter(call=>call.op==='insert'||call.op==='update').length,0);
+});
+test('Go to date keyboard navigation handles week and month boundaries including leap years',async()=>{
+  const h=environment();await h.start();h.app.toggleJumpCalendar(true);
+  function press(date,key){h.app.jumpState.month=date.slice(0,7)+'-01';h.app.jumpState.focusDate=date;h.app.renderJumpCalendar();let prevented=false;h.app.jumpCalendarKey({target:h.get(`eod-jump-${date}`),key,preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(h.document.activeElement?.id,`eod-jump-${h.app.jumpState.focusDate}`);return h.app.jumpState.focusDate;}
+  assert.equal(press('2026-12-31','ArrowRight'),'2027-01-01');assert.equal(h.app.jumpState.month,'2027-01-01');assert.equal(press('2026-10-01','ArrowUp'),'2026-09-24');assert.equal(press('2026-10-13','Home'),'2026-10-12');assert.equal(press('2026-10-13','End'),'2026-10-18');assert.equal(press('2026-01-31','PageDown'),'2026-02-28');assert.equal(press('2024-03-31','PageUp'),'2024-02-29');assert.equal(h.app.state.weekEnd,'2026-10-13');
+});
+test('an invalid typed jump stays visible with a helpful error and makes no record queries',async()=>{
+  const h=environment();await h.start();const count=h.api.calls.length;h.get('jumpDate').value='02/30/2026';await h.get('jumpDate').emit('change');assert.equal(h.get('jumpDate').attrs['aria-invalid'],'true');assert.equal(h.get('jumpDate').value,'02/30/2026');assert.equal(h.app.state.weekEnd,'2026-10-13');assert.equal(h.api.calls.length,count);assert.ok(h.app.jumpState.invalid);h.app.renderWeek();assert.equal(h.get('jumpDate').value,'02/30/2026');
+  h.get('jumpDate').value='2/28/2026';await h.get('jumpDate').emit('change');assert.notEqual(h.get('jumpDate').attrs['aria-invalid'],'true');assert.equal(h.app.state.weekEnd,'2026-02-28');assert.equal(h.get('jumpDate').value,'02/28/2026');
+});
+test('Go to date closes on Escape, outside interaction, page exit, workspace revocation and auth reset',async()=>{
+  for(const action of ['escape','pointerdown','focusin','pagehide','paws-access-revoked','reset']){
+    const h=environment();await h.start();h.app.toggleJumpCalendar(true);assert.equal(h.get('jumpDatePicker').hidden,false);
+    if(action==='escape'){let prevented=false;await h.get('dateJump').emit('keydown',{key:'Escape',preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(h.document.activeElement,h.get('jumpDate'));}
+    else if(action==='reset')h.app.resetAuth(null);
+    else if(['pointerdown','focusin'].includes(action))await h.document.emit(action,{target:h.get('pageMessage')});
+    else for(const handler of h.window.events[action]||[])handler({detail:{status:'revoked'}});
+    assert.equal(h.get('jumpDatePicker').hidden,true,action);assert.equal(h.get('openDateCalendar').attrs['aria-expanded'],'false',action);
+  }
+});
 test('deleting a day keeps it restorable after the five-second toast and blocks automatic recreation',async()=>{
   const original=record({cash_received:' 12.34 ',additional_note:' Legacy note ',source_values:allFields.map(key=>`Original ${key}`)});const h=environment({records:[original]});await h.start();await h.app.deleteDay(h.app.state.editors.get('2026-10-13'));assert.equal(h.inputs.size,0);assert.match(h.get('dayContent').innerHTML,/Restore entry/);h.runTimers(5000);assert.equal(h.get('toast').hidden,true);assert.match(h.get('deletedList').innerHTML,/2026-10-13/);assert.equal(h.app.editorForDate('2026-10-13'),null);assert.equal(h.api.calls.filter(call=>call.op==='insert').length,0);await h.app.restoreDay();assert.equal(h.api.records[0].deleted_at,null);assert.equal(h.inputs.get('cash_received').value,' 12.34 ');assert.deepEqual(h.api.records[0].source_values,original.source_values);
 });
@@ -173,7 +211,7 @@ test('Delete pointer avoids saving a discarded draft while Tab to Delete still s
   const other=environment();await other.start();const next=other.input('notes','Keep local note');other.get('deleteDay').focus();await other.get('dayContent').emit('focusout',{target:next});other.runTimers(0);await until(()=>other.api.records[0].notes==='Keep local note');assert.equal(other.api.records[0].deleted_at,null);
 });
 test('anonymous and unapproved accounts never fetch daily financial records',async()=>{
-  for(const anonymous of [false,true]){const h=environment({active:false});if(anonymous)h.api.session=null;await h.start();assert.equal(h.api.calls.filter(call=>call.table==='hq_end_of_day').length,0);assert.equal(h.inputs.size,0);assert.equal(h.get('goToday').disabled,true);}
+  for(const anonymous of [false,true]){const h=environment({active:false});if(anonymous)h.api.session=null;await h.start();assert.equal(h.api.calls.filter(call=>call.table==='hq_end_of_day').length,0);assert.equal(h.inputs.size,0);assert.equal(h.get('goToday').disabled,true);assert.equal(h.get('openDateCalendar').disabled,true);h.app.toggleJumpCalendar(true);assert.equal(h.get('jumpDatePicker').hidden,true);}
 });
 test('sign-out discards late save, delete, restore and week query responses',async()=>{
   for(const mode of ['save','delete','restore','load']){const h=environment();await h.start();if(mode==='restore')await h.app.deleteDay(h.app.state.editors.get('2026-10-13'));const gate=deferred();let pending;h.api.intercept=call=>{if(call.table==='hq_end_of_day'){pending=call;return gate.promise;}};let mutation;

@@ -17,7 +17,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
   <link rel="stylesheet" href="/assets/training.css?v=3" />
-  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261020e" />
+  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261020f" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
@@ -39,7 +39,17 @@
             <button id="previousWeek" class="eod-icon-button" type="button" aria-label="Previous seven days" title="Previous seven days" disabled>‹</button>
             <button id="goToday" class="eod-today-button" type="button" disabled>Enter today</button>
             <button id="nextWeek" class="eod-icon-button" type="button" aria-label="Next seven days" title="Next seven days" disabled>›</button>
-            <label class="eod-date-jump"><span>Go to date</span><input id="jumpDate" type="date" disabled /></label>
+            <div id="dateJump" class="eod-date-jump">
+              <label for="jumpDate">Go to date</label>
+              <div class="eod-jump-input"><input id="jumpDate" type="text" inputmode="numeric" autocomplete="off" placeholder="MM/DD/YYYY" aria-describedby="jumpDateHelp" disabled /><button id="openDateCalendar" type="button" aria-label="Open date calendar" aria-haspopup="dialog" aria-expanded="false" aria-controls="jumpDatePicker" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 3v4m10-4v4M4 10h16M4 5h16v16H4z"/><path d="M8 14h2m4 0h2M8 17h2"/></svg></button></div>
+              <span id="jumpDateHelp" class="tr-sr-only">Type a date as month, day and four-digit year, then press Enter, or open the calendar.</span>
+              <section id="jumpDatePicker" class="eod-jump-picker" role="dialog" aria-label="Choose a day" hidden>
+                <div class="eod-jump-picker-heading"><strong>Choose a day</strong><button id="closeDateCalendar" type="button" aria-label="Close date calendar">×</button></div>
+                <div class="eod-jump-month-navigation"><button id="jumpPreviousMonth" type="button" data-jump-month="-1" aria-label="Previous calendar month">‹</button><div><select id="jumpMonth" aria-label="Calendar month"></select><select id="jumpYear" aria-label="Calendar year"></select></div><button id="jumpNextMonth" type="button" data-jump-month="1" aria-label="Next calendar month">›</button></div>
+                <div id="jumpCalendar" role="group" aria-label="Pick a date"></div>
+                <button id="jumpCalendarToday" class="eod-jump-today" type="button">Today</button>
+              </section>
+            </div>
           </div>
         </div>
         <div class="eod-overview-scroll" role="region" aria-label="Seven days; scroll horizontally on a small screen" tabindex="0">
@@ -105,6 +115,6 @@
     }
   </script>
   <script src="/assets/end-of-day-report.js?v=20261020d" defer></script>
-  <script src="/assets/end-of-day.js?v=20261020e" defer></script>
+  <script src="/assets/end-of-day.js?v=20261020f" defer></script>
 </body>
 </html>
