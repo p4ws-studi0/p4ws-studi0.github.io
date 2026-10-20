@@ -453,7 +453,7 @@
       if(!valid())return null;if(result.error)throw result.error;
       const report=window.PawsEodReport.createReport({start,end,rows:result.data||[],fields:FIELDS});
       reportState.model=report;reportState.start=start;reportState.end=end;$('reportDateLabel').textContent=reportRangeLabel(start,end);$('weekReportContent').innerHTML=window.PawsEodReport.html(report);
-      reportMessage('Saved entries only · denomination values are dollar amounts · deleted entries are excluded.');return report;
+      reportMessage('Every date in the selected range is included. Days without an entry are shown with blank fields.');return report;
     }catch(error) {
       if(!valid())return null;
       if(['AUTH','ACCESS','42501'].includes(error?.code)) {state.ready=false;state.logs=[];state.deletedRows=[];state.editors.clear();state.loadedDates.clear();render();}
@@ -470,7 +470,7 @@
     if(kind==='print'){window.print();return;}
     const blob=new Blob([window.PawsEodReport.csv(report)],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),link=document.createElement('a');reportState.urls.add(url);
     link.href=url;link.download=`paws-end-of-day_${report.start}_to_${report.end}.csv`;document.body.appendChild(link);link.click();link.remove();
-    setTimeout(()=>{URL.revokeObjectURL(url);reportState.urls.delete(url);},1000);reportMessage('CSV downloaded. It includes one row per day and every End Of Day field.');
+    setTimeout(()=>{URL.revokeObjectURL(url);reportState.urls.delete(url);},1000);reportMessage('CSV downloaded. Every date in the selected range is included, with blank fields for days without an entry.');
   }
   function resetAuth(userId) {
     state.epoch++;state.request++;state.userId=userId;state.ready=false;state.loading=false;state.logs=[];state.deletedRows=[];state.editors.clear();state.loadedDates.clear();state.firstDate=null;state.metadataLoaded=false;state.undo=null;state.undoSaving=false;state.today=easternToday();state.weekEnd=state.today;state.selectedDate=state.today;state.historyVisible=12;

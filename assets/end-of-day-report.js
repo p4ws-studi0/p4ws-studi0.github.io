@@ -91,7 +91,7 @@
       }).join('');
       sheets.push(`<section class="eod-report-sheet" aria-label="${escape(label)}"><h3>${escape(label)}</h3><table class="eod-report-table"><thead><tr><th scope="col">End Of Day</th>${headings}</tr></thead><tbody>${status}${groups}</tbody></table></section>`);
     }
-    return `<div class="eod-report-summary"><h2>End Of Day</h2><p>${escape(range(report.start, report.end))}</p><p>Bill and coin values are dollar amounts, not counts. Totals are the stored values for each day. Deleted entries contain no financial details.</p></div>${sheets.join('')}`;
+    return `<div class="eod-report-summary"><h2>End Of Day</h2><p>${escape(range(report.start, report.end))}</p><p>Bill and coin values are dollar amounts, not counts. Totals are the stored values for each day. Every date is included, even when its entry is blank.</p></div>${sheets.join('')}`;
   }
 
   return Object.freeze({ createReport, csv, html });

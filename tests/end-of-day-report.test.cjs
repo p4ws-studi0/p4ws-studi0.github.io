@@ -37,6 +37,34 @@ test('reports include chronological calendar dates across DST and year boundarie
   }
 });
 
+test('CSV and print retain every date across report sheets, including empty and deleted days', () => {
+  const dates = Array.from({ length: 18 }, (_, index) => `2026-10-${String(index + 1).padStart(2, '0')}`);
+  const sparse = [
+    row({ entry_date: dates[0], cash_received: '42' }),
+    row({ entry_date: dates[7], cash_received: '999', notes: 'Removed entry', deleted_at: '2026-10-09T12:00:00Z' }),
+    row({ entry_date: dates[17], cash_received: '0' })
+  ];
+  for (const rows of [[], sparse]) {
+    const result = report({ start: dates[0], end: dates.at(-1), rows });
+    const csvRows = parseCsv(csv(result)).slice(1), markup = html(result);
+    const printDates = [...markup.matchAll(/<span>(\d{4}-\d{2}-\d{2})<\/span>/g)].map(match => match[1]);
+    assert.deepEqual(result.days.map(day => day.date), dates);
+    assert.deepEqual(csvRows.map(day => day[0]), dates);
+    assert.deepEqual(printDates, dates);
+    assert.equal((markup.match(/class="eod-report-sheet"/g) || []).length, 3);
+    for (const day of result.days) {
+      if (day.status !== 'Recorded') assert.ok(Object.values(day.values).every(value => value === ''));
+    }
+    if (rows.length) {
+      assert.equal(csvRows[0][3], '42');
+      assert.equal(csvRows[7][1], 'Deleted');
+      assert.ok(csvRows[7].slice(2).every(value => value === ''));
+      assert.equal(csvRows[17][3], '0');
+      assert.doesNotMatch(csv(result) + markup, /Removed entry|999/);
+    }
+  }
+});
+
 test('only real ISO dates and inclusive ranges of one to 366 days are accepted', () => {
   assert.equal(report({ start: '2024-01-01', end: '2024-12-31' }).days.length, 366);
   assert.equal(report({ start: '2024-02-29', end: '2024-02-29' }).days.length, 1);
