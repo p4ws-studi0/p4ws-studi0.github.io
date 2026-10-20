@@ -17,7 +17,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
   <link rel="stylesheet" href="/assets/training.css?v=3" />
-  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261020d" />
+  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261020e" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
@@ -50,7 +50,7 @@
             <tbody id="weekRows"></tbody>
           </table>
         </div>
-        <div class="eod-week-footer"><span>Last seven days by default · open any day to enter details</span><div class="eod-week-actions"><button id="openWeekReport" type="button" class="eod-report-open" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V9h16v8h-3M7 14h10v7H7z"/><path d="M17 11h.01" stroke-linecap="round"/></svg>Print / export</button><button id="refreshLogs" type="button" class="tr-refresh" disabled>↻ Refresh</button></div></div>
+        <div class="eod-week-footer"><span>Last seven days by default · open any day to enter details</span><div class="eod-week-actions"><button id="openWeekReport" type="button" class="eod-report-open" disabled>Export as CSV<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button><button id="refreshLogs" type="button" class="tr-refresh" disabled>↻ Refresh</button></div></div>
       </section>
 
       <section id="dayPanel" class="eod-day" aria-label="Daily entry">
@@ -105,6 +105,6 @@
     }
   </script>
   <script src="/assets/end-of-day-report.js?v=20261020d" defer></script>
-  <script src="/assets/end-of-day.js?v=20261020d" defer></script>
+  <script src="/assets/end-of-day.js?v=20261020e" defer></script>
 </body>
 </html>

@@ -451,7 +451,7 @@
     $('applyReportDates').addEventListener('click',async()=>{const {pendingStart:start,pendingEnd:end}=reportState;if(reportRangeError(start,end)||reportState.busy)return;toggleReportDates(false);await prepareReport(start,end);});
     $('printReport').addEventListener('click',()=>outputReport('print'));$('downloadReport').addEventListener('click',()=>outputReport('csv'));
     window.addEventListener('paws-access-revoked',closeReport);window.addEventListener('pagehide',closeReport);
-    window.addEventListener('beforeprint',()=>{if(!state.ready||!reportState.model)$('weekReportContent').innerHTML='<p class="eod-report-print-help">Open Print / export in End Of Day, choose dates, then select Print report.</p>';});
+    window.addEventListener('beforeprint',()=>{if(!state.ready||!reportState.model)$('weekReportContent').innerHTML='<p class="eod-report-print-help">Select Export as CSV in End Of Day, choose dates, then select Print report.</p>';});
     window.addEventListener('afterprint',()=>{if(!$('weekReport').open)$('weekReportContent').innerHTML='';});
     $('previousWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,-7),{week:true}));$('nextWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,7),{week:true}));
     $('goToday').addEventListener('click',()=>{state.today=easternToday();return openDay(state.today,{week:true});});$('jumpDate').addEventListener('change',()=>openDay($('jumpDate').value,{week:true}));

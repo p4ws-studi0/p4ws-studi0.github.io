@@ -186,7 +186,7 @@ test('End Of Day has sidebar and homepage links without loading daily financial 
   const sidebar=fs.readFileSync(path.join(root,'partials/sidebar.html'),'utf8'),home=fs.readFileSync(path.join(root,'index.html'),'utf8');assert.equal((sidebar.match(/href="\/end-of-day"/g)||[]).length,1);assert.equal((home.match(/href="\/end-of-day"/g)||[]).length,1);assert.doesNotMatch(home,/end-of-day\.js|hq_end_of_day/);assert.doesNotMatch(html+source,/preview-client|Fixture Staff|Annaella|53\.04/);assert.match(html,/Browse earlier weeks/);assert.match(html,/Drawer target/);
 });
 
-test('Print / export opens the selected seven days and custom calendar accepts forward, backward and single-day ranges',async()=>{
+test('Export as CSV opens the selected seven days and custom calendar accepts forward, backward and single-day ranges',async()=>{
   const h=environment();await h.start();await h.app.selectDate('2026-10-06',{week:true});h.get('openWeekReport').focus();await h.get('openWeekReport').emit('click');
   assert.equal(h.get('weekReport').open,true);assert.equal(h.app.reportState.start,'2026-09-30');assert.equal(h.app.reportState.end,'2026-10-06');assert.equal(h.app.reportState.model.days.length,7);
   for(const [first,last,expectedStart,expectedEnd]of [['2026-10-01','2026-10-03','2026-10-01','2026-10-03'],['2026-10-08','2026-10-02','2026-10-02','2026-10-08'],['2026-10-04','2026-10-04','2026-10-04','2026-10-04']]){
@@ -275,5 +275,5 @@ test('workspace revocation and leaving the page discard delayed report outputs w
 test('browser print after workspace revocation cannot reveal the earlier report',async()=>{
   const h=environment({records:[record({notes:'Formerly visible financial details',cash_received:'123456.78'})]});await h.start();await h.app.openReport();assert.match(h.get('weekReportContent').innerHTML,/Formerly visible financial details/);
   for(const handler of h.window.events['paws-access-revoked'])handler({detail:{status:'revoked'}});for(const handler of h.window.events.beforeprint)handler({});
-  assert.equal(h.app.reportState.model,null);assert.doesNotMatch(h.get('weekReportContent').innerHTML,/Formerly visible financial details|123456\.78/);assert.match(h.get('weekReportContent').innerHTML,/Open Print \/ export/);assert.equal(h.api.prints.length,0);
+  assert.equal(h.app.reportState.model,null);assert.doesNotMatch(h.get('weekReportContent').innerHTML,/Formerly visible financial details|123456\.78/);assert.match(h.get('weekReportContent').innerHTML,/Select Export as CSV/);assert.equal(h.api.prints.length,0);
 });
