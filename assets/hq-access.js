@@ -7,6 +7,80 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   'use strict';
   const POLL_MS = 60000;
+  const ENROLLMENT_RETRY_MS = 30000;
+  const membershipManagers = new WeakMap();
+
+  function createMembershipManager(options) {
+    const client = options?.client;
+    if (!client?.auth || typeof client.from !== 'function') throw new TypeError('A Supabase client is required.');
+    if (membershipManagers.has(client)) return membershipManagers.get(client);
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    const flights = new Map(), negative = new Map();
+    const result = (userId, status, reason, approval = 'unknown', extra = {}) => ({userId, status, reason, approval, confirmed: ['allowed', 'revoked', 'unapproved', 'session-missing'].includes(status), allowed: status === 'allowed', ...extra});
+    async function readApproval(userId) {
+      let response;
+      try { response = await client.from('hq_tour_staff').select('user_id,active').eq('user_id', userId).maybeSingle(); }
+      catch (_) { return {error: 'staff-unavailable', approval: 'unknown'}; }
+      if (!response || response.error) return {error: 'staff-unavailable', approval: 'unknown'};
+      if (!response.data) return {approval: 'missing'};
+      if (response.data.user_id !== userId) return {error: 'staff-identity-mismatch', approval: 'unknown'};
+      if (response.data.active === true) return {approval: 'active'};
+      if (response.data.active === false) return {approval: 'inactive'};
+      return {error: 'staff-response-incomplete', approval: 'unknown'};
+    }
+    async function verify(userId, approval) {
+      const cached = negative.get(userId);
+      if (cached && cached.retryAt > now()) return {...cached};
+      let response;
+      try {
+        if (typeof client.functions?.invoke !== 'function') throw new Error('Workspace verification is unavailable.');
+        // The server derives identity from this client's existing JWT; no user ID,
+        // Slack ID, email, role, or guest flag is accepted from the browser.
+        response = await client.functions.invoke('hq-workspace-access', {body: {}});
+      } catch (_) { response = null; }
+      let data = response?.data;
+      if (response?.error && !data) {
+        try { data = await response.error.context?.clone()?.json(); } catch (_) { /* A transport error has no response body. */ }
+      }
+      let checked;
+      const code = data?.error?.code;
+      if (data?.success === true && data.active === true && data.user_id === userId && !response?.error) {
+        const fresh = await readApproval(userId);
+        checked = fresh.approval === 'active'
+          ? result(userId, 'allowed', 'active-workspace-member', 'active', {enrolled: true})
+          : result(userId, 'unavailable', fresh.error || 'enrollment-not-visible', fresh.approval);
+      } else if (data?.success === false && code === 'SLACK_DEACTIVATED') {
+        checked = result(userId, 'revoked', 'slack-account-deactivated', approval);
+      } else if (data?.success === false && code === 'WORKSPACE_ACCESS_DENIED') {
+        checked = result(userId, 'unapproved', 'workspace-access-denied', approval);
+      } else {
+        checked = result(userId, 'unavailable', data?.success === true ? 'workspace-identity-mismatch' : 'workspace-unavailable', approval);
+      }
+      if (checked.allowed) { negative.delete(userId); return checked; }
+      checked = {...checked, retryAt: now() + ENROLLMENT_RETRY_MS};
+      negative.set(userId, checked);
+      return {...checked};
+    }
+    function ensure(session) {
+      const userId = typeof session?.user?.id === 'string' && session.user.id ? session.user.id : null;
+      if (!userId) return Promise.resolve(result(null, 'session-missing', 'session-missing'));
+      if (flights.has(userId)) return flights.get(userId);
+      const pending = (async () => {
+        const existing = await readApproval(userId);
+        if (existing.error) return result(userId, 'unavailable', existing.error, existing.approval);
+        if (existing.approval === 'active') {
+          negative.delete(userId);
+          return result(userId, 'allowed', 'active-staff', 'active');
+        }
+        return verify(userId, existing.approval);
+      })().finally(() => { if (flights.get(userId) === pending) flights.delete(userId); });
+      flights.set(userId, pending);
+      return pending;
+    }
+    const manager = {ensure};
+    membershipManagers.set(client, manager);
+    return manager;
+  }
 
   function createController(options) {
     const client = options?.client;
@@ -14,6 +88,7 @@
     const win = options.window || root;
     const doc = options.document || win.document;
     const onChange = typeof options.onChange === 'function' ? options.onChange : () => {};
+    const membership = options.membershipManager || createMembershipManager({client});
     let state = {status: 'idle', userId: null, confirmed: false, allowed: false, lastConfirmedStatus: null, reason: 'not-checked', checkedAt: null};
     let identityKnown = false, userId = null, identityEpoch = 0, authEpoch = 0, lookupEpoch = 0;
     let lookupFlight = null, staffFlight = null, started = false, disposed = false;
@@ -72,18 +147,18 @@
       const flight = {identityEpoch: epoch, authEpoch: auth, promise: null};
       const current = () => !disposed && identityEpoch === epoch && authEpoch === auth && userId === checkedUserId;
       flight.promise = (async () => {
-        let result;
-        try { result = await client.from('hq_tour_staff').select('user_id,active').eq('user_id', checkedUserId).maybeSingle(); }
-        catch (_) { return current() ? unavailable('staff-unavailable') : snapshot(); }
+        let checked;
+        try { checked = await membership.ensure(session); }
+        catch (_) { return current() ? unavailable('workspace-unavailable') : snapshot(); }
         if (!current()) return snapshot();
-        if (!result || result.error) return unavailable('staff-unavailable');
-        let status, reason;
-        if (!result.data) { status = 'unapproved'; reason = 'staff-not-approved'; }
-        else if (result.data.user_id !== checkedUserId) return unavailable('staff-identity-mismatch');
-        else if (result.data.active === true) { status = 'allowed'; reason = 'active-staff'; }
-        else if (result.data.active === false) { status = 'revoked'; reason = 'staff-access-revoked'; }
-        else return unavailable('staff-response-incomplete');
-        return publish({status, userId: checkedUserId, confirmed: true, allowed: status === 'allowed', lastConfirmedStatus: status, reason});
+        if (!checked || checked.userId !== checkedUserId) return unavailable('staff-identity-mismatch');
+        if (checked.status === 'unavailable') {
+          const retainsAllowed = checked.approval === 'unknown' && state.allowed;
+          return publish({...state, status: 'unavailable', confirmed: false, allowed: Boolean(retainsAllowed), approval:checked.approval, reason: checked.reason, retryAt: checked.retryAt});
+        }
+        const status = checked.status;
+        if (!['allowed', 'revoked', 'unapproved'].includes(status)) return unavailable('staff-response-incomplete');
+        return publish({status, userId: checkedUserId, confirmed: true, allowed: status === 'allowed', lastConfirmedStatus: status, reason: checked.reason, enrolled: checked.enrolled === true});
       })().finally(() => { if (staffFlight === flight) staffFlight = null; });
       staffFlight = flight;
       return flight.promise;
@@ -184,7 +259,7 @@
       if (!['revoked', 'unapproved', 'session-missing', 'unavailable'].includes(state.status)) return;
       const confirmed = state.status === 'unavailable' ? state.lastConfirmedStatus : state.status;
       title.textContent = confirmed === 'revoked' ? 'Paws HQ access paused' : confirmed === 'unapproved' ? 'Paws HQ access needed' : confirmed === 'session-missing' ? 'Sign-in unavailable' : 'Connection unavailable';
-      message.textContent = confirmed === 'revoked' ? 'This account no longer has access to Paws HQ. Your work on this page has been kept. If access is restored, choose Check access.' : confirmed === 'unapproved' ? 'This account is not approved for Paws HQ. Your work on this page has been kept. Ask your Paws HQ administrator to check your access.' : confirmed === 'session-missing' ? 'Your sign-in could not be found. Your work on this page has been kept. Choose Check access to try again.' : 'Paws HQ could not check your access. Your work on this page has been kept. Check your connection and try again.';
+      message.textContent = confirmed === 'revoked' ? 'This account no longer has access to Paws HQ. Your work on this page has been kept. If access is restored, choose Check access.' : confirmed === 'unapproved' ? 'Paws HQ could not verify this account as an active member of the Paws Slack workspace. Your work on this page has been kept. Choose Check access to try again.' : confirmed === 'session-missing' ? 'Your sign-in could not be found. Your work on this page has been kept. Choose Check access to try again.' : 'Paws HQ could not check your access. Your work on this page has been kept. Check your connection and try again.';
       if (state.status === 'unavailable' && confirmed) message.textContent += ' The latest access check could not connect.';
       if (!dialog.open) {
         if (typeof dialog.showModal === 'function') dialog.showModal();
@@ -212,5 +287,5 @@
     }};
   }
 
-  return {createController, createNotice, POLL_MS};
+  return {createMembershipManager, createController, createNotice, POLL_MS, ENROLLMENT_RETRY_MS};
 });

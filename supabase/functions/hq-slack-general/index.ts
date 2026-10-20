@@ -79,18 +79,9 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       return true;
     });
     const viewer=await userInfo(slackUser);
-    if(!viewer||viewer.deleted||viewer.is_bot||viewer.team_id!==team)fail(403,'ACCESS_DENIED');
-    const members=await cached('members',30000,async()=>{
-      const found=new Set();let cursor='';const seen=new Set();
-      for(let page=0;page<100;page++) {
-        const response=await slack('conversations.members',{channel,limit:'200',...(cursor?{cursor}:{})});
-        for(const id of response.members||[])found.add(id);
-        cursor=string(response.response_metadata?.next_cursor).trim();if(!cursor)return found;
-        if(seen.has(cursor))fail(502,'SLACK_UNAVAILABLE');seen.add(cursor);
-      }
-      fail(502,'SLACK_UNAVAILABLE');
-    });
-    if(!members.has(slackUser))fail(403,'ACCESS_DENIED');
+    if(!viewer||viewer.id!==slackUser||viewer.deleted!==false||viewer.is_bot!==false||viewer.team_id!==team)fail(403,'ACCESS_DENIED');
+    // HQ grants the same public #general widget to every verified active workspace member, including guests.
+
   }
   async function latest() {
     return cached('latest',30000,async()=>{

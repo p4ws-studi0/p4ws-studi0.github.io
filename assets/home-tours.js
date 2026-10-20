@@ -98,6 +98,7 @@
       if (!current()) return;
       if (authError || !auth?.session?.user) throw {code:'AUTH'};
       const userId = auth.session.user.id;
+      if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(auth.session);
       const {data:staff,error:staffError} = await supabaseClient.from('hq_tour_staff').select('user_id,active').eq('user_id',userId).eq('active',true).maybeSingle();
       if (!current()) return;
       if (staffError) throw staffError;

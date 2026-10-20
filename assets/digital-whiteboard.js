@@ -121,6 +121,7 @@
       const session=data?.session;
       if(error||!session?.user?.id||!session.access_token)throw new Error('AUTH_REQUIRED');
       if(state.user&&session.user.id!==state.user)throw new Error('AUTH_REQUIRED');
+      if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(session);
       state.user=session.user.id;
       const response=await fetch('https://dppjgglaeieevsfwsbii.supabase.co/functions/v1/hq-gingr-whiteboard',{
         method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},

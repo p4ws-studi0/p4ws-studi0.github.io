@@ -90,7 +90,7 @@ export function createHandler({env, fetch: request = fetch, now = Date.now, log 
       const seen = new Set();
       for (const candidate of run.candidates) {
         if (!uuid(candidate?.user_id) || seen.has(candidate.user_id) || !Number.isInteger(candidate.identity_count) || candidate.identity_count < 0 ||
-          !(candidate.slack_user_id === null || slackId(candidate.slack_user_id)) || candidate.identity_count !== 1 && candidate.slack_user_id !== null) fail(502, 'DATABASE_PAYLOAD');
+          !(candidate.slack_user_id === null || slackId(candidate.slack_user_id)) || candidate.identity_count !== 1 && candidate.slack_user_id !== null || candidate.staff_active !== undefined && typeof candidate.staff_active !== 'boolean') fail(502, 'DATABASE_PAYLOAD');
         seen.add(candidate.user_id);
       }
       const bot = await slack('auth.test');
@@ -109,7 +109,8 @@ export function createHandler({env, fetch: request = fetch, now = Date.now, log 
         result.status = user.deleted === true ? 'deactivated' : 'active';
         results.push(result);
       }
-      const proposed = results.filter(result => result.status === 'deactivated').length;
+      const deactivated = results.filter(result => result.status === 'deactivated').length;
+      const proposed = results.filter(result => result.status === 'deactivated' && run.candidates.find(candidate => candidate.user_id === result.user_id).staff_active !== false).length;
       const active = results.filter(result => result.status === 'active').length;
       // The database repeats these safeguards; keeping them here prevents unsafe apply calls.
       if (proposed > config.max_revocations || proposed > 0 && active === 0) {
@@ -117,8 +118,8 @@ export function createHandler({env, fetch: request = fetch, now = Date.now, log 
         return json({status: 'blocked', checked: results.length, proposed, changed: 0});
       }
       const finished = await rpc('hq_slack_sync_finish', {p_run_id: runId, p_results: results});
-      if (!finished || !['applied', 'dry_run', 'unchanged', 'blocked', 'disabled'].includes(finished.status) || !Number.isInteger(finished.changed) || finished.changed < 0 || finished.changed > proposed) fail(502, 'DATABASE_PAYLOAD');
-      return json({status: finished.status, checked: results.length, proposed, unknown: results.filter(result => result.status === 'unknown').length, changed: finished.changed});
+      if (!finished || !['applied', 'dry_run', 'unchanged', 'blocked', 'disabled'].includes(finished.status) || !Number.isInteger(finished.changed) || finished.changed < 0 || finished.changed > deactivated) fail(502, 'DATABASE_PAYLOAD');
+      return json({status: finished.status, checked: results.length, proposed:Math.max(proposed,finished.changed), unknown: results.filter(result => result.status === 'unknown').length, changed: finished.changed,...(Number.isInteger(finished.enrolled)&&finished.enrolled>=0?{enrolled:finished.enrolled}:{})});
     } catch (error) {
       const code = error instanceof Failure ? error.code : 'SYNC_UNAVAILABLE';
       if (started) try { await rpc('hq_slack_sync_fail', {p_run_id: runId, p_code: code}); } catch { /* Failures never grant or revoke access. */ }

@@ -10,3 +10,7 @@ entrypoint = "./functions/hq-gingr-whiteboard/index.ts"
 [functions.hq-slack-access-sync]
 verify_jwt = false
 entrypoint = "./functions/hq-slack-access-sync/index.ts"
+
+[functions.hq-workspace-access]
+verify_jwt = true
+entrypoint = "./functions/hq-workspace-access/index.ts"

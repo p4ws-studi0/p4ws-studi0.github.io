@@ -116,11 +116,11 @@ test('editable user metadata cannot forge a Slack identity or workspace',async()
   const h=await environment({user});await errorIs(await h.request(),403,'ACCESS_DENIED');assert.equal(h.state.calls.filter(call=>call.api).length,0);
  }
 });
-test('deleted, bot, foreign-workspace and nonmember Slack viewers cannot read the feed',async()=>{
+test('deleted, bot and foreign-workspace Slack viewers cannot read the feed',async()=>{
  for(const viewer of [{deleted:true},{is_bot:true},{team_id:'TOTHER'}]){
   const h=await environment({users:{[VIEWER]:{id:VIEWER,team_id:TEAM,deleted:false,is_bot:false,...viewer}}});await errorIs(await h.request(),403,'ACCESS_DENIED');assert.equal(h.calls('conversations.history').length,0);
  }
- const h=await environment({members:['USOMEONE']});await errorIs(await h.request(),403,'ACCESS_DENIED');assert.equal(h.calls('conversations.history').length,0);
+ const h=await environment({members:[],users:{[VIEWER]:{id:VIEWER,team_id:TEAM,deleted:false,is_bot:false,is_restricted:true,is_ultra_restricted:true}}});assert.equal((await h.request()).status,200);assert.equal(h.calls('conversations.members').length,0);
 });
 test('bot workspace and channel must match the configured public general channel',async()=>{
  for(const channel of [{id:'COTHER'},{is_general:false},{is_member:false},{is_private:true}]){
@@ -128,13 +128,12 @@ test('bot workspace and channel must match the configured public general channel
  }
  const h=await environment({intercept:call=>call.api==='auth.test'?json({ok:true,team_id:'TOTHER'}):undefined});await errorIs(await h.request(),503,'CONNECTION_REQUIRED');
 });
-test('membership pagination follows cursors even when a page is short',async()=>{
- const h=await environment({intercept:call=>call.api==='conversations.members'?json({ok:true,members:call.params.cursor?[VIEWER]:['USOMEONE'],response_metadata:{next_cursor:call.params.cursor?'':'page-two'}}):undefined});
- assert.equal((await h.request()).status,200);assert.deepEqual(h.calls('conversations.members').map(call=>call.params.cursor||''),['','page-two']);
+test('workspace guests receive the public widget without a separate channel-member tier',async()=>{
+ const h=await environment({members:[]});assert.equal((await h.request()).status,200);assert.equal(h.calls('conversations.members').length,0);
 });
-test('repeated membership cursors fail closed before reading history',async()=>{
- const h=await environment({intercept:call=>call.api==='conversations.members'?json({ok:true,members:[VIEWER],response_metadata:{next_cursor:'loop'}}):undefined});
- await errorIs(await h.request(),502,'SLACK_UNAVAILABLE');assert.equal(h.calls('conversations.history').length,0);
+test('channel roster API failures cannot deny otherwise valid workspace access',async()=>{
+ const h=await environment({intercept:call=>call.api==='conversations.members'?json({ok:false,error:'missing_scope'}):undefined});
+ assert.equal((await h.request()).status,200);assert.equal(h.calls('conversations.members').length,0);
 });
 test('latest post skips system events, hidden messages and thread replies and sorts exact timestamp strings',async()=>{
  const h=await environment({messages:[message({ts:'1770000000.000001',text:'older'}),message({ts:'1770000000.000009',text:'latest'}),message({ts:'1770000000.000007',text:'middle'}),message({ts:'1770000001.000001',subtype:'channel_join'}),message({ts:'1770000002.000001',hidden:true}),message({ts:'1770000003.000001',deleted:true}),message({ts:'1770000004.000001',thread_ts:'1770000000.000001'})]});
@@ -211,12 +210,12 @@ test('cached content never bypasses fresh Supabase JWT and staff checks',async()
  h.state.approved=false;await errorIs(await h.request(),403,'ACCESS_DENIED');assert.equal(h.calls('conversations.history').length,1);
  h.state.approved=true;h.state.user=null;await errorIs(await h.request(),401,'AUTH_REQUIRED');assert.equal(h.calls('conversations.history').length,1);
 });
-test('membership changes revoke access when the short authorization cache expires',async()=>{
- const h=await environment();assert.equal((await h.request()).status,200);h.state.members=[];h.advance(30001);
- await errorIs(await h.request(),403,'ACCESS_DENIED');assert.equal(h.calls('conversations.history').length,1);assert.equal(h.calls('conversations.members').length,2);
+test('Slack deactivation revokes feed access when the short viewer cache expires',async()=>{
+ const h=await environment();assert.equal((await h.request()).status,200);h.state.users[VIEWER]={id:VIEWER,team_id:TEAM,is_bot:false,deleted:true};h.advance(30001);
+ await errorIs(await h.request(),403,'ACCESS_DENIED');assert.equal(h.calls('conversations.history').length,1);assert.equal(h.calls('users.info').filter(call=>call.params.user===VIEWER).length,2);
 });
-test('a second viewer must prove its own Slack identity and membership even with warm content cache',async()=>{
- const h=await environment();assert.equal((await h.request()).status,200);h.state.user=account({id:'00000000-0000-4000-8000-000000000002',identities:[{provider:'slack_oidc',identity_data:{sub:'UOTHER',custom_claims:{'https://slack.com/team_id':TEAM}}}]});
+test('a second viewer must prove active workspace identity even with warm content cache',async()=>{
+ const h=await environment({users:{UOTHER:{id:'UOTHER',team_id:TEAM,deleted:true,is_bot:false}}});assert.equal((await h.request()).status,200);h.state.user=account({id:'00000000-0000-4000-8000-000000000002',identities:[{provider:'slack_oidc',identity_data:{sub:'UOTHER',custom_claims:{'https://slack.com/team_id':TEAM}}}]});
  await errorIs(await h.request(),403,'ACCESS_DENIED');assert.equal(h.calls('conversations.history').length,1);assert.ok(h.calls('users.info').some(call=>call.params.user==='UOTHER'));
 });
 test('Slack JSON errors and rate limits are sanitized and Retry-After enforces backoff',async()=>{

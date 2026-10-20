@@ -68,6 +68,10 @@
       if (sessionResult.error) throw new KnowledgeError('UNAVAILABLE', 'Your connection could not be checked. Please try again.');
       const session = sessionResult.data?.session;
       if (!session?.user?.id) throw new KnowledgeError('SIGN_IN_REQUIRED', 'Sign in to Paws HQ to view the knowledgebase.', true);
+      if (typeof ensureHqWorkspaceAccess === 'function') {
+        try { await ensureHqWorkspaceAccess(session); }
+        catch (error) { throw new KnowledgeError(error?.code === 'ACCESS' ? 'ACCESS_DENIED' : 'UNAVAILABLE', error?.code === 'ACCESS' ? 'Knowledgebase access is not available for this account.' : 'Your workspace access could not be checked. Please try again.', error?.code === 'ACCESS'); }
+      }
       let approval;
       try { approval = await client.from('hq_tour_staff').select('user_id,active').eq('user_id', session.user.id).maybeSingle(); }
       catch { throw new KnowledgeError('UNAVAILABLE', 'Your access could not be checked. Please try again.'); }

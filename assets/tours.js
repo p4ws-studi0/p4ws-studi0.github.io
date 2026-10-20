@@ -96,6 +96,7 @@
     const {data:auth,error:authError} = await supabaseClient.auth.getSession();
     if (epoch !== state.authEpoch || authError || !auth?.session?.user) throw {code:'AUTH'};
     const user = auth.session.user;
+    if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(auth.session);
     const {data,error} = await supabaseClient.from('hq_tour_staff').select('user_id,active').eq('user_id',user.id).eq('active',true).maybeSingle();
     if (epoch !== state.authEpoch) throw {code:'AUTH'};
     if (error) throw error;

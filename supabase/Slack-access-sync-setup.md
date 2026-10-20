@@ -1,3 +1,5 @@
+> Workspace membership update: after this original installer, apply `workspace-access-setup.sql` and `workspace-access-sync.sql` and deploy both workspace/current sync functions. See [Workspace-access-setup.md](Workspace-access-setup.md). The final policy enrolls every explicitly verified active workspace member as well as revoking explicitly deactivated members. The false-only text below describes the original installation, not the final policy.
+
 # Slack offboarding sync
 
 This job removes HQ data access only after Slack explicitly returns `deleted: true` for the same provider-owned Slack user and workspace. It updates `hq_tour_staff.active` from `true` to `false`. Existing table RLS and the private Knowledge Base read this live approval, so a valid old JWT cannot bypass a revoked approval.

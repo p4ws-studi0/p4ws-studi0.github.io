@@ -23,7 +23,7 @@ function node(tag) {
 function harness(options = {}) {
   const scripts = [], styles = [], events = [], authCallbacks = [], timers = new Map(), intervals = new Map(), redirects = [], calls = [], authMutations = [], storageMutations = [];
   let id = 0, context;
-  const state = {session: session('active'), active: true, staffError: null, authError: null, kbFailure: Boolean(options.kbFailure), knowledge: options.knowledge || (async () => [{path: '/kb/safety', title: 'Safety', search_text: 'Private approved content'}])};
+  const state = {session: session('active'), active: true, staffMissing: false, staffError: null, authError: null, kbFailure: Boolean(options.kbFailure), knowledge: options.knowledge || (async () => [{path: '/kb/safety', title: 'Safety', search_text: 'Private approved content'}])};
   const elements = {searchResults: node('div')};
   const body = node('body'), html = node('html'), head = node('head');
   const document = Object.assign(target(), {readyState: 'loading', visibilityState: 'visible', body, documentElement: html, head, createElement: node,
@@ -44,7 +44,10 @@ function harness(options = {}) {
     async getSession() { calls.push('getSession'); return {data: {session: state.session}, error: state.authError}; },
     onAuthStateChange(callback) { authCallbacks.push(callback); return {data: {subscription: {unsubscribe() {}}}}; },
     signOut() { authMutations.push('signOut'); return Promise.resolve(); },
-  }, from(table) { return {select(fields) { calls.push({table, fields}); return this; }, eq(key, value) { this.userId = value; return this; }, async maybeSingle() { if (options.staffPending) return options.staffPending; return {data: {user_id: this.userId, active: state.active}, error: state.staffError}; }}; }};
+  }, functions: {async invoke(name, request) {
+    calls.push({invoke: name, request});
+    return options.invoke ? options.invoke(state, name, request) : {data: {success: false, error: {code: state.active === false ? 'SLACK_DEACTIVATED' : 'WORKSPACE_ACCESS_DENIED'}}, error: null};
+  }}, from(table) { return {select(fields) { calls.push({table, fields}); return this; }, eq(key, value) { this.userId = value; return this; }, async maybeSingle() { if (options.staffPending) return options.staffPending; return {data: state.staffMissing ? null : {user_id: this.userId, active: state.active}, error: state.staffError}; }}; }};
   const sandbox = Object.assign(target(), {document, URL, Promise, Date, console: {log() {}, warn() {}},
     location: {href: 'https://hq.pawspet.com/tours', origin: 'https://hq.pawspet.com', replace(value) { redirects.push(value); }, reload() { authMutations.push('reload'); }},
     localStorage: {getItem() { return null; }, setItem(...args) { storageMutations.push(args); }, removeItem() { storageMutations.push('removeItem'); }, clear() { storageMutations.push('clear'); }},
@@ -58,7 +61,7 @@ function harness(options = {}) {
   const dispatch = sandbox.dispatchEvent;
   sandbox.dispatchEvent = event => { events.push(event); dispatch(event); };
   context = vm.createContext(sandbox);
-  vm.runInContext(shared + '\nglobalThis.sharedAccessTest = {enforceAuthGate, ensureHqAccessController, loadSearchIndex, searchKB, getController: () => hqAccessController, getSearchState: () => ({ready: SEARCH_READY, rows: SEARCH_INDEX}), receiveHqAccess};', context);
+  vm.runInContext(shared + '\nglobalThis.sharedAccessTest = {enforceAuthGate, ensureHqAccessController, ensureHqWorkspaceAccess, loadSearchIndex, searchKB, getController: () => hqAccessController, getSearchState: () => ({ready: SEARCH_READY, rows: SEARCH_INDEX}), receiveHqAccess};', context);
   return {context, state, scripts, styles, calls, elements, body, html, events, timers, redirects, authMutations, storageMutations, authCallbacks,
     api: context.sharedAccessTest, async start() { document.dispatchEvent({type: 'DOMContentLoaded'}); sandbox.dispatchEvent({type: 'load'}); await flush(); },
     async runTimers() { const pending = [...timers.values()]; timers.clear(); for (const fn of pending) fn(); await flush(); },
@@ -73,7 +76,7 @@ test('shared auth keeps the same persistent client and loads security dependenci
   const asset = name => h.scripts.findIndex(src => src.includes(name));
   assert.ok(asset('hq-access.js') < asset('knowledge-base.js'));
   assert.ok(asset('knowledge-base.js') < asset('paws-navigation.js'));
-  assert.ok(h.scripts.every(src => src.includes('v=20261020b')));
+  assert.ok(h.scripts.every(src => src.includes('v=20261020c')));
   assert.equal(h.body.dataset.auth, 'ok');
   assert.equal(h.body.style.opacity, '1');
   assert.deepEqual(h.authMutations, []);
@@ -194,4 +197,15 @@ test('a transient dependency failure can be retried without recreating the clien
   assert.equal(h.calls.filter(call => call.createClient).length, 1);
   assert.deepEqual(h.authMutations, []);
   assert.deepEqual(h.storageMutations, []);
+});
+
+
+test('an explicitly removed membership clears private caches even when Slack verification is unavailable', async () => {
+  const h = harness({invoke:()=>({data:null,error:new Error('offline')})}); await h.start(); await h.api.loadSearchIndex();
+  assert.equal(h.api.searchKB('private').length,1);
+  h.state.active=false; await h.api.getController().check();
+  assert.equal(h.api.getController().getState().allowed,false);
+  assert.equal(h.api.searchKB('private').length,0);
+  assert.ok(h.events.some(event=>event.type==='paws-access-revoked'));
+  assert.deepEqual(h.authMutations,[]);
 });

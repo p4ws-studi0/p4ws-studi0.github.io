@@ -201,6 +201,7 @@
   async function requireStaff(epoch) {
     if(typeof supabaseClient==='undefined')throw {code:'AUTH'};const {data,error}=await supabaseClient.auth.getSession();
     if(!current(epoch)||error||!data?.session?.user)throw {code:'AUTH'};const id=data.session.user.id;
+    if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(data.session);
     const result=await supabaseClient.from('hq_tour_staff').select('user_id,active').eq('user_id',id).eq('active',true).maybeSingle();
     if(!current(epoch))throw {code:'AUTH'};if(result.error)throw result.error;if(!result.data)throw {code:'ACCESS'};state.userId=id;
   }

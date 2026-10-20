@@ -161,7 +161,7 @@ with check (
 comment on table public.hq_tours is
   'Paws HQ staff tour calendar. Dates/times are local to America/New_York; deletion is reversible.';
 comment on table public.hq_tour_staff is
-  'Administrator-managed Tours allowlist. Slack sign-in alone does not grant Tours access.';
+  'Legacy table name for the single shared HQ workspace membership. Server verification enrolls every active Slack workspace member; no page or guest permission tiers.';
 comment on column public.hq_tours.revision is
   'Server-incremented optimistic lock. Client updates must filter by expected revision.';
 

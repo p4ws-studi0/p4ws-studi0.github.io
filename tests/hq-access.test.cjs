@@ -1,10 +1,10 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {createController, createNotice, POLL_MS} = require('../assets/hq-access.js');
+const {createMembershipManager, createController, createNotice, POLL_MS, ENROLLMENT_RETRY_MS} = require('../assets/hq-access.js');
 const session = id => ({user: {id}, access_token: 'unchanged-existing-token', refresh_token: 'unchanged-existing-refresh'});
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return {promise, resolve, reject}; };
-const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
+const flush = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 function target() {
   const listeners = new Map();
   return {listeners, addEventListener(type, handler) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(handler); }, removeEventListener(type, handler) { listeners.get(type)?.delete(handler); }, dispatchEvent(event) { for (const handler of listeners.get(event.type) || []) handler(event); return true; }};
@@ -12,7 +12,7 @@ function target() {
 function harness(options = {}) {
   const document = Object.assign(target(), {visibilityState: 'visible'});
   const timers = new Map(), intervals = new Map();
-  let timerId = 0, callback = null, unsubscribed = 0, activeSession = session('active');
+  let timerId = 0, callback = null, unsubscribed = 0, activeSession = session('active'), lastApproval = null;
   const window = Object.assign(target(), {document, CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
     setTimeout(fn) { const id = ++timerId; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); },
     setInterval(fn, ms) { const id = ++timerId; intervals.set(id, {fn, ms}); return id; }, clearInterval(id) { intervals.delete(id); },
@@ -26,12 +26,16 @@ function harness(options = {}) {
     signOut() { mutations.push('signOut'); throw Error('Must not sign out.'); },
     setSession() { mutations.push('setSession'); throw Error('Must not replace a session.'); },
     refreshSession() { mutations.push('refreshSession'); throw Error('Must not force refresh a session.'); },
-  }, from(table) {
+  }, functions: {async invoke(name, request) {
+    calls.push({method: 'invoke', name, request});
+    return options.invoke ? options.invoke(name, request) : {data: {success: false, error: {code: lastApproval?.active === false ? 'SLACK_DEACTIVATED' : 'WORKSPACE_ACCESS_DENIED'}}, error: null};
+  }}, from(table) {
     const call = {table}; calls.push(call);
-    return {select(fields) { call.fields = fields; return this; }, eq(field, value) { call[field] = value; return this; }, maybeSingle() { return options.staff ? options.staff(call) : Promise.resolve(response); }};
+    return {select(fields) { call.fields = fields; return this; }, eq(field, value) { call[field] = value; return this; }, async maybeSingle() { const result = await (options.staff ? options.staff(call) : response); lastApproval = result.data; return result; }};
   }};
-  const controller = createController({client, window, document, onChange: next => changes.push(next)});
-  return {client, controller, window, document, changes, events, calls, mutations, response, timers, intervals,
+  const membership = createMembershipManager({client, now: options.now});
+  const controller = createController({client, membershipManager: membership, window, document, onChange: next => changes.push(next)});
+  return {client, membership, controller, window, document, changes, events, calls, mutations, response, timers, intervals,
     setSession(next) { activeSession = next; }, emit(event, value) { assert.ok(callback); callback(event, value); },
     async runTimers() { const pending = [...timers.values()]; timers.clear(); for (const fn of pending) fn(); await flush(); },
     get unsubscribed() { return unsubscribed; }, staffCalls() { return calls.filter(call => call.table); },
@@ -65,11 +69,11 @@ test('an explicit false approval revokes access without signing out', async () =
   assert.ok((await h.client.auth.getSession()).data.session);
 });
 
-test('a missing staff row is unapproved rather than confirmed Slack deactivation', async () => {
+test('a missing staff row is denied only after explicit workspace verification rejects membership', async () => {
   const h = harness(); h.response.data = null;
   const result = await h.controller.check(session('guest'));
   assert.equal(result.status, 'unapproved');
-  assert.equal(result.reason, 'staff-not-approved');
+  assert.equal(result.reason, 'workspace-access-denied');
   assert.equal(result.confirmed, true);
   assert.equal(result.allowed, false);
   assert.deepEqual(h.mutations, []);

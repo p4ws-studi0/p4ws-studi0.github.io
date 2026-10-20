@@ -73,7 +73,7 @@ using (
 );
 
 comment on table public.hq_knowledge_pages is
-  'Private Paws HQ knowledgebase and search content. Browser roles have read-only access through the existing active staff allowlist.';
+  'Private Paws HQ knowledgebase and search content. Browser roles have read-only access through the shared active workspace membership.';
 
 notify pgrst, 'reload schema';
 commit;

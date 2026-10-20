@@ -168,6 +168,7 @@ function isProtectedPage() {
     sidebarPath(window.location.href).startsWith(path)
   )
 }
+let hqWorkspaceMembership = null
 let hqAccessController = null
 let hqAccessNotice = null
 let hqPreviousAccess = null
@@ -213,8 +214,9 @@ function receiveHqAccess(state) {
   const previous = hqPreviousAccess
   const changedIdentity = state.reason === 'identity-changed'
   if (changedIdentity) document.body.style.opacity = '0'
+  const missingMembership = state.status === 'unavailable' && ['missing', 'inactive'].includes(state.approval)
   const confirmedDenied = state.confirmed && ['revoked', 'unapproved', 'session-missing'].includes(state.status)
-  if (changedIdentity || (confirmedDenied && (!previous || previous.status !== state.status || previous.userId !== state.userId))) {
+  if (changedIdentity || ((confirmedDenied || missingMembership) && (!previous || previous.status !== state.status || previous.userId !== state.userId || previous.approval !== state.approval))) {
     clearPrivateKnowledgeSearch()
     hqAccessInvalidated = true
     window.dispatchEvent(new CustomEvent('paws-access-revoked', {detail: state}))
@@ -806,7 +808,7 @@ document.addEventListener('click', e => {
 })
 
 // Shared security code reuses this exact Supabase client and loads before navigation.
-const HQ_ASSET_VERSION = '20261020b'
+const HQ_ASSET_VERSION = '20261020c'
 let hqSecurityAssets = null
 
 function loadHqSharedScript(path, globalName) {
@@ -838,10 +840,24 @@ function loadHqSecurityAssets() {
   return hqSecurityAssets
 }
 
+async function ensureHqWorkspaceAccess(session) {
+  await loadHqSecurityAssets()
+  if (!hqWorkspaceMembership) hqWorkspaceMembership = window.PawsHqAccess.createMembershipManager({client: supabaseClient})
+  const checked = await hqWorkspaceMembership.ensure(session)
+  if (!checked.allowed) {
+    const error = new Error(checked.confirmed ? 'This account is not an active Paws Slack workspace member.' : 'Workspace access could not be checked. Please try again.')
+    error.code = checked.confirmed ? 'ACCESS' : 'UNAVAILABLE'
+    error.access = checked
+    throw error
+  }
+  return checked
+}
+
 async function ensureHqAccessController() {
   await loadHqSecurityAssets()
   if (!hqAccessController) {
-    hqAccessController = window.PawsHqAccess.createController({client: supabaseClient, onChange: receiveHqAccess})
+    if (!hqWorkspaceMembership) hqWorkspaceMembership = window.PawsHqAccess.createMembershipManager({client: supabaseClient})
+    hqAccessController = window.PawsHqAccess.createController({client: supabaseClient, membershipManager: hqWorkspaceMembership, onChange: receiveHqAccess})
     hqAccessNotice = window.PawsHqAccess.createNotice({controller: hqAccessController})
     hqAccessController.start()
   }

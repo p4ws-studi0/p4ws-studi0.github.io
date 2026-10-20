@@ -172,3 +172,14 @@ test('SQL preserves sessions and defaults disabled with service-only, transactio
     assert.match(SQL, new RegExp(`grant execute on function public.hq_slack_sync_${signature} to service_role`));
   }
 });
+
+test('historical inactive Slack accounts do not count as new revocations or block new member enrollment',async()=>{
+ const candidates=[candidate(A,'UACTIVE'),...[2,3,4,5].map(n=>({...candidate('00000000-0000-4000-8000-'+String(n).padStart(12,'0'),'UOLD'+n),staff_active:false}))];
+ const users=Object.fromEntries(candidates.map(c=>[c.slack_user_id,{id:c.slack_user_id,team_id:TEAM,is_bot:false,deleted:c.user_id!==A}]));
+ const h=await harness({dry_run:false,candidates,users,active:new Map(candidates.map(c=>[c.user_id,c.user_id===A]))});
+ const r=await h.request();assert.equal(r.status,200);assert.equal((await r.json()).proposed,0);assert.equal(h.calls('/hq_slack_sync_finish').length,1);
+});
+test('verified enrollment counts are returned separately from deactivation changes',async()=>{
+ const h=await harness({dry_run:false,intercept:call=>call.url.pathname.endsWith('/hq_slack_sync_finish')?response({status:'applied',changed:1,enrolled:2}):undefined});
+ const r=await h.request();assert.equal(r.status,200);assert.equal((await r.json()).enrolled,2);
+});

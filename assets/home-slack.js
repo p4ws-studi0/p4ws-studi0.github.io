@@ -201,6 +201,7 @@
         setStatus('Sign in to Paws HQ to view #general.');
         return;
       }
+      if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(auth.session);
       state.userId = auth.session.user.id;
       const {data,error} = await invoke({action:'message'});
       if (!current()) return;

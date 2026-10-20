@@ -72,6 +72,7 @@
       if (typeof supabaseClient === 'undefined') throw {code:'AUTH'};
       const {data:auth,error:authError} = await supabaseClient.auth.getSession();
       if (!current(epoch) || authError || !auth?.session?.user) throw {code:'AUTH'};
+      if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(auth.session);
       const {data,error} = await supabaseClient.from('hq_tour_staff').select('user_id,active').eq('user_id',auth.session.user.id).eq('active',true).maybeSingle();
       if (!current(epoch)) throw {code:'AUTH'};
       if (error) throw error;
