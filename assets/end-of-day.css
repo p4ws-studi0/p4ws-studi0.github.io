@@ -158,6 +158,10 @@
 .eod-report-chevron {margin-left:auto;color:var(--tr-muted);}
 .eod-report-date-button[aria-expanded="true"] .eod-report-chevron {transform:rotate(180deg);}
 .eod-report-output-actions {display:flex;align-items:center;gap:8px;}
+#downloadReport {background:#33c978;border-color:#33c978;color:#fff;}
+#downloadReport:hover:not(:disabled) {background:#28bb6b;border-color:#28bb6b;}
+.dark #downloadReport {background:#40d985;border-color:#40d985;}
+.dark #downloadReport:hover:not(:disabled) {background:#56e396;border-color:#56e396;}
 .eod-report-dialog button:disabled {opacity:.45;cursor:default;}
 .eod-report-dialog button:focus-visible,.eod-calendar-inputs input:focus-visible {outline:2px solid var(--tr-focus);outline-offset:3px;}
 .eod-report-message {margin:0;padding:0 27px 17px;color:var(--tr-muted);font-size:11px;line-height:1.65;}
