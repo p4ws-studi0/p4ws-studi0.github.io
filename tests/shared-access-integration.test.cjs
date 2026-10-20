@@ -44,7 +44,7 @@ function harness(options = {}) {
     async getSession() { calls.push('getSession'); return {data: {session: state.session}, error: state.authError}; },
     onAuthStateChange(callback) { authCallbacks.push(callback); return {data: {subscription: {unsubscribe() {}}}}; },
     signOut() { authMutations.push('signOut'); return Promise.resolve(); },
-  }, from(table) { return {select(fields) { calls.push({table, fields}); return this; }, eq(key, value) { this.userId = value; return this; }, async maybeSingle() { return {data: {user_id: this.userId, active: state.active}, error: state.staffError}; }}; }};
+  }, from(table) { return {select(fields) { calls.push({table, fields}); return this; }, eq(key, value) { this.userId = value; return this; }, async maybeSingle() { if (options.staffPending) return options.staffPending; return {data: {user_id: this.userId, active: state.active}, error: state.staffError}; }}; }};
   const sandbox = Object.assign(target(), {document, URL, Promise, Date, console: {log() {}, warn() {}},
     location: {href: 'https://hq.pawspet.com/tours', origin: 'https://hq.pawspet.com', replace(value) { redirects.push(value); }, reload() { authMutations.push('reload'); }},
     localStorage: {getItem() { return null; }, setItem(...args) { storageMutations.push(args); }, removeItem() { storageMutations.push('removeItem'); }, clear() { storageMutations.push('clear'); }},
@@ -73,12 +73,41 @@ test('shared auth keeps the same persistent client and loads security dependenci
   const asset = name => h.scripts.findIndex(src => src.includes(name));
   assert.ok(asset('hq-access.js') < asset('knowledge-base.js'));
   assert.ok(asset('knowledge-base.js') < asset('paws-navigation.js'));
-  assert.ok(h.scripts.every(src => src.includes('v=20261020a')));
+  assert.ok(h.scripts.every(src => src.includes('v=20261020b')));
   assert.equal(h.body.dataset.auth, 'ok');
   assert.equal(h.body.style.opacity, '1');
   assert.deepEqual(h.authMutations, []);
   assert.deepEqual(h.storageMutations, []);
   assert.deepEqual(h.redirects, []);
+});
+
+test('routine and delayed sign-in checks never display a connection screen', async () => {
+  const pending = deferred(), h = harness({staffPending: pending.promise});
+  await h.start();
+  assert.ok(!h.html.children.some(child => child.className === 'hq-access-connection' && !child.removed));
+  assert.equal(h.api.getController().getState().allowed, false);
+  pending.resolve({data: {user_id: 'active', active: true}, error: null});
+  await flush();
+  assert.equal(h.body.dataset.auth, 'ok');
+  assert.ok(!h.html.children.some(child => child.className === 'hq-access-connection' && !child.removed));
+  assert.deepEqual(h.authMutations, []);
+  assert.deepEqual(h.storageMutations, []);
+});
+
+test('account switches hide old content without a checking screen or discarded drafts', async () => {
+  const options = {}, h = harness(options), form = {unsaved: 'Keep this draft'};
+  h.body.children.push(form); await h.start();
+  const pending = deferred(); options.staffPending = pending.promise;
+  h.state.session = session('another-user');
+  const checking = h.api.getController().check(h.state.session); await flush();
+  assert.equal(h.body.style.opacity, '0');
+  assert.ok(!h.html.children.some(child => child.className === 'hq-access-connection' && !child.removed));
+  assert.ok(h.body.children.includes(form));
+  pending.resolve({data: {user_id: 'another-user', active: true}, error: null});
+  await checking;
+  assert.equal(h.body.style.opacity, '1');
+  assert.equal(h.body.dataset.auth, 'ok');
+  assert.deepEqual(h.authMutations, []);
 });
 
 test('active users survive connection failures without login redirects, reloads, or session changes', async () => {

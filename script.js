@@ -185,7 +185,8 @@ function clearPrivateKnowledgeSearch() {
 }
 
 function accessConnectionPanel(show, retry = false) {
-  if (!show) {
+  // Routine session checks stay invisible; the existing page transition handles loading.
+  if (!show || !retry) {
     hqConnectionPanel?.remove()
     hqConnectionPanel = null
     return
@@ -195,9 +196,8 @@ function accessConnectionPanel(show, retry = false) {
     hqConnectionPanel.className = 'hq-access-connection'
     hqConnectionPanel.setAttribute('role', 'status')
     const title = document.createElement('h2')
-    title.textContent = 'Connecting to Paws HQ'
+    title.textContent = 'Unable to connect'
     const message = document.createElement('p')
-    message.textContent = 'Checking your existing sign-in. Your work on this page is kept.'
     const button = document.createElement('button')
     button.type = 'button'
     button.textContent = 'Try again'
@@ -206,15 +206,13 @@ function accessConnectionPanel(show, retry = false) {
     // Separate from the body opacity gate; existing forms are never replaced.
     document.documentElement.append(hqConnectionPanel)
   }
-  hqConnectionPanel.querySelector('p').textContent = retry
-    ? 'Your connection could not be checked. Your sign-in and work on this page are kept. Please try again.'
-    : 'Checking your existing sign-in. Your work on this page is kept.'
-  hqConnectionPanel.querySelector('button').hidden = !retry
+  hqConnectionPanel.querySelector('p').textContent = 'Your connection could not be checked. Your sign-in and work on this page are kept. Please try again.'
 }
 
 function receiveHqAccess(state) {
   const previous = hqPreviousAccess
   const changedIdentity = state.reason === 'identity-changed'
+  if (changedIdentity) document.body.style.opacity = '0'
   const confirmedDenied = state.confirmed && ['revoked', 'unapproved', 'session-missing'].includes(state.status)
   if (changedIdentity || (confirmedDenied && (!previous || previous.status !== state.status || previous.userId !== state.userId))) {
     clearPrivateKnowledgeSearch()
@@ -808,7 +806,7 @@ document.addEventListener('click', e => {
 })
 
 // Shared security code reuses this exact Supabase client and loads before navigation.
-const HQ_ASSET_VERSION = '20261020a'
+const HQ_ASSET_VERSION = '20261020b'
 let hqSecurityAssets = null
 
 function loadHqSharedScript(path, globalName) {
