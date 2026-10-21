@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { createReport, csv, html } = require('../assets/end-of-day-report.js');
+const { createReport, csv, html, printHtml } = require('../assets/end-of-day-report.js');
 
 const keys = ['staff_name', 'cash_received', 'checks_received', 'card_tips_received', 'card_tips_paid', 'receipts_paid', 'receipt_description', 'drawer_total', 'cash_replaced', 'cash_deposit', 'check_deposit', 'total_deposit', 'notes', 'additional_note', 'bills_100', 'bills_50', 'bills_20', 'bills_10', 'bills_5', 'bills_1', 'quarters', 'dimes', 'nickels', 'pennies'];
 const fields = keys.map(key => [key, key.replaceAll('_', ' '), 200]);
@@ -150,10 +150,57 @@ test('long notes and labels are fully escaped and every seven days start a new p
   assert.equal((output.match(/<th scope="row">&lt;Notes &amp; details&gt;<\/th>/g) || []).length, 3);
 });
 
+test('dedicated printing puts each seven-day group on one complete page with every field and date', () => {
+  const result = report({ start: '2026-10-01', end: '2026-10-18', rows: [row({ entry_date:'2026-10-18', drawer_total:'199.99', total_deposit:'29.50' })] });
+  const output = printHtml(result), pages = output.split('<section class="eod-print-page"').slice(1);
+  assert.equal(pages.length,3);
+  assert.equal((output.match(/class="eod-print-page-content"/g)||[]).length,3);
+  assert.equal((output.match(/<h2>End Of Day<\/h2>/g)||[]).length,3);
+  assert.equal((output.match(/class="eod-report-table"/g)||[]).length,3);
+  assert.deepEqual([...output.matchAll(/<span>(\d{4}-\d{2}-\d{2})<\/span>/g)].map(match=>match[1]),result.days.map(day=>day.date));
+  for(const [index,page] of pages.entries()) {
+    const days=result.days.slice(index*7,index*7+7);
+    assert.equal((page.match(/class="eod-report-column-header"/g)||[]).length,days.length);
+    assert.equal((page.match(/scope="row"/g)||[]).length,25);
+    for(const [,label] of fields) assert.ok(page.includes(`<th scope="row">${label}</th>`),label);
+    assert.match(page,/Money in &amp; out/);assert.match(page,/Drawer · dollar amounts/);assert.match(page,/Deposits &amp; notes/);
+  }
+  assert.match(pages[2],/199\.99/);assert.match(pages[2],/29\.50/);
+  assert.doesNotMatch(output,/eod-report-summary|Bill and coin values|Totals are the stored values/);
+});
+
+test('one-page print markup retains full long notes safely and omits deleted information', () => {
+  const notes='<img src=x onerror="alert(1)">\n'+'Long & complete note. '.repeat(900);
+  const labels=fields.map(field=>field[0]==='notes'?['notes','<Notes & details>',20000]:field);
+  const result=report({rows:[row({notes}),row({entry_date:'2026-10-19',notes:'Deleted confidential note',deleted_at:'2026-10-20T12:00:00Z'})],fields:labels});
+  const before=JSON.stringify(result),output=printHtml(result);
+  assert.equal((output.match(/class="eod-print-page"/g)||[]).length,1);
+  assert.equal((output.match(/Long &amp; complete note\./g)||[]).length,900);
+  assert.match(output,/&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
+  assert.match(output,/&lt;Notes &amp; details&gt;/);
+  assert.doesNotMatch(output,/<img|onerror="alert|Deleted confidential note/);
+  assert.equal(JSON.stringify(result),before);
+});
+
+test('print stylesheet measures complete fixed pages offscreen and applies saved fit scale only to content', () => {
+  const stylesheet=fs.readFileSync(path.join(__dirname,'../assets/end-of-day-print.css'),'utf8');
+  assert.match(stylesheet,/#weekReportPrint\.eod-print-output\s*\{[^}]*display:none/);
+  assert.match(stylesheet,/#weekReportPrint\.is-measuring\s*\{[^}]*display:block[^}]*position:fixed[^}]*left:-20000px[^}]*visibility:hidden/);
+  assert.match(stylesheet,/\.eod-print-page\s*\{[^}]*width:10\.2in[^}]*height:7\.65in[^}]*overflow:hidden/);
+  assert.match(stylesheet,/\.eod-print-page-content\s*\{[^}]*position:absolute[^}]*transform:scale\(var\(--eod-print-scale,1\)\)[^}]*transform-origin:top center/);
+  assert.match(stylesheet,/@page eod-week\s*\{size:letter landscape;margin:10mm/);
+  assert.match(stylesheet,/body\.eod-print-report\s+\.eod-print-page\s*\{[^}]*page:eod-week/);
+  assert.match(stylesheet,/body\.eod-print-report\s+\.eod-print-page\s*\{[^}]*break-after:page/);
+  assert.match(stylesheet,/body\.eod-print-report\s+\.eod-print-page:last-child\s*\{[^}]*break-after:auto/);
+  assert.match(stylesheet,/body\.eod-print-report #weekReport > :not\(#weekReportPrint\)/);
+  assert.doesNotMatch(stylesheet,/line-clamp|text-overflow|font-size:0/);
+});
+
 test('browser utility exposes only pure report functions and needs no DOM, network or auth', () => {
   const browser = { window: {} };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../assets/end-of-day-report.js'), 'utf8'), browser);
-  assert.deepEqual(Object.keys(browser.window.PawsEodReport), ['createReport', 'csv', 'html']);
+  assert.deepEqual(Object.keys(browser.window.PawsEodReport), ['createReport', 'csv', 'html', 'printHtml']);
   const result = browser.window.PawsEodReport.createReport({ start: '2026-10-20', end: '2026-10-20', rows: [], fields });
   assert.equal(result.days.length, 1); assert.match(browser.window.PawsEodReport.html(result), /No entry/);
+  assert.match(browser.window.PawsEodReport.printHtml(result), /class="eod-print-page"/);
 });

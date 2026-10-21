@@ -74,25 +74,40 @@
   }
   const range = (start, end) => start === end ? friendly(start) : `${friendly(start)} – ${friendly(end)}`;
 
-  function html(report) {
+  function table(report, days) {
     const byKey = new Map(report.fields.map(field => [field.key, field]));
+    const headings = days.map(day => `<th scope="col"><div class="eod-report-column-header"><span>${escape(friendly(day.date, { weekday: 'short', year: undefined }))}</span><span>${escape(day.date)}</span></div></th>`).join('');
+    const status = `<tr class="eod-report-entry-row"><th scope="row">Entry</th>${days.map(day => `<td>${escape(day.status)}</td>`).join('')}</tr>`;
+    const groups = GROUPS.map(([title, keys]) => {
+      const fields = keys.map(key => byKey.get(key)).filter(Boolean);
+      if (!fields.length) return '';
+      return `<tr class="eod-report-group"><th colspan="${days.length + 1}">${escape(title)}</th></tr>` + fields.map(field => {
+        const classes = [TOTALS.has(field.key) ? 'is-total' : '', NOTES.has(field.key) ? 'is-notes' : ''].filter(Boolean).join(' ');
+        return `<tr${classes ? ` class="${classes}"` : ''}><th scope="row">${escape(field.label)}</th>${days.map(day => `<td>${escape(day.values[field.key])}</td>`).join('')}</tr>`;
+      }).join('');
+    }).join('');
+    return `<table class="eod-report-table"><thead><tr><th scope="col">End Of Day</th>${headings}</tr></thead><tbody>${status}${groups}</tbody></table>`;
+  }
+
+  function html(report) {
     const sheets = [];
     for (let offset = 0; offset < report.days.length; offset += 7) {
       const days = report.days.slice(offset, offset + 7), label = range(days[0].date, days.at(-1).date);
-      const headings = days.map(day => `<th scope="col"><div class="eod-report-column-header"><span>${escape(friendly(day.date, { weekday: 'short', year: undefined }))}</span><span>${escape(day.date)}</span></div></th>`).join('');
-      const status = `<tr class="eod-report-entry-row"><th scope="row">Entry</th>${days.map(day => `<td>${escape(day.status)}</td>`).join('')}</tr>`;
-      const groups = GROUPS.map(([title, keys]) => {
-        const fields = keys.map(key => byKey.get(key)).filter(Boolean);
-        if (!fields.length) return '';
-        return `<tr class="eod-report-group"><th colspan="${days.length + 1}">${escape(title)}</th></tr>` + fields.map(field => {
-          const classes = [TOTALS.has(field.key) ? 'is-total' : '', NOTES.has(field.key) ? 'is-notes' : ''].filter(Boolean).join(' ');
-          return `<tr${classes ? ` class="${classes}"` : ''}><th scope="row">${escape(field.label)}</th>${days.map(day => `<td>${escape(day.values[field.key])}</td>`).join('')}</tr>`;
-        }).join('');
-      }).join('');
-      sheets.push(`<section class="eod-report-sheet" aria-label="${escape(label)}"><h3>${escape(label)}</h3><table class="eod-report-table"><thead><tr><th scope="col">End Of Day</th>${headings}</tr></thead><tbody>${status}${groups}</tbody></table></section>`);
+      sheets.push(`<section class="eod-report-sheet" aria-label="${escape(label)}"><h3>${escape(label)}</h3>${table(report, days)}</section>`);
     }
     return `<div class="eod-report-summary"><h2>End Of Day</h2><p>${escape(range(report.start, report.end))}</p><p>Bill and coin values are dollar amounts, not counts. Totals are the stored values for each day. Every date is included, even when its entry is blank.</p></div>${sheets.join('')}`;
   }
 
-  return Object.freeze({ createReport, csv, html });
+  // A fixed printable page per week; the caller measures each complete page and
+  // scales its contents to fit without changing or shortening any saved value.
+  function printHtml(report) {
+    const pages = [];
+    for (let offset = 0; offset < report.days.length; offset += 7) {
+      const days = report.days.slice(offset, offset + 7), label = range(days[0].date, days.at(-1).date);
+      pages.push(`<section class="eod-print-page" aria-label="${escape(label)}"><div class="eod-print-page-content"><header class="eod-print-heading"><h2>End Of Day</h2><p>${escape(label)}</p></header>${table(report, days)}</div></section>`);
+    }
+    return pages.join('');
+  }
+
+  return Object.freeze({ createReport, csv, html, printHtml });
 });

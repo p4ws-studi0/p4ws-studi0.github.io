@@ -5,6 +5,7 @@
   const FIELDS=[['staff_name','Staff name',500],['cash_received','Cash received',200],['checks_received','Checks received',200],['card_tips_received','Card tips received',200],['card_tips_paid','Card tips paid to staff',200],['receipts_paid','Receipts paid from drawer',200],['receipt_description','Receipt description',20000],['drawer_total','Drawer total',200],['cash_replaced','Cash returned to drawer',200],['cash_deposit','Cash deposit',200],['check_deposit','Check deposit',200],['total_deposit','Total deposit',200],['notes','Notes about today',20000],['additional_note','Additional note',20000],['bills_100','$100 bills',200],['bills_50','$50 bills',200],['bills_20','$20 bills',200],['bills_10','$10 bills',200],['bills_5','$5 bills',200],['bills_1','$1 bills',200],['quarters','Quarters',200],['dimes','Dimes',200],['nickels','Nickels',200],['pennies','Pennies',200]];
   const PROTECTED=['drawer_total','total_deposit'],KEYS=FIELDS.map(([key])=>key).filter(key=>!PROTECTED.includes(key));
   const DENOMINATIONS=['bills_100','bills_50','bills_20','bills_10','bills_5','bills_1','quarters','dimes','nickels','pennies'];
+  const DENOMINATION_CENTS={bills_100:10000n,bills_50:5000n,bills_20:2000n,bills_10:1000n,bills_5:500n,bills_1:100n,quarters:25n,dimes:10n,nickels:5n,pennies:1n};
   const MONEY=['cash_received','checks_received','card_tips_received','card_tips_paid','receipts_paid','cash_replaced','cash_deposit','check_deposit',...DENOMINATIONS];
   const TEXT_FIELDS=['staff_name','receipt_description','notes','additional_note'];
   const text=value=>String(value??''),nonblank=value=>text(value).trim().length>0;
@@ -40,6 +41,25 @@
     if(limit&&cents>99999999999n)return {valid:false,cents:null,message:'Enter an amount of $999,999,999.99 or less.'};
     return {valid:true,cents:negative?-cents:cents};
   }
+  function parseQuantity(key,value) {
+    const raw=text(value).trim(),unit=DENOMINATION_CENTS[key];
+    const invalid=message=>({valid:false,cents:null,quantity:null,message});
+    if(!unit)return invalid('Choose a bill or coin denomination.');
+    if(!raw)return {valid:true,cents:null,quantity:null};
+    if(raw.length>200||!/^\+?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.0+)?$/.test(raw))return invalid('Enter a whole number of bills or coins, 0 or more.');
+    const quantity=BigInt(raw.replace(/,/g,'').split('.')[0]),cents=quantity*unit;
+    if(cents>99999999999n)return invalid('This count is too large. Check the number of bills or coins.');
+    return {valid:true,cents,quantity};
+  }
+  function quantityValue(key,amount) {
+    const parsed=parseMoney(amount,{limit:false}),unit=DENOMINATION_CENTS[key];
+    if(!unit||!parsed.valid)return null;
+    if(parsed.cents===null)return '';
+    return parsed.cents>=0n&&parsed.cents%unit===0n?String(parsed.cents/unit):null;
+  }
+  const quantityInputValue=(editor,key)=>Object.hasOwn(editor?.quantityInputs||{},key)?editor.quantityInputs[key]:quantityValue(key,editor?.values[key])??'';
+  const invalidQuantities=editor=>DENOMINATIONS.filter(key=>Object.hasOwn(editor?.quantityInputs||{},key)&&!parseQuantity(key,editor.quantityInputs[key]).valid);
+  const drawerSum=editor=>invalidQuantities(editor).length?{valid:false,cents:null}:sumMoney(editor.values,DENOMINATIONS);
   function centsText(cents) {const absolute=cents<0n?-cents:cents;return `${cents<0n?'-':''}${absolute/100n}.${String(absolute%100n).padStart(2,'0')}`;}
   function currency(cents) {
     if(cents===null||cents===undefined)return '—';
@@ -57,17 +77,18 @@
   }
   const valuesOf=row=>Object.fromEntries(FIELDS.map(([key])=>[key,text(row?.[key])]));
   const state={logs:[],deletedRows:[],editors:new Map(),loadedDates:new Set(),ready:false,loading:false,userId:null,epoch:0,request:0,today:easternToday(),weekEnd:easternToday(),selectedDate:easternToday(),firstDate:null,historyVisible:12,metadataLoaded:false,undo:null,undoSaving:false,toastTimer:null,pointerField:null};
-  const reportState={busy:false,request:0,model:null,start:'',end:'',pendingStart:'',pendingEnd:'',month:'',selecting:false,focusDate:'',returnFocus:null,urls:new Set()};
+  const reportState={busy:false,printing:false,request:0,model:null,start:'',end:'',pendingStart:'',pendingEnd:'',month:'',selecting:false,focusDate:'',returnFocus:null,urls:new Set()};
+  const reportWindowState={expanded:false,position:null,drag:null};
   const jumpState={month:'',focusDate:'',invalid:false};
   const current=epoch=>epoch===state.epoch;
-  const dirty=editor=>editor.base?KEYS.some(key=>editor.values[key]!==text(editor.base[key])):KEYS.some(key=>nonblank(editor.values[key]));
+  const dirty=editor=>Boolean(invalidQuantities(editor).length)||(editor.base?KEYS.some(key=>editor.values[key]!==text(editor.base[key])):KEYS.some(key=>nonblank(editor.values[key])));
   const unfinished=()=>state.undoSaving||[...state.editors.values()].some(editor=>dirty(editor)||editor.saving||editor.deleting||editor.error);
   const formFocused=()=>Boolean(document.activeElement?.closest?.('#dayFields'));
   const rowForDate=date=>state.logs.find(row=>row.entry_date===date)||state.deletedRows.find(row=>row.entry_date===date)||null;
   function editorForDate(date,{create=true}={}) {
     let editor=state.editors.get(date);if(editor)return editor;
     const row=rowForDate(date);if(row?.deleted_at||!create||!state.loadedDates.has(date))return null;
-    editor={id:row?.id||crypto.randomUUID(),date,base:row?{...row}:null,values:valuesOf(row),saving:null,deleting:false,deleteAttempt:false,error:'',conflict:false,attempt:null,fieldErrors:{}};
+    editor={id:row?.id||crypto.randomUUID(),date,base:row?{...row}:null,values:valuesOf(row),quantityInputs:{},saving:null,deleting:false,deleteAttempt:false,error:'',conflict:false,attempt:null,fieldErrors:{}};
     state.editors.set(date,editor);return editor;
   }
   function message(value,error=false) {$('pageMessage').textContent=value;$('pageMessage').hidden=!value;$('pageMessage').classList.toggle('is-error',error);}
@@ -95,7 +116,7 @@
     for(const row of rows) {
       remember(row);const editor=state.editors.get(row.entry_date);
       if(editor&&!dirty(editor)&&!editor.saving&&!editor.deleting&&!editor.error) {
-        if(row.deleted_at)state.editors.delete(row.entry_date);else {editor.id=row.id;editor.base={...row};editor.values=valuesOf(row);}
+        if(row.deleted_at)state.editors.delete(row.entry_date);else {editor.id=row.id;editor.base={...row};editor.values=valuesOf(row);editor.quantityInputs={};}
       }
     }
     for(const date of weekDates(end)) {
@@ -105,10 +126,11 @@
   }
   function inputField(key,{multiline=false,label=null}={}) {
     const [,,limit]=FIELDS.find(([name])=>name===key),fieldLabel=label||FIELDS.find(([name])=>name===key)[1];
-    const editor=editorForDate(state.selectedDate),value=escape(editor?.values[key]),id=`field-${key}`,money=MONEY.includes(key);
-    const accessible=`aria-labelledby="label-${key}" aria-describedby="error-${key}"`;
-    const input=multiline?`<textarea id="${id}" ${accessible} data-field="${key}" maxlength="${limit}" rows="3">${value}</textarea>`:`<input id="${id}" ${accessible} data-field="${key}"${money?' data-money inputmode="decimal"':''}${key==='staff_name'?' list="staffSuggestions" autocomplete="off"':''} type="text" maxlength="${limit}" value="${value}"${money?' placeholder="0.00"':''} />`;
-    return `<label class="eod-field"><span id="label-${key}">${escape(fieldLabel)}</span>${input}<span id="error-${key}" class="eod-field-error" hidden></span></label>`;
+    const editor=editorForDate(state.selectedDate),quantity=DENOMINATIONS.includes(key),value=escape(quantity?quantityInputValue(editor,key):editor?.values[key]),id=`field-${key}`,money=MONEY.includes(key)&&!quantity;
+    const accessible=`aria-labelledby="label-${key}" aria-describedby="${quantity?`amount-${key} `:''}error-${key}"`;
+    const input=multiline?`<textarea id="${id}" ${accessible} data-field="${key}" maxlength="${limit}" rows="3">${value}</textarea>`:`<input id="${id}" ${accessible} data-field="${key}"${quantity?' data-quantity inputmode="numeric"':money?' data-money inputmode="decimal"':''}${key==='staff_name'?' list="staffSuggestions" autocomplete="off"':''} type="text" maxlength="${limit}" value="${value}"${quantity?' placeholder="0"':money?' placeholder="0.00"':''} />`;
+    const caption=quantity?`<span class="eod-denomination-label"><span id="label-${key}">${escape(fieldLabel)}</span><small id="amount-${key}" class="eod-quantity-amount"></small></span>`:`<span id="label-${key}">${escape(fieldLabel)}</span>`;
+    return `<label class="eod-field">${caption}${input}<span id="error-${key}" class="eod-field-error" hidden></span></label>`;
   }
   function renderForm() {
     $('dayEyebrow').textContent=state.selectedDate===state.today?'TODAY’S ENTRY':'DAILY ENTRY';
@@ -125,13 +147,13 @@
         <section class="eod-card eod-money-card glass"><div class="eod-card-heading"><span class="eod-step">1</span><div><h3>Money in &amp; out</h3><p>Record what was received and paid from the drawer.</p></div></div>
           <div class="eod-staff-field">${inputField('staff_name')}</div><p class="eod-group-label">RECEIVED FROM CUSTOMERS</p><div class="eod-fields-three">${moneyIn}</div>
           <p class="eod-group-label">DRAWER PAYOUTS &amp; REPLACEMENT</p><div class="eod-fields-three">${moneyOut}</div><p class="eod-money-note">Cash returned to drawer replaces a previous shortfall.</p><div class="eod-receipt-field">${inputField('receipt_description',{multiline:true,label:'Receipts — store and what was purchased'})}</div></section>
-        <section class="eod-card eod-count-card glass"><div class="eod-card-heading"><span class="eod-step">2</span><div><h3>Count the drawer</h3><p>Enter the total dollar amount for each denomination, not the number of bills or coins.</p></div></div><div class="eod-count-grid">${counts}</div>
-          <div class="eod-total-block"><span>Counted drawer <span class="tr-sr-only">calculated from denomination dollar amounts</span></span><output id="drawerTotal">—</output></div><p id="drawerBalance" class="eod-balance">Drawer target: $200.00</p><p id="drawerRecorded" class="eod-recorded-note" hidden></p></section>
+        <section class="eod-card eod-count-card glass"><div class="eod-card-heading"><span class="eod-step">2</span><div><h3>Count the drawer</h3><p>Enter the number of bills or coins. Dollar totals calculate automatically.</p></div></div><div class="eod-count-grid">${counts}</div>
+          <div class="eod-total-block"><span>Counted drawer <span class="tr-sr-only">calculated from bill and coin quantities</span></span><output id="drawerTotal">—</output></div><p id="drawerBalance" class="eod-balance">Drawer target: $200.00</p><p id="drawerRecorded" class="eod-recorded-note" hidden></p></section>
           <section class="eod-card eod-deposit-card glass"><div class="eod-card-heading"><span class="eod-step">3</span><div><h3>Deposits &amp; notes</h3><p>Record the deposit and anything the next shift should know.</p></div></div><div class="eod-fields-two">${inputField('cash_deposit')}${inputField('check_deposit')}</div>
             <div class="eod-total-block"><span>Total deposit <span class="tr-sr-only">calculated from cash and check deposit</span></span><output id="depositTotal">—</output></div><p id="depositRecorded" class="eod-recorded-note" hidden></p>
             <div class="eod-notes-field">${inputField('notes',{multiline:true})}</div><p class="eod-manager-help">If the day doesn’t balance, let a manager know. Ask a manager or Jen if you need change to make a deposit.</p>
             <details class="eod-extra-note"${nonblank(editor.values.additional_note)?' open':''}><summary>Additional note</summary>${inputField('additional_note',{multiline:true,label:'Additional note from the original log'})}</details></section>
-      </div><div class="eod-day-actions"><span>Amounts save exactly as entered · totals calculate automatically</span><button id="deleteDay" class="eod-delete" type="button" data-day-action="delete">${editor.base?'Delete entry':'Clear entry'}</button></div>`;
+      </div><div class="eod-day-actions"><span>Changes save automatically · drawer counts become dollar totals</span><button id="deleteDay" class="eod-delete" type="button" data-day-action="delete">${editor.base?'Delete entry':'Clear entry'}</button></div>`;
     updateEditorStatus(editor);renderCalculations(editor);
   }
   function recordedNote(id,editor,key,total) {
@@ -142,18 +164,23 @@
   }
   function renderCalculations(editor) {
     if(editor?.date!==state.selectedDate)return;
-    const drawer=sumMoney(editor.values,DENOMINATIONS),deposit=sumMoney(editor.values,['cash_deposit','check_deposit']);
-    if($('drawerTotal'))$('drawerTotal').textContent=drawer.valid?currency(drawer.cents):'Check amounts';
+    const drawer=drawerSum(editor),deposit=sumMoney(editor.values,['cash_deposit','check_deposit']);
+    if($('drawerTotal'))$('drawerTotal').textContent=drawer.valid?currency(drawer.cents):'Check counts';
+    for(const key of DENOMINATIONS) {
+      const node=$(`amount-${key}`);if(!node)continue;const raw=Object.hasOwn(editor.quantityInputs||{},key),parsed=parseMoney(editor.values[key],{limit:false}),legacy=!raw&&quantityValue(key,editor.values[key])===null;
+      node.textContent=legacy?`Saved amount: ${parsed.valid?currency(parsed.cents):text(editor.values[key])}. Enter a count to update.`:invalidQuantities(editor).includes(key)?'Check quantity':parsed.cents===null?`${currency(DENOMINATION_CENTS[key])} each`:currency(parsed.cents);node.classList.toggle('is-legacy',legacy);
+    }
     if($('depositTotal'))$('depositTotal').textContent=deposit.valid?currency(deposit.cents):'Check amounts';
     const balance=$('drawerBalance');if(balance) {
       balance.dataset.state='idle';
-      if(!drawer.valid)balance.textContent='Fix a highlighted denomination to calculate the drawer total.';
+      if(!drawer.valid)balance.textContent='Fix a highlighted count to calculate the drawer total.';
       else if(!hasActivity(editor.values)||drawer.cents===null)balance.textContent='Drawer target: $200.00';
       else {const difference=drawer.cents-20000n;balance.dataset.state=difference===0n?'met':difference<0n?'short':'over';balance.textContent=difference===0n?'$200.00 drawer target met':difference<0n?`Short by ${currency(-difference)} from the $200.00 target`:`Over by ${currency(difference)} from the $200.00 target`;}
     }
     recordedNote('drawerRecorded',editor,'drawer_total',drawer);recordedNote('depositRecorded',editor,'total_deposit',deposit);
   }
   function displayedTotal(editor,row,key) {
+    if(key==='drawer_total'&&editor&&invalidQuantities(editor).length)return 'Check counts';
     const keys=key==='drawer_total'?DENOMINATIONS:['cash_deposit','check_deposit'];
     if(editor&&keys.some(name=>!editor.base?nonblank(editor.values[name]):editor.values[name]!==text(editor.base[name]))) {const total=sumMoney(editor.values,keys);return total.valid?currency(total.cents):'Check amounts';}
     const parsed=parseMoney(row?.[key]??editor?.base?.[key],{limit:false});return parsed.valid?currency(parsed.cents):text(row?.[key])||'—';
@@ -191,12 +218,14 @@
     const button=$('deleteDay');if(button)button.disabled=!state.ready||state.loading||state.undoSaving||Boolean(editor.saving||editor.deleting);
   }
   function controls() {
-    const blocked=!state.ready||state.loading||state.undoSaving||reportState.busy;
+    const blocked=!state.ready||state.loading||state.undoSaving||reportState.busy||reportState.printing;
     for(const id of ['previousWeek','nextWeek','goToday','jumpDate','openDateCalendar','loadOlderWeeks'])$(id).disabled=blocked;
     $('refreshLogs').disabled=state.loading||state.undoSaving||reportState.busy;
     $('openWeekReport').disabled=blocked;
-    for(const id of ['selectReportDates','reportLastSeven'])$(id).disabled=reportState.busy;
-    for(const id of ['downloadReport'])$(id).disabled=blocked||Boolean(reportRangeError(reportState.start,reportState.end))||!$('reportDatePicker').hidden;
+    $('expandWeekReport').disabled=reportState.printing;
+    for(const id of ['selectReportDates','reportLastSeven'])$(id).disabled=reportState.busy||reportState.printing;
+    for(const id of ['downloadReport','printReport'])$(id).disabled=blocked||!reportState.model||!$('reportDatePicker').hidden;
+    $('weekReportContent').setAttribute('aria-busy',String(reportState.busy));
     document.querySelectorAll('[data-restore-date],[data-week-end],[data-open-date]').forEach(button=>{button.disabled=blocked;});
     const editor=editorForDate(state.selectedDate,{create:false});
     $('saveStatus').textContent=state.loading?'Loading…':editor?.deleting||editor?.saving||state.undoSaving?'Saving…':editor?.error?'Changes not saved':editor&&dirty(editor)?'Unsaved changes':!state.ready?'':editor?.base?'All changes saved':'Ready for today’s entry';
@@ -242,26 +271,38 @@
   function takeInput(input) {
     const date=input.closest('[data-day-date]')?.dataset.dayDate,key=input.dataset.field,editor=state.editors.get(date);
     if(!editor||!KEYS.includes(key)||editor.deleting||editor.deleteAttempt)return;
-    const original=editor.base?text(editor.base[key]):'';editor.values[key]=input.value===normalized(original)?original:input.value;
-    if(!editor.conflict)editor.error='';if(MONEY.includes(key)){const parsed=parseMoney(editor.values[key]);if(parsed.valid)delete editor.fieldErrors[key];else editor.fieldErrors[key]=parsed.message;}
-    controls();renderCalculations(editor);renderAttention();
+    const original=editor.base?text(editor.base[key]):'';
+    if(DENOMINATIONS.includes(key)) {
+      editor.quantityInputs??={};editor.quantityInputs[key]=input.value;
+      const parsed=parseQuantity(key,input.value),base=parseMoney(original,{limit:false});
+      if(parsed.valid) {editor.values[key]=base.valid&&base.cents===parsed.cents?original:parsed.cents===null?'':centsText(parsed.cents);delete editor.fieldErrors[key];}
+      else editor.fieldErrors[key]=parsed.message;
+    }else {
+      editor.values[key]=input.value===normalized(original)?original:input.value;
+      if(MONEY.includes(key)){const parsed=parseMoney(editor.values[key]);if(parsed.valid)delete editor.fieldErrors[key];else editor.fieldErrors[key]=parsed.message;}
+    }
+    if(!editor.conflict)editor.error='';controls();renderCalculations(editor);renderAttention();
   }
   const changedPatch=editor=>Object.fromEntries(KEYS.filter(key=>!editor.base?nonblank(editor.values[key]):editor.values[key]!==text(editor.base[key])).map(key=>[key,editor.values[key]]));
   function validate(editor) {
     const patch=changedPatch(editor);editor.fieldErrors={};for(const key of MONEY)if(key in patch){const parsed=parseMoney(editor.values[key]);if(!parsed.valid)editor.fieldErrors[key]=parsed.message;}
-    if(Object.keys(editor.fieldErrors).length){editor.error='Check the highlighted amounts. Your entries are still here.';controls();return false;}return true;
+    for(const key of invalidQuantities(editor))editor.fieldErrors[key]=parseQuantity(key,editor.quantityInputs[key]).message;
+    if(Object.keys(editor.fieldErrors).length){editor.error='Check the highlighted counts or amounts. Your entries are still here.';controls();return false;}return true;
   }
   async function fetchDate(date) {const result=await supabaseClient.from(TABLE).select('*').eq('entry_date',date).maybeSingle();if(result.error)throw result.error;return result.data;}
-  function accept(editor,saved) {editor.id=saved.id;editor.base={...saved};for(const key of PROTECTED)editor.values[key]=text(saved[key]);editor.attempt=null;editor.error='';editor.conflict=false;remember(saved);}
+  function accept(editor,saved) {editor.id=saved.id;editor.base={...saved};for(const key of DENOMINATIONS)if(Object.hasOwn(editor.quantityInputs||{},key)){const count=parseQuantity(key,editor.quantityInputs[key]),amount=parseMoney(saved[key],{limit:false});if(count.valid&&amount.valid&&count.cents===amount.cents)delete editor.quantityInputs[key];}for(const key of PROTECTED)editor.values[key]=text(saved[key]);editor.attempt=null;editor.error='';editor.conflict=false;remember(saved);}
   function mergeUntouched(editor,reference,patch,fresh) {
     for(const key of KEYS)if(!(key in patch)) {
       const prior=text(reference?.[key]),local=editor.values[key],remote=text(fresh[key]);
       if(local!==prior&&remote!==prior&&local!==remote)throw {code:'CONFLICT'};
-      if(local===prior)editor.values[key]=remote;
+      if(local===prior) {
+        if(DENOMINATIONS.includes(key)&&Object.hasOwn(editor.quantityInputs||{},key)){const count=parseQuantity(key,editor.quantityInputs[key]),amount=parseMoney(prior,{limit:false});if(count.valid&&amount.valid&&count.cents===amount.cents)delete editor.quantityInputs[key];}
+        editor.values[key]=remote;
+      }
     }
   }
   function syncUntouchedFields(editor) {
-    if(editor.date!==state.selectedDate)return;document.querySelectorAll('#dayFields [data-field]').forEach(input=>{if(document.activeElement!==input)input.value=editor.values[input.dataset.field];});renderCalculations(editor);
+    if(editor.date!==state.selectedDate)return;document.querySelectorAll('#dayFields [data-field]').forEach(input=>{if(document.activeElement!==input)input.value=DENOMINATIONS.includes(input.dataset.field)?quantityInputValue(editor,input.dataset.field):editor.values[input.dataset.field];});renderCalculations(editor);
   }
   async function reconcile(editor,epoch) {
     const attempt=editor.attempt;if(!attempt)return;const fresh=await fetchDate(editor.date);if(!current(epoch))return;
@@ -277,6 +318,7 @@
   }
   function saveEditor(editor) {
     if(!editor||editor.deleting||editor.deleteAttempt||editor.conflict||!state.ready)return Promise.resolve();if(editor.saving)return editor.saving;if(!dirty(editor))return Promise.resolve();
+    if(invalidQuantities(editor).length){validate(editor);return Promise.resolve();}
     if(!KEYS.some(key=>nonblank(editor.values[key]))) {editor.error='This entry is empty. Enter a detail or delete the entry.';controls();return Promise.resolve();}
     if(!validate(editor))return Promise.resolve();const epoch=state.epoch;
     const task=(async()=>{
@@ -388,18 +430,18 @@
     $('reportMessage').textContent=value;$('reportMessage').classList.toggle('is-error',error);
   }
   function updateReportRange(start,end) {
-    if(reportState.busy)return false;
+    if(reportState.busy||reportState.printing)return false;
     const error=reportRangeError(start,end);if(error){reportMessage(error,true);return false;}
     reportState.request++;reportState.model=null;reportState.start=start;reportState.end=end;reportState.pendingStart=start;reportState.pendingEnd=end;reportState.selecting=false;
-    $('reportDateLabel').textContent=reportRangeLabel(start,end);reportMessage('');controls();return true;
+    $('weekReportContent').innerHTML='';$('reportDateLabel').textContent=reportRangeLabel(start,end);reportMessage('');controls();return true;
   }
   function toggleReportDates(open) {
-    if(open&&(reportState.busy))return;
+    if(open&&(reportState.busy||reportState.printing))return;
     $('reportDatePicker').hidden=!open;$('selectReportDates').setAttribute('aria-expanded',String(open));
     if(open) {
       reportState.pendingStart=reportState.start;reportState.pendingEnd=reportState.end;reportState.selecting=false;reportState.month=monthStart(reportState.start);reportState.focusDate=reportState.start;renderCalendar();$(`eod-calendar-${reportState.start}`)?.focus();
     }
-    controls();
+    controls();clampReportPosition();
   }
   function renderCalendar() {
     if(reportState.month>'9999-12-01')reportState.month='9999-12-01';
@@ -417,12 +459,12 @@
       return `<div class="eod-calendar-month"><div role="grid" aria-label="${escape(formatDate(month,{month:'long',year:'numeric'}))}"><div role="row" class="eod-calendar-weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day=>`<span role="columnheader" aria-label="${day}">${day.slice(0,1)}</span>`).join('')}</div>${rows.join('')}</div></div>`;
     }).join('')}</div>`;
   }
-  function chooseReportDate(date) {
-    if(!validDate(date)||reportState.busy)return;
+  async function chooseReportDate(date) {
+    if(!validDate(date)||reportState.busy||reportState.printing)return;
     if(!reportState.selecting){reportState.pendingStart=date;reportState.pendingEnd='';reportState.selecting=true;reportMessage('');}
     else {
       const start=date<reportState.pendingStart?date:reportState.pendingStart,end=date<reportState.pendingStart?reportState.pendingStart:date;
-      if(updateReportRange(start,end)){reportState.pendingStart=start;reportState.pendingEnd=end;reportState.selecting=false;toggleReportDates(false);$('selectReportDates').focus();return;}
+      if(updateReportRange(start,end)){reportState.pendingStart=start;reportState.pendingEnd=end;reportState.selecting=false;toggleReportDates(false);$('selectReportDates').focus();return prepareReport(start,end);}
     }
     reportState.focusDate=date;renderCalendar();$(`eod-calendar-${date}`)?.focus();
   }
@@ -438,8 +480,49 @@
     if(monthStart(next)!==reportState.month)reportState.month=monthStart(next);
     renderCalendar();$(`eod-calendar-${next}`)?.focus();
   }
+  function clampReportPosition() {
+    const dialog=$('weekReport'),position=reportWindowState.position;
+    if(!position||!dialog.open)return;
+    if(window.innerWidth<=700) {
+      reportWindowState.position=null;dialog.classList.remove('is-positioned');dialog.style.removeProperty('--eod-report-left');dialog.style.removeProperty('--eod-report-top');return;
+    }
+    if(reportWindowState.expanded)return;
+    const rectangle=dialog.getBoundingClientRect(),margin=8;
+    position.left=Math.max(margin,Math.min(position.left,Math.max(margin,window.innerWidth-rectangle.width-margin)));
+    position.top=Math.max(margin,Math.min(position.top,Math.max(margin,window.innerHeight-rectangle.height-margin)));
+    dialog.style.setProperty('--eod-report-left',`${position.left}px`);dialog.style.setProperty('--eod-report-top',`${position.top}px`);dialog.classList.add('is-positioned');
+  }
+  function endReportDrag(event) {
+    const drag=reportWindowState.drag;if(event&&drag&&event.pointerId!==drag.pointerId)return;
+    reportWindowState.drag=null;const toolbar=$('reportToolbar');toolbar.classList.remove('is-dragging');
+    if(drag)try{toolbar.releasePointerCapture?.(drag.pointerId);}catch(error){/* Capture may already have ended. */}
+  }
+  function resetReportWindow() {
+    endReportDrag();reportWindowState.expanded=false;reportWindowState.position=null;
+    const dialog=$('weekReport'),button=$('expandWeekReport');dialog.classList.remove('is-expanded','is-positioned');dialog.style.removeProperty('--eod-report-left');dialog.style.removeProperty('--eod-report-top');
+    button.setAttribute('aria-label','Expand preview');button.setAttribute('title','Expand preview');button.setAttribute('aria-pressed','false');
+  }
+  function toggleReportExpanded() {
+    const dialog=$('weekReport');if(!dialog.open||reportState.printing)return;
+    endReportDrag();reportWindowState.expanded=!reportWindowState.expanded;dialog.classList.toggle('is-expanded',reportWindowState.expanded);
+    if(reportWindowState.expanded)dialog.classList.remove('is-positioned');else clampReportPosition();
+    const button=$('expandWeekReport'),label=reportWindowState.expanded?'Restore preview size':'Expand preview';button.setAttribute('aria-label',label);button.setAttribute('title',label);button.setAttribute('aria-pressed',String(reportWindowState.expanded));
+  }
+  function startReportDrag(event) {
+    const dialog=$('weekReport');
+    if(!dialog.open||reportWindowState.expanded||reportState.printing||window.innerWidth<=700||event.button!==0||event.isPrimary===false||event.pointerType==='touch'||event.target.closest?.('button,input,select,textarea,a'))return;
+    const rectangle=dialog.getBoundingClientRect();event.preventDefault();
+    reportWindowState.position={left:rectangle.left,top:rectangle.top};reportWindowState.drag={pointerId:event.pointerId,x:event.clientX,y:event.clientY,left:rectangle.left,top:rectangle.top};
+    clampReportPosition();const toolbar=$('reportToolbar');toolbar.classList.add('is-dragging');try{toolbar.setPointerCapture?.(event.pointerId);}catch(error){/* Window pointer listeners still handle this drag. */}
+  }
+  function moveReportDrag(event) {
+    const drag=reportWindowState.drag;if(!drag||event.pointerId!==drag.pointerId)return;
+    event.preventDefault();reportWindowState.position={left:drag.left+event.clientX-drag.x,top:drag.top+event.clientY-drag.y};clampReportPosition();
+  }
   function clearReport() {
-    reportState.request++;reportState.busy=false;reportState.model=null;
+    reportState.request++;reportState.busy=false;reportState.printing=false;reportState.model=null;
+    resetReportWindow();
+    $('weekReportContent').innerHTML='';$('weekReportPrint').innerHTML='';document.body.classList.remove('eod-print-report');
     for(const url of reportState.urls)URL.revokeObjectURL(url);reportState.urls.clear();
     reportMessage('');$('reportDatePicker').hidden=true;$('selectReportDates').setAttribute('aria-expanded','false');controls();
   }
@@ -448,9 +531,9 @@
   }
   async function prepareReport(start,end) {
     const error=reportRangeError(start,end);if(error){reportMessage(error,true);return null;}
-    if(!state.ready||state.loading||reportState.busy||state.undoSaving)return null;
+    if(!state.ready||state.loading||reportState.busy||reportState.printing||state.undoSaving)return null;
     const epoch=state.epoch,request=++reportState.request,valid=()=>current(epoch)&&request===reportState.request&&$('weekReport').open;
-    reportState.busy=true;reportState.model=null;reportMessage('Preparing your export…');controls();
+    reportState.busy=true;reportState.model=null;$('weekReportContent').innerHTML='';reportMessage('Loading preview…');controls();
     try {
       const editors=[...state.editors.values()].filter(editor=>editor.date>=start&&editor.date<=end);
       await Promise.all(editors.map(editor=>saveEditor(editor)));if(!valid())return null;
@@ -458,23 +541,41 @@
       await requireStaff(epoch);if(!valid())return null;
       const result=await supabaseClient.from(TABLE).select('*').gte('entry_date',start).lte('entry_date',end).order('entry_date',{ascending:true}).range(0,499);
       if(!valid())return null;if(result.error)throw result.error;
-      const report=window.PawsEodReport.createReport({start,end,rows:result.data||[],fields:FIELDS});
-      reportState.model=report;reportMessage('');return report;
+      const report=window.PawsEodReport.createReport({start,end,rows:result.data||[],fields:FIELDS.map(([key,label,limit])=>[key,DENOMINATIONS.includes(key)?`${label} (amount $)`:label,limit])});
+      reportState.model=report;$('weekReportContent').innerHTML=window.PawsEodReport.html(report);reportMessage('');return report;
     }catch(error) {
       if(!valid())return null;
       if(['AUTH','ACCESS','42501'].includes(error?.code)) {state.ready=false;state.logs=[];state.deletedRows=[];state.editors.clear();state.loadedDates.clear();render();}
       reportMessage(error?.code==='REPORT_UNSAVED'?'Finish saving or retry the unsaved entries in this date range, then try again.':error?.code==='AUTH'?'Sign in to Paws HQ to export entries.':error?.code==='ACCESS'||error?.code==='42501'?'Your workspace access could not be confirmed. Refresh Paws HQ and try again.':'Could not load the report. Check your connection and try again.',true);return null;
-    }finally {if(valid()){reportState.busy=false;controls();}}
+    }finally {if(valid()){reportState.busy=false;controls();clampReportPosition();}}
   }
   async function openReport() {
     if(!state.ready||state.loading||reportState.busy)return;
-    reportState.returnFocus=document.activeElement;updateReportRange(shiftDate(state.weekEnd,-6),state.weekEnd);$('weekReport').showModal();
+    reportState.returnFocus=document.activeElement;updateReportRange(shiftDate(state.weekEnd,-6),state.weekEnd);$('weekReport').showModal();return prepareReport(reportState.start,reportState.end);
   }
-  async function outputReport() {
-    const report=await prepareReport(reportState.start,reportState.end);if(!report||!state.ready||!$('weekReport').open||reportState.model!==report)return;
+  function fitPrintPages() {
+    const output=$('weekReportPrint');output.classList.add('is-measuring');
+    try {
+      for(const page of output.querySelectorAll('.eod-print-page')) {
+        const content=page.querySelector('.eod-print-page-content');if(!content)continue;
+        const width=page.clientWidth,height=page.clientHeight,contentWidth=content.scrollWidth,contentHeight=content.scrollHeight;
+        if(width>0&&height>0&&contentWidth>0&&contentHeight>0)page.style.setProperty('--eod-print-scale',String(Math.min(1,(width-2)/contentWidth,(height-2)/contentHeight)));
+      }
+    }finally {output.classList.remove('is-measuring');}
+  }
+  async function outputReport(kind) {
+    const report=await prepareReport(reportState.start,reportState.end);
+    if(kind==='print'&&document.fonts?.ready)await document.fonts.ready;
+    if(!report||!state.ready||!$('weekReport').open||reportState.model!==report)return;
+    if(kind==='print') {
+      try {
+        $('weekReportPrint').innerHTML=window.PawsEodReport.printHtml(report);fitPrintPages();
+        reportState.printing=true;document.body.classList.add('eod-print-report');controls();window.print();
+      }catch(error){reportState.printing=false;$('weekReportPrint').innerHTML='';document.body.classList.remove('eod-print-report');controls();reportMessage('Could not open printing. Please try again.',true);}return;
+    }
     const blob=new Blob([window.PawsEodReport.csv(report)],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),link=document.createElement('a');reportState.urls.add(url);
     link.href=url;link.download=`paws-end-of-day_${report.start}_to_${report.end}.csv`;document.body.appendChild(link);link.click();link.remove();
-    reportState.model=null;setTimeout(()=>{URL.revokeObjectURL(url);reportState.urls.delete(url);},1000);reportMessage('CSV downloaded.');
+    setTimeout(()=>{URL.revokeObjectURL(url);reportState.urls.delete(url);},1000);reportMessage('CSV downloaded.');
   }
   function resetAuth(userId) {
     state.epoch++;state.request++;state.userId=userId;state.ready=false;state.loading=false;state.logs=[];state.deletedRows=[];state.editors.clear();state.loadedDates.clear();state.firstDate=null;state.metadataLoaded=false;state.undo=null;state.undoSaving=false;state.today=easternToday();state.weekEnd=state.today;state.selectedDate=state.today;state.historyVisible=12;
@@ -494,16 +595,21 @@
     const closeJumpOutside=event=>{if(!$('jumpDatePicker').hidden&&!$('dateJump').contains(event.target))toggleJumpCalendar(false,{focus:false});};document.addEventListener('pointerdown',closeJumpOutside);document.addEventListener('focusin',closeJumpOutside);
     window.addEventListener('paws-access-revoked',()=>toggleJumpCalendar(false,{focus:false}));window.addEventListener('pagehide',()=>toggleJumpCalendar(false,{focus:false}));
     $('openWeekReport').addEventListener('click',openReport);$('closeWeekReport').addEventListener('click',closeReport);
+    $('expandWeekReport').addEventListener('click',toggleReportExpanded);$('reportToolbar').addEventListener('pointerdown',startReportDrag);
+    window.addEventListener('pointermove',moveReportDrag);window.addEventListener('pointerup',endReportDrag);window.addEventListener('pointercancel',endReportDrag);
+    window.addEventListener('resize',()=>{endReportDrag();clampReportPosition();});
     $('weekReport').addEventListener('close',clearReport);$('weekReport').addEventListener('click',event=>{if(event.target===$('weekReport'))closeReport();});
     $('weekReport').addEventListener('cancel',event=>{if(!$('reportDatePicker').hidden){event.preventDefault();toggleReportDates(false);$('selectReportDates').focus();}});
     $('selectReportDates').addEventListener('click',()=>toggleReportDates($('reportDatePicker').hidden));
-    $('reportLastSeven').addEventListener('click',()=>{const today=easternToday();if(updateReportRange(shiftDate(today,-6),today))toggleReportDates(false);});
+    $('reportLastSeven').addEventListener('click',async()=>{const today=easternToday();if(updateReportRange(shiftDate(today,-6),today)){toggleReportDates(false);return prepareReport(reportState.start,reportState.end);}});
     $('reportCalendar').addEventListener('click',event=>{
-      const date=event.target.closest('[data-calendar-date]');if(date){chooseReportDate(date.dataset.calendarDate);return;}
-      const step=event.target.closest('[data-calendar-step]');if(step&&!reportState.busy&&!step.disabled){const month=shiftMonth(reportState.month,Number(step.dataset.calendarStep));if(validDate(month)){reportState.month=month;reportState.focusDate=month;renderCalendar();}}
+      const date=event.target.closest('[data-calendar-date]');if(date)return chooseReportDate(date.dataset.calendarDate);
+      const step=event.target.closest('[data-calendar-step]');if(step&&!reportState.busy&&!reportState.printing&&!step.disabled){const month=shiftMonth(reportState.month,Number(step.dataset.calendarStep));if(validDate(month)){reportState.month=month;reportState.focusDate=month;renderCalendar();}}
     });$('reportCalendar').addEventListener('keydown',calendarKey);
-    $('downloadReport').addEventListener('click',outputReport);
+    $('downloadReport').addEventListener('click',()=>outputReport('csv'));$('printReport').addEventListener('click',()=>outputReport('print'));
     window.addEventListener('paws-access-revoked',closeReport);window.addEventListener('pagehide',closeReport);
+    window.addEventListener('beforeprint',()=>{const valid=Boolean(state.ready&&reportState.printing&&reportState.model&&$('weekReport').open);document.body.classList.toggle('eod-print-report',valid);if(!valid)$('weekReportPrint').innerHTML='';});
+    window.addEventListener('afterprint',()=>{reportState.printing=false;$('weekReportPrint').innerHTML='';document.body.classList.remove('eod-print-report');controls();});
     $('previousWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,-7),{week:true}));$('nextWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,7),{week:true}));
     $('goToday').addEventListener('click',()=>{state.today=easternToday();return openDay(state.today,{week:true});});
     $('weekRows').addEventListener('click',event=>{const button=event.target.closest('[data-open-date]');if(button)return openDay(button.dataset.openDate);});
@@ -513,7 +619,7 @@
     const restore=event=>{const button=event.target.closest('[data-restore-date]');if(button)restoreDay(rowForDate(button.dataset.restoreDate));};$('deletedList').addEventListener('click',restore);
     $('dayContent').addEventListener('input',event=>{if(event.target.matches('[data-field]'))takeInput(event.target);});
     $('dayContent').addEventListener('pointerdown',event=>{const input=event.target.closest('[data-field]');state.pointerField=input||null;const button=event.target.closest('[data-day-action="delete"]');if(button){const editor=editorForDate(state.selectedDate,{create:false});if(editor)editor.skipBlurSave=true;}});
-    $('dayContent').addEventListener('focusin',event=>{const input=event.target;if(input.matches('[data-money]')&&state.pointerField!==input)input.select();state.pointerField=null;});
+    $('dayContent').addEventListener('focusin',event=>{const input=event.target;if((input.matches('[data-money]')||input.matches('[data-quantity]'))&&state.pointerField!==input)input.select();state.pointerField=null;});
     $('dayContent').addEventListener('focusout',event=>{
       const input=event.target;if(!input.matches('[data-field]'))return;const editor=state.editors.get(input.closest('[data-day-date]')?.dataset.dayDate);if(editor?.skipBlurSave){editor.skipBlurSave=false;return;}const epoch=state.epoch;
       setTimeout(()=>{if(current(epoch)&&editor&&state.editors.get(editor.date)===editor&&!editor.deleting)saveEditor(editor);},0);

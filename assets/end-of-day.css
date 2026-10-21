@@ -81,7 +81,7 @@
 .eod-field input:focus,.eod-field textarea:focus {outline:2px solid var(--tr-focus);outline-offset:1px;}
 .eod-field input:disabled,.eod-field textarea:disabled {opacity:.6;}
 .eod-field textarea {min-height:73px;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere;}
-.eod-field input[data-money] {text-align:right;font-variant-numeric:tabular-nums;}
+.eod-field input[data-money],.eod-field input[data-quantity] {text-align:right;font-variant-numeric:tabular-nums;}
 .eod-field input::placeholder,.eod-field textarea::placeholder {color:var(--tr-muted);opacity:.7;}
 .eod-field [aria-invalid="true"] {border-color:#d94850;}
 .eod-field-error {display:block;margin-top:6px;color:#b72d37;font-size:10px;line-height:1.6;}.dark .eod-field-error {color:#ffadb3;}
@@ -95,6 +95,8 @@
 .eod-count-grid .eod-field {display:grid;grid-template-columns:1fr minmax(0,120px);align-items:center;gap:8px;}
 .eod-count-grid .eod-field > span:first-child {margin:0;font-size:12px;color:var(--tr-text);}
 .eod-count-grid .eod-field input {padding:9px 10px;}
+.eod-quantity-amount {display:block;margin-top:3px;color:var(--tr-muted);font-size:10px;font-weight:400;line-height:1.5;}
+.eod-quantity-amount.is-legacy {color:#a16207;}.dark .eod-quantity-amount.is-legacy {color:#facc83;}
 .eod-count-grid .eod-field-error {grid-column:1/-1;margin-top:0;}
 .eod-total-block {display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--tr-line);}
 .eod-total-block > span {font-size:11px;font-weight:600;}
@@ -132,25 +134,35 @@
 
 /* A separate, read-only workspace for the bookkeeper. */
 .eod-week-actions {display:flex;align-items:center;gap:15px;flex-shrink:0;}
-.eod-week-actions .eod-report-open {display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:32px;margin-block:7px;padding:5px 15px;border:1px solid #33c978;border-radius:8px;background:#33c978;color:#fff;font:inherit;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap;cursor:pointer;box-shadow:0 2px 5px rgba(33,129,91,.1);transition:background 120ms,border-color 120ms,box-shadow 120ms;}
+.eod-week-actions .eod-report-open {display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:32px;margin-block:7px;padding:5px 15px;border:1px solid #2563eb;border-radius:8px;background:#2563eb;color:#fff;font:inherit;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap;cursor:pointer;box-shadow:0 2px 5px rgba(37,99,235,.1);transition:background 120ms,border-color 120ms,box-shadow 120ms;}
 .eod-report-open svg {width:18px;height:18px;color:inherit;}
-.eod-report-open:hover:not(:disabled) {border-color:#28bb6b;background:#28bb6b;box-shadow:0 3px 9px rgba(33,129,91,.18);}
-.dark .eod-report-open {border-color:#40d985;background:#40d985;color:#fff;}
-.dark .eod-report-open:hover:not(:disabled) {border-color:#56e396;background:#56e396;}
-.eod-report-dialog {--tr-text:#172033;--tr-muted:#5b6a7e;--tr-line:rgba(43,59,85,.12);--tr-soft:rgba(75,101,139,.04);--tr-surface:rgba(255,255,255,.67);--tr-input:rgba(255,255,255,.77);--tr-focus:#2563eb;--tr-menu:#f7f9fc;width:min(560px,calc(100vw - 40px));max-height:calc(100dvh - 50px);margin:auto;padding:0;border:1px solid var(--tr-line);border-radius:16px;background:var(--tr-menu);color:var(--tr-text);font-family:Inter,sans-serif;box-shadow:0 32px 100px #0004;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;color-scheme:light;}
-.eod-report-dialog * {box-sizing:border-box;}
+.eod-report-open:hover:not(:disabled) {border-color:#1d4ed8;background:#1d4ed8;box-shadow:0 3px 9px rgba(37,99,235,.18);}
+.dark .eod-report-open {border-color:#3b82f6;background:#3b82f6;color:#fff;}
+.dark .eod-report-open:hover:not(:disabled) {border-color:#60a5fa;background:#60a5fa;}
+.eod-report-dialog {--tr-text:#172033;--tr-muted:#5b6a7e;--tr-line:rgba(43,59,85,.12);--tr-soft:rgba(75,101,139,.04);--tr-surface:rgba(255,255,255,.67);--tr-input:rgba(255,255,255,.77);--tr-focus:#2563eb;--tr-menu:#f7f9fc;width:min(1120px,calc(100vw - 40px));max-height:calc(100dvh - 50px);margin:auto;padding:0;border:1px solid var(--tr-line);border-radius:16px;background:var(--tr-menu);color:var(--tr-text);font-family:Inter,sans-serif;box-shadow:0 32px 100px #0004;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;color-scheme:light;}
+.eod-report-dialog,.eod-report-dialog * {box-sizing:border-box;}
 .eod-report-dialog button {font-family:inherit;cursor:pointer;}
 .dark .eod-report-dialog {--tr-text:#f3f6fb;--tr-muted:#a6b1c3;--tr-line:rgba(255,255,255,.10);--tr-soft:rgba(255,255,255,.025);--tr-surface:rgba(255,255,255,.045);--tr-input:rgba(255,255,255,.055);--tr-focus:#84b4ff;--tr-menu:#171e28;color-scheme:dark;}
 .eod-report-dialog::backdrop {background:rgba(15,23,42,.4);backdrop-filter:blur(7px);}
 .eod-report-dialog[open] {animation:eod-report-enter 160ms ease-out;}
+.eod-report-dialog.is-positioned {position:fixed;inset:auto;top:var(--eod-report-top);left:var(--eod-report-left);margin:0;animation:none;}
+.eod-report-dialog.is-expanded[open] {display:flex;flex-direction:column;position:fixed;inset:8px;width:calc(100vw - 16px);max-width:none;height:calc(100dvh - 16px);max-height:none;margin:0;animation:none;}
+.eod-report-dialog.is-expanded > .eod-report-toolbar,.eod-report-dialog.is-expanded > .eod-report-tools,.eod-report-dialog.is-expanded > .eod-report-date-picker,.eod-report-dialog.is-expanded > .eod-report-message {flex-shrink:0;}
+.eod-report-dialog.is-expanded .eod-report-content {flex:1;min-height:0;max-height:none;}
 @keyframes eod-report-enter {from {opacity:0;transform:translateY(7px) scale(.995);}to {opacity:1;transform:none;}}
-.eod-report-toolbar {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:23px 24px 21px;}
+.eod-report-toolbar {display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:23px 24px 21px;cursor:grab;user-select:none;touch-action:pan-y;}
+.eod-report-toolbar.is-dragging {cursor:grabbing;}
+.eod-report-dialog.is-expanded .eod-report-toolbar {cursor:default;}
+.eod-report-window-actions {display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:default;}
 .eod-report-toolbar h2 {margin:0;font-size:25px;font-weight:650;letter-spacing:-.035em;}
 .eod-report-toolbar p:last-child {margin:6px 0 0;color:var(--tr-muted);font-size:12px;}
 .eod-report-close {display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;border:1px solid var(--tr-line);border-radius:9px;background:transparent;color:var(--tr-muted);font-size:25px;line-height:1;cursor:pointer;}
 .eod-report-close:hover {background:var(--tr-soft);color:var(--tr-text);}
+.eod-report-expand svg {width:18px;height:18px;}
+.eod-report-expand .eod-restore-icon,.eod-report-expand[aria-pressed="true"] .eod-expand-icon {display:none;}
+.eod-report-expand[aria-pressed="true"] .eod-restore-icon {display:block;}
 .eod-report-tools {display:flex;align-items:center;gap:9px;padding:0 24px 20px;}
-.eod-report-date-button {display:flex;align-items:center;gap:12px;flex:1;min-height:56px;min-width:0;padding:9px 13px;border:1px solid var(--tr-line);border-radius:11px;background:var(--tr-surface);color:var(--tr-text);text-align:left;cursor:pointer;transition:background 120ms,border-color 120ms;}
+.eod-report-date-button {display:flex;align-items:center;gap:12px;flex:0 1 340px;min-height:56px;min-width:0;padding:9px 13px;border:1px solid var(--tr-line);border-radius:11px;background:var(--tr-surface);color:var(--tr-text);text-align:left;cursor:pointer;transition:background 120ms,border-color 120ms;}
 .eod-report-shortcut {flex-shrink:0;min-height:36px;padding:7px 10px;border:1px solid var(--tr-line);border-radius:8px;background:transparent;color:var(--tr-focus);font-size:11px;font-weight:600;}
 .eod-report-shortcut:hover:not(:disabled) {border-color:var(--tr-focus);background:var(--tr-soft);}
 .eod-report-date-button:hover,.eod-report-date-button[aria-expanded="true"] {border-color:var(--tr-focus);background:var(--tr-soft);}
@@ -159,7 +171,7 @@
 .eod-report-date-button strong {display:block;font-size:12px;font-weight:600;}
 .eod-report-chevron {margin-left:auto;color:var(--tr-muted);}
 .eod-report-date-button[aria-expanded="true"] .eod-report-chevron {transform:rotate(180deg);}
-.eod-report-output-actions {display:grid;grid-template-columns:1fr;margin:0 24px 23px;}
+.eod-report-output-actions {display:flex;align-items:center;gap:9px;margin-left:auto;flex-shrink:0;}
 #downloadReport {background:#33c978;border-color:#33c978;color:#fff;}
 #downloadReport:hover:not(:disabled) {background:#28bb6b;border-color:#28bb6b;}
 .dark #downloadReport {background:#40d985;border-color:#40d985;}
@@ -169,7 +181,7 @@
 .eod-report-message {margin:0;padding:0 24px 20px;color:var(--tr-muted);font-size:11px;line-height:1.65;}
 .eod-report-message:empty {display:none;}
 .eod-report-message.is-error {color:#b72d37;}.dark .eod-report-message.is-error {color:#ffadb3;}
-.eod-report-date-picker {width:calc(100% - 48px);max-width:340px;margin:0 auto 20px;padding:13px;border:1px solid var(--tr-line);border-radius:12px;background:var(--tr-surface);animation:eod-report-enter 140ms ease-out;}
+.eod-report-date-picker {width:calc(100% - 48px);max-width:340px;margin:0 24px 20px;padding:13px;border:1px solid var(--tr-line);border-radius:12px;background:var(--tr-surface);animation:eod-report-enter 140ms ease-out;}
 .eod-report-date-picker[hidden] {display:none;}
 .eod-calendar {max-width:340px;margin:auto;}
 .eod-calendar-navigation {display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;color:var(--tr-text);font-size:12px;font-weight:600;}
@@ -187,14 +199,34 @@
 .eod-calendar-row button.is-range-edge {background:#2563eb;border-color:#2563eb;border-radius:8px;color:#fff;font-weight:650;}
 .eod-calendar-row button.is-today::after {position:absolute;bottom:3px;left:calc(50% - 2px);width:4px;height:4px;border-radius:50%;background:currentColor;content:'';}
 .eod-calendar-hint {margin:12px 0 0;font-size:10px;line-height:1.6;color:var(--tr-muted);}
+
+.eod-report-content {max-height:55dvh;padding:20px 24px 24px;border-top:1px solid var(--tr-line);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+.eod-report-content:empty {display:none;}
+.eod-report-content:focus-visible {outline:2px solid var(--tr-focus);outline-offset:-3px;}
+.eod-report-summary {display:none;}
+.eod-report-sheet + .eod-report-sheet {margin-top:24px;}
+.eod-report-sheet h3 {margin:0 0 12px;color:var(--tr-muted);font-size:12px;font-weight:600;}
+.eod-report-table {width:100%;min-width:900px;table-layout:fixed;border-collapse:collapse;background:var(--tr-input);font-size:11px;line-height:1.55;}
+.eod-report-table th,.eod-report-table td {padding:7px 8px;border:1px solid var(--tr-line);vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap;}
+.eod-report-table th {text-align:left;font-weight:550;}
+.eod-report-table tr > :first-child {width:175px;}
+.eod-report-table td {font-variant-numeric:tabular-nums;}
+.eod-report-table thead th {background:var(--tr-menu);font-weight:650;}
+.eod-report-column-header > span {display:block;}
+.eod-report-column-header > span:last-child {margin-top:3px;font-size:9px;color:var(--tr-muted);font-weight:400;}
+.eod-report-group th {padding-block:6px;background:var(--tr-soft);font-size:10px;font-weight:700;letter-spacing:.02em;}
+.eod-report-entry-row {color:var(--tr-muted);font-size:9px;}
+.eod-report-table .is-total {background:rgba(59,130,246,.055);font-weight:650;}
+.eod-report-table .is-notes td {font-size:10px;line-height:1.6;}
 @media(max-width:700px) {
   .eod-report-dialog {width:calc(100vw - 16px);max-height:calc(100dvh - 20px);border-radius:15px;}
-  .eod-report-toolbar {padding:19px 17px 16px;}.eod-report-toolbar h2 {font-size:22px;}
+  .eod-report-toolbar {padding:19px 17px 16px;cursor:default;gap:12px;}.eod-report-toolbar h2 {font-size:22px;}
   .eod-report-tools {padding:0 17px 18px;flex-wrap:wrap;gap:9px;}.eod-report-date-button {flex-basis:100%;width:100%;min-width:0;}
   .eod-report-shortcut {min-height:32px;}
-  .eod-report-output-actions {margin:0 17px 20px;}
+  .eod-report-output-actions {margin-left:auto;gap:8px;}
   .eod-report-message {padding:0 17px 18px;}
-  .eod-report-date-picker {width:calc(100% - 34px);margin:0 auto 18px;padding:13px;}
+  .eod-report-date-picker {width:calc(100% - 34px);margin:0 17px 18px;padding:13px;}
+  .eod-report-content {padding:16px 17px 20px;}
   .eod-calendar-row button {min-height:37px;}
 }
 @media(max-width:600px) {.eod-week-footer {flex-wrap:wrap;gap:0;padding-bottom:2px;}.eod-week-footer > span {padding-bottom:3px;}.eod-week-actions {width:100%;margin-left:0;}.eod-report-open {flex:1;}}

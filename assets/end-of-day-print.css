@@ -1,0 +1,34 @@
+/* Separate measured pages keep each selected week together on one printed sheet. */
+#weekReportPrint.eod-print-output {display:none;font-family:Inter,Arial,sans-serif;color:#111;background:#fff;}
+#weekReportPrint.is-measuring {display:block;position:fixed;left:-20000px;top:0;width:10.2in;visibility:hidden;pointer-events:none;}
+#weekReportPrint * {box-sizing:border-box;}
+#weekReportPrint .eod-print-page {position:relative;width:10.2in;height:7.65in;margin:0;padding:0;overflow:hidden;background:#fff;color:#111;}
+#weekReportPrint .eod-print-page-content {position:absolute;top:0;left:0;width:100%;transform:scale(var(--eod-print-scale,1));transform-origin:top center;}
+#weekReportPrint .eod-print-heading {display:flex;align-items:baseline;justify-content:space-between;gap:12pt;margin:0 0 7pt;padding:0;}
+#weekReportPrint .eod-print-heading h2 {margin:0;font-size:13pt;font-weight:700;line-height:1.2;}
+#weekReportPrint .eod-print-heading p {margin:0;color:#333;font-size:8pt;line-height:1.2;}
+#weekReportPrint .eod-report-table {width:100%;min-width:0;margin:0;border-collapse:collapse;table-layout:fixed;background:#fff;color:#111;font-size:8.5pt;line-height:1.15;}
+#weekReportPrint .eod-report-table th,#weekReportPrint .eod-report-table td {padding:2pt;border:1px solid #bbb;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;}
+#weekReportPrint .eod-report-table th {font-weight:550;text-align:left;}
+#weekReportPrint .eod-report-table tr > :first-child {width:20%;}
+#weekReportPrint .eod-report-table td {font-variant-numeric:tabular-nums;}
+#weekReportPrint .eod-report-table thead th {background:#eef0f3;font-weight:700;}
+#weekReportPrint .eod-report-column-header > span {display:block;}
+#weekReportPrint .eod-report-column-header > span:last-child {margin-top:1pt;font-size:7pt;font-weight:400;color:#444;}
+#weekReportPrint .eod-report-group th {padding:2pt;background:#e8ebef;font-size:7pt;font-weight:700;letter-spacing:0;}
+#weekReportPrint .eod-report-entry-row {font-size:6.5pt;color:#444;}
+#weekReportPrint .eod-report-table .is-total {background:#f3f5f7;font-weight:700;}
+#weekReportPrint .eod-report-table .is-total th {font-weight:700;}
+#weekReportPrint .eod-report-table .is-notes td {font-size:8.5pt;line-height:1.15;}
+
+@media print {
+  @page eod-week {size:letter landscape;margin:10mm;}
+  body.eod-print-report {height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important;color:#111!important;opacity:1!important;}
+  body.eod-print-report > *:not(#weekReport) {display:none!important;}
+  body.eod-print-report #weekReport {display:block!important;position:static!important;inset:auto!important;width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#fff!important;color:#111!important;box-shadow:none!important;overflow:visible!important;transform:none!important;animation:none!important;}
+  body.eod-print-report #weekReport::backdrop {display:none!important;}
+  body.eod-print-report #weekReport > :not(#weekReportPrint) {display:none!important;}
+  body.eod-print-report #weekReportPrint {display:block!important;position:static!important;inset:auto!important;width:10.2in!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;visibility:visible!important;}
+  body.eod-print-report .eod-print-page {page:eod-week;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always;}
+  body.eod-print-report .eod-print-page:last-child {break-after:auto;page-break-after:auto;}
+}

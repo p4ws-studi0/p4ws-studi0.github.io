@@ -17,7 +17,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
   <link rel="stylesheet" href="/assets/training.css?v=3" />
-  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261020l" />
+  <link rel="stylesheet" href="/assets/end-of-day.css?v=20261021a" />
+  <link rel="stylesheet" href="/assets/end-of-day-print.css?v=20261021a" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
@@ -60,7 +61,7 @@
             <tbody id="weekRows"></tbody>
           </table>
         </div>
-        <div class="eod-week-footer"><span>Last seven days by default · open any day to enter details</span><div class="eod-week-actions"><button id="openWeekReport" type="button" class="eod-report-open" disabled>Export as CSV<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button><button id="refreshLogs" type="button" class="tr-refresh" disabled>↻ Refresh</button></div></div>
+        <div class="eod-week-footer"><span>Last seven days by default · open any day to enter details</span><div class="eod-week-actions"><button id="openWeekReport" type="button" class="eod-report-open" disabled>Export<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button><button id="refreshLogs" type="button" class="tr-refresh" disabled>↻ Refresh</button></div></div>
       </section>
 
       <section id="dayPanel" class="eod-day" aria-label="Daily entry">
@@ -84,20 +85,25 @@
   <div id="footer"></div>
   <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
   <dialog id="weekReport" class="eod-report-dialog" aria-labelledby="reportTitle">
-    <div class="eod-report-toolbar">
+    <div id="reportToolbar" class="eod-report-toolbar" title="Drag to move preview">
       <div><p class="eod-eyebrow">EXPORT</p><h2 id="reportTitle">End Of Day report</h2></div>
-      <button id="closeWeekReport" type="button" class="eod-report-close" aria-label="Close report">×</button>
+      <div class="eod-report-window-actions">
+        <button id="expandWeekReport" type="button" class="eod-report-close eod-report-expand" aria-label="Expand preview" title="Expand preview" aria-pressed="false" aria-controls="weekReportContent"><svg class="eod-expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><svg class="eod-restore-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8V4h12v12h-4M4 8h12v12H4z"/></svg></button>
+        <button id="closeWeekReport" type="button" class="eod-report-close" aria-label="Close report" title="Close report">×</button>
+      </div>
     </div>
     <div class="eod-report-tools">
       <button id="selectReportDates" type="button" class="eod-report-date-button" aria-expanded="false" aria-controls="reportDatePicker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 3v4m10-4v4M4 10h16M4 5h16v16H4z"/><path d="M8 14h2m4 0h2M8 17h2"/></svg><span><small>Select dates</small><strong id="reportDateLabel"></strong></span><span class="eod-report-chevron" aria-hidden="true">⌄</span></button>
       <button id="reportLastSeven" class="eod-report-shortcut" type="button">Last 7 days</button>
+      <div class="eod-report-output-actions"><button id="downloadReport" class="eod-secondary-button" type="button" disabled>Download CSV</button><button id="printReport" class="eod-today-button" type="button" disabled>Print</button></div>
     </div>
     <section id="reportDatePicker" class="eod-report-date-picker" aria-label="Select report dates" hidden>
       <div id="reportCalendar" class="eod-calendar" role="group" aria-label="Date range calendar"></div>
       <p id="reportDateHint" class="eod-calendar-hint" role="status" aria-live="polite">Choose a start date, then an end date.</p>
     </section>
-    <div class="eod-report-output-actions"><button id="downloadReport" class="eod-secondary-button" type="button" disabled>Download CSV</button></div>
     <p id="reportMessage" class="eod-report-message" role="status" aria-live="polite"></p>
+    <div id="weekReportContent" class="eod-report-content" role="region" aria-label="Report preview" tabindex="0"></div>
+    <div id="weekReportPrint" class="eod-print-output"></div>
   </dialog>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/script.js?v=20261020c"></script>
@@ -113,7 +119,7 @@
         .catch(error => console.warn(error.message))
     }
   </script>
-  <script src="/assets/end-of-day-report.js?v=20261020k" defer></script>
-  <script src="/assets/end-of-day.js?v=20261020l" defer></script>
+  <script src="/assets/end-of-day-report.js?v=20261021a" defer></script>
+  <script src="/assets/end-of-day.js?v=20261021a" defer></script>
 </body>
 </html>
