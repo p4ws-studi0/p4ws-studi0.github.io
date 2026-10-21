@@ -608,7 +608,7 @@
     });$('reportCalendar').addEventListener('keydown',calendarKey);
     $('downloadReport').addEventListener('click',()=>outputReport('csv'));$('printReport').addEventListener('click',()=>outputReport('print'));
     window.addEventListener('paws-access-revoked',closeReport);window.addEventListener('pagehide',closeReport);
-    window.addEventListener('beforeprint',()=>{const valid=Boolean(state.ready&&reportState.printing&&reportState.model&&$('weekReport').open);document.body.classList.toggle('eod-print-report',valid);if(!valid)$('weekReportPrint').innerHTML='';});
+    window.addEventListener('beforeprint',()=>{const valid=Boolean(state.ready&&reportState.printing&&reportState.model&&$('weekReport').open);document.body.classList.toggle('eod-print-report',valid);if(valid)fitPrintPages();else $('weekReportPrint').innerHTML='';});
     window.addEventListener('afterprint',()=>{reportState.printing=false;$('weekReportPrint').innerHTML='';document.body.classList.remove('eod-print-report');controls();});
     $('previousWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,-7),{week:true}));$('nextWeek').addEventListener('click',()=>selectDate(shiftDate(state.weekEnd,7),{week:true}));
     $('goToday').addEventListener('click',()=>{state.today=easternToday();return openDay(state.today,{week:true});});

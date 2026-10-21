@@ -8,7 +8,7 @@
 #weekReportPrint .eod-print-heading h2 {margin:0;font-size:13pt;font-weight:700;line-height:1.2;}
 #weekReportPrint .eod-print-heading p {margin:0;color:#333;font-size:8pt;line-height:1.2;}
 #weekReportPrint .eod-report-table {width:100%;min-width:0;margin:0;border-collapse:collapse;table-layout:fixed;background:#fff;color:#111;font-size:8.5pt;line-height:1.15;}
-#weekReportPrint .eod-report-table th,#weekReportPrint .eod-report-table td {padding:2pt;border:1px solid #bbb;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;}
+#weekReportPrint .eod-report-table th,#weekReportPrint .eod-report-table td {padding:2pt!important;border:1px solid #bbb!important;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;}
 #weekReportPrint .eod-report-table th {font-weight:550;text-align:left;}
 #weekReportPrint .eod-report-table tr > :first-child {width:20%;}
 #weekReportPrint .eod-report-table td {font-variant-numeric:tabular-nums;}
@@ -22,13 +22,13 @@
 #weekReportPrint .eod-report-table .is-notes td {font-size:8.5pt;line-height:1.15;}
 
 @media print {
-  @page eod-week {size:letter landscape;margin:10mm;}
-  body.eod-print-report {height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important;color:#111!important;opacity:1!important;}
+  @page {size:letter landscape;margin:10mm;}
+  body.eod-print-report {margin:0!important;height:auto!important;min-height:0!important;overflow:visible!important;background:#fff!important;color:#111!important;opacity:1!important;}
   body.eod-print-report > *:not(#weekReport) {display:none!important;}
   body.eod-print-report #weekReport {display:block!important;position:static!important;inset:auto!important;width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#fff!important;color:#111!important;box-shadow:none!important;overflow:visible!important;transform:none!important;animation:none!important;}
   body.eod-print-report #weekReport::backdrop {display:none!important;}
   body.eod-print-report #weekReport > :not(#weekReportPrint) {display:none!important;}
   body.eod-print-report #weekReportPrint {display:block!important;position:static!important;inset:auto!important;width:10.2in!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;visibility:visible!important;}
-  body.eod-print-report .eod-print-page {page:eod-week;break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always;}
+  body.eod-print-report .eod-print-page {break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always;}
   body.eod-print-report .eod-print-page:last-child {break-after:auto;page-break-after:auto;}
 }

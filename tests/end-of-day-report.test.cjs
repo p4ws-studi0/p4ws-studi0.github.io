@@ -28,6 +28,59 @@ function parseCsv(value) {
   return result;
 }
 
+// Resolve the real table-cell metric rules that caused screen/print height drift.
+// Native PDF verification remains necessary for browser pagination and clipping.
+function stylesheetRules(source, mode, filename, rules = []) {
+  source = source.replace(/\/\*[\s\S]*?\*\//g, '');
+  let cursor = 0;
+  while (cursor < source.length) {
+    const opening = source.indexOf('{', cursor); if (opening < 0) break;
+    const selector = source.slice(cursor, opening).trim(); let depth = 1, closing = opening + 1;
+    for (; closing < source.length && depth; closing++) { if (source[closing] === '{') depth++; else if (source[closing] === '}') depth--; }
+    const body = source.slice(opening + 1, closing - 1); cursor = closing;
+    if (selector.startsWith('@media')) {
+      const applies = /\bprint\b/.test(selector) ? mode === 'print' : /\bscreen\b/.test(selector) ? mode === 'screen' : true;
+      if (applies) stylesheetRules(body, mode, filename, rules);
+    } else if (selector.startsWith('@supports')) stylesheetRules(body, mode, filename, rules);
+    else if (!selector.startsWith('@') || selector === '@page') {
+      const declarations = body.split(';').map(declaration => {
+        const colon = declaration.indexOf(':'); if (colon < 0) return null;
+        const value = declaration.slice(colon + 1).trim(), important = /!important\s*$/i.test(value);
+        return { property: declaration.slice(0, colon).trim(), value: value.replace(/\s*!important\s*$/i, '').trim(), important };
+      }).filter(Boolean);
+      rules.push({ selector, declarations, filename });
+    }
+  }
+  return rules;
+}
+function printStyles(mode) {
+  const rules = [];
+  for (const filename of ['styles.css', 'assets/end-of-day.css', 'assets/end-of-day-print.css']) stylesheetRules(fs.readFileSync(path.join(__dirname, '..', filename), 'utf8'), mode, filename, rules);
+  return rules;
+}
+function cellMetric(rules, cell, metric) {
+  const candidates = [];
+  for (const [order, rule] of rules.entries()) for (const selector of rule.selector.split(',').map(value => value.trim())) {
+    const matches = selector === cell.tag || selector.includes('#weekReportPrint') && new RegExp(`\\s${cell.tag}$`).test(selector) && (!selector.includes('.eod-report-group') || cell.group) && (!selector.includes('.is-notes') || cell.notes);
+    if (!matches) continue;
+    for (const declaration of rule.declarations) {
+      if (declaration.property !== metric) continue;
+      const specificity = [(selector.match(/#/g) || []).length, (selector.match(/\./g) || []).length, selector.split(/\s+/).filter(token => /^[a-z]/.test(token)).length];
+      candidates.push({ ...declaration, selector, filename: rule.filename, weight: [Number(declaration.important), ...specificity, order] });
+    }
+  }
+  candidates.sort((left, right) => { for (let index = 0; index < left.weight.length; index++) if (left.weight[index] !== right.weight[index]) return left.weight[index] - right.weight[index]; return 0; });
+  return candidates.at(-1);
+}
+function cssLengthPixels(value) {
+  const match = value.match(/^(\d+(?:\.\d+)?)(px|pt|in|mm)$/); assert.ok(match, `supported physical metric: ${value}`);
+  return Number(match[1]) * { px: 1, pt: 96 / 72, in: 96, mm: 96 / 25.4 }[match[2]];
+}
+function paddingPixels(value) {
+  const values = value.split(/\s+/).map(cssLengthPixels);
+  return values.length === 1 ? [values[0], values[0], values[0], values[0]] : values.length === 2 ? [values[0], values[1], values[0], values[1]] : values.length === 3 ? [values[0], values[1], values[2], values[1]] : values;
+}
+
 test('reports include chronological calendar dates across DST and year boundaries', () => {
   for (const [start, end] of [['2026-03-05', '2026-03-11'], ['2026-10-29', '2026-11-04'], ['2025-12-29', '2026-01-04']]) {
     const result = report({ start, end });
@@ -188,8 +241,8 @@ test('print stylesheet measures complete fixed pages offscreen and applies saved
   assert.match(stylesheet,/#weekReportPrint\.is-measuring\s*\{[^}]*display:block[^}]*position:fixed[^}]*left:-20000px[^}]*visibility:hidden/);
   assert.match(stylesheet,/\.eod-print-page\s*\{[^}]*width:10\.2in[^}]*height:7\.65in[^}]*overflow:hidden/);
   assert.match(stylesheet,/\.eod-print-page-content\s*\{[^}]*position:absolute[^}]*transform:scale\(var\(--eod-print-scale,1\)\)[^}]*transform-origin:top center/);
-  assert.match(stylesheet,/@page eod-week\s*\{size:letter landscape;margin:10mm/);
-  assert.match(stylesheet,/body\.eod-print-report\s+\.eod-print-page\s*\{[^}]*page:eod-week/);
+  assert.match(stylesheet,/@page\s*\{size:letter landscape;margin:10mm/);
+  assert.doesNotMatch(stylesheet,/page:eod-week|@page eod-week/);
   assert.match(stylesheet,/body\.eod-print-report\s+\.eod-print-page\s*\{[^}]*break-after:page/);
   assert.match(stylesheet,/body\.eod-print-report\s+\.eod-print-page:last-child\s*\{[^}]*break-after:auto/);
   assert.match(stylesheet,/body\.eod-print-report #weekReport > :not\(#weekReportPrint\)/);
@@ -203,4 +256,47 @@ test('browser utility exposes only pure report functions and needs no DOM, netwo
   const result = browser.window.PawsEodReport.createReport({ start: '2026-10-20', end: '2026-10-20', rows: [], fields });
   assert.equal(result.days.length, 1); assert.match(browser.window.PawsEodReport.html(result), /No entry/);
   assert.match(browser.window.PawsEodReport.printHtml(result), /class="eod-print-page"/);
+});
+
+
+test('real global important print padding cannot make fitted snapshot cells taller than their screen measurements', () => {
+  const screenRules = printStyles('screen'), actualPrintRules = printStyles('print');
+  const globalOverride = actualPrintRules.find(rule => rule.filename === 'styles.css' && rule.selector.split(',').map(value => value.trim()).includes('td') && rule.declarations.some(declaration => declaration.property === 'padding' && declaration.important));
+  assert.ok(globalOverride, 'the regression includes the actual site-wide important print override');
+  const dangerousPadding = globalOverride.declarations.find(declaration => declaration.property === 'padding'); assert.deepEqual(paddingPixels(dangerousPadding.value), [6, 8, 6, 8]);
+  for (const cell of [{ tag: 'td' }, { tag: 'th' }, { tag: 'th', group: true }, { tag: 'td', notes: true }]) {
+    const measured = cellMetric(screenRules, cell, 'padding'), printed = cellMetric(actualPrintRules, cell, 'padding');
+    assert.ok(measured && printed, `${JSON.stringify(cell)} has explicit snapshot padding in both media`);
+    assert.equal(measured.filename, 'assets/end-of-day-print.css'); assert.equal(printed.filename, 'assets/end-of-day-print.css', `${JSON.stringify(cell)} must defeat global print padding`);
+    assert.equal(measured.important, true); assert.equal(printed.important, true);
+    assert.deepEqual(paddingPixels(printed.value), paddingPixels(measured.value), `${JSON.stringify(cell)} must have the same actual and measured row height`);
+    assert.ok(paddingPixels(printed.value)[0] < 6, 'the compact print metrics remain compact');
+    const unprotectedRules = actualPrintRules.map(rule => rule.filename !== 'assets/end-of-day-print.css' ? rule : { ...rule, declarations: rule.declarations.map(declaration => declaration.property === 'padding' ? { ...declaration, important: false } : declaration) });
+    const unprotected = cellMetric(unprotectedRules, cell, 'padding'); assert.equal(unprotected.filename, 'styles.css', 'the old unprotected snapshot loses to the real global override'); assert.notDeepEqual(paddingPixels(unprotected.value), paddingPixels(measured.value), 'the regression would recreate measured/printed height drift');
+    const measuredBorder = cellMetric(screenRules, cell, 'border'), printedBorder = cellMetric(actualPrintRules, cell, 'border');
+    assert.equal(measuredBorder.filename, 'assets/end-of-day-print.css'); assert.equal(printedBorder.filename, 'assets/end-of-day-print.css'); assert.equal(measuredBorder.important, true); assert.equal(printedBorder.important, true);
+    assert.equal(cssLengthPixels(measuredBorder.value.split(/\s+/)[0]), cssLengthPixels(printedBorder.value.split(/\s+/)[0]));
+  }
+});
+
+test('the final anonymous page rule requests landscape and leaves enough physical space for complete weekly sheets', () => {
+  const rules = printStyles('print'), pages = rules.filter(rule => rule.selector === '@page'); assert.ok(pages.length >= 2, 'include the earlier site-wide page rule as well as the report override');
+  const last = pages.at(-1), size = last.declarations.find(declaration => declaration.property === 'size'), margin = last.declarations.find(declaration => declaration.property === 'margin');
+  assert.equal(last.filename, 'assets/end-of-day-print.css'); assert.equal(size.value, 'letter landscape'); assert.deepEqual(paddingPixels(margin.value), [cssLengthPixels('10mm'), cssLengthPixels('10mm'), cssLengthPixels('10mm'), cssLengthPixels('10mm')]);
+  const stylesheet = fs.readFileSync(path.join(__dirname, '../assets/end-of-day-print.css'), 'utf8');
+  const page = stylesheetRules(stylesheet, 'screen', 'snapshot').find(rule => rule.selector === '#weekReportPrint .eod-print-page');
+  const width = page.declarations.find(declaration => declaration.property === 'width'), height = page.declarations.find(declaration => declaration.property === 'height'), margins = paddingPixels(margin.value);
+  assert.ok(cssLengthPixels(width.value) <= cssLengthPixels('11in') - margins[1] - margins[3]); assert.ok(cssLengthPixels(height.value) <= cssLengthPixels('8.5in') - margins[0] - margins[2]);
+  const body = rules.findLast(rule => rule.selector === 'body.eod-print-report'); assert.ok(body.declarations.some(declaration => declaration.property === 'margin' && declaration.value === '0' && declaration.important), 'browser body margins cannot consume the fitted print area');
+});
+
+test('every weekly print page retains all bottom-row end markers and all dates after wrapped notes', () => {
+  const dates = Array.from({ length: 21 }, (_, index) => `2026-10-${String(index + 1).padStart(2, '0')}`), rows = dates.map(date => row({ entry_date: date, staff_name: 'Synthetic closer', receipt_description: 'Wrapped receipt detail. '.repeat(8), notes: 'Wrapped reconciliation note. '.repeat(15), additional_note: `END_OF_REPORT_${date.replaceAll('-', '')}` }));
+  const result = report({ start: dates[0], end: dates.at(-1), rows }), output = printHtml(result), pages = output.split('<section class="eod-print-page"').slice(1); assert.equal(pages.length, 3);
+  for (const [index, page] of pages.entries()) {
+    const expectedDates = dates.slice(index * 7, index * 7 + 7); assert.deepEqual([...page.matchAll(/<span>(\d{4}-\d{2}-\d{2})<\/span>/g)].map(match => match[1]), expectedDates);
+    const lastRow = page.match(/<tr class="is-notes"><th scope="row">additional note<\/th>([\s\S]*?)<\/tr>/); assert.ok(lastRow, 'the final Additional note row exists');
+    assert.deepEqual([...lastRow[1].matchAll(/END_OF_REPORT_(\d{8})/g)].map(match => match[1]), expectedDates.map(date => date.replaceAll('-', '')));
+    assert.match(page, /Wrapped receipt detail/); assert.match(page, /Wrapped reconciliation note/); assert.equal((page.match(/scope="row"/g) || []).length, 25);
+  }
 });
