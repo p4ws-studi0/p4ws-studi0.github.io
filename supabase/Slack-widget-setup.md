@@ -1,6 +1,6 @@
 # Homepage Slack widget
 
-The homepage displays the newest post in the workspace's public `#general` channel, its author and Eastern timestamp, attached images, and a link to open the post in Slack. It checks for updates every minute while the page is visible. Images open in an enlarged viewer; other attachments link to Slack.
+The homepage displays the newest post in the workspace's public `#general` channel, its author and Eastern timestamp, attached images, and a link to open the post in Slack. Standard Slack emoji shortcodes, aliases, skin tones, and common text emoticons render as native emoji. This conversion uses a bundled, pinned Unicode mapping; it makes no third-party requests and preserves code and URL destinations. Unrecognized custom workspace emoji names remain readable as text. It checks for updates every minute while the page is visible. Images open in an enlarged viewer; other attachments link to Slack.
 
 ## Connect Slack
 

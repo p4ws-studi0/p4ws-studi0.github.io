@@ -4,10 +4,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname,'../assets/home-slack.js'),'utf8');
+const emojiSource = fs.readFileSync(path.join(__dirname,'../assets/slack-emoji.js'),'utf8');
 const fixture = (patch={}) => ({message:{ts:'1790953200.000001',text:'Hello *team*',author:{name:'Test Staff'},permalink:'https://paws.slack.com/archives/C1/p1790953200000001',images:[],files:[],...patch},updated_at:'2026-10-02T15:00:00Z'});
 const deferred = () => {let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 async function flush(){for(let pass=0;pass<3;pass++){for(let i=0;i<60;i++)await Promise.resolve();await new Promise(setImmediate);}}
-function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_token:'fixture-user-jwt'}}={}) {
+function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_token:'fixture-user-jwt'},emoji=true}={}) {
   const nodes=new Map(),listeners={},auth=[],timers=new Map(),intervals=[],created=[],createdBlobs=[],revoked=[];
   function node(id) {
     if (nodes.has(id)) return nodes.get(id);
@@ -55,6 +56,7 @@ function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_
   let timerId=0;
   const context=vm.createContext({document,window,supabaseClient:client,URL:TestURL,Date:TestDate,Blob,AbortController,fetch,Intl,console,
     setTimeout(fn,delay){timers.set(++timerId,{fn,delay});return timerId;},clearTimeout(id){timers.delete(id);},setInterval(fn,delay){intervals.push({fn,delay});}});
+  if(emoji)vm.runInContext(emojiSource,context);
   vm.runInContext(source.replace("  $('homeSlackRefresh').addEventListener", "  globalThis.__slack = {state,refresh,formatText,safeURL,clearImages};\n  $('homeSlackRefresh').addEventListener"),context);
   return {api,document,listeners,created,createdBlobs,revoked,timers,intervals,get:node,app:context.__slack,
     async settle(){await flush();assert.equal(context.__slack.state.loading,false);},
@@ -161,4 +163,52 @@ test('newer refresh suppresses a late image from the earlier message',async()=>{
 });
 test('signed-out visitors never request Slack content',async()=>{
   const h=harness({session:null});await h.settle();assert.equal(h.api.calls.length,0);assert.match(h.get('homeSlackEmpty').textContent,/Sign in/);
+});
+
+
+test('Slack shortcodes render standard emoji, aliases, flags and composed skin tones',async()=>{
+  const text=':dog: :paw_prints: :heart: :rainbow: :+1: :thumbsup: :wave::skin-tone-3: :female-technologist::skin-tone-4: :us: :dog::heart:';
+  const h=harness({message:fixture({text})});await h.settle();
+  assert.equal(h.get('homeSlackBody').innerHTML,'🐶 🐾 ❤️ 🌈 👍 👍 👋🏼 👩🏽‍💻 🇺🇸 🐶❤️');
+  assert.deepEqual(h.api.calls.map(call=>call.action),['message']);
+});
+test('emoji render alongside Slack formatting while code and URL destinations remain literal',async()=>{
+  const h=harness();await h.settle();
+  const result=h.app.formatText('*Thank you :heart:* _Great :dog:_ <https://example.test/:dog:?a=1&b=2|Celebrate :tada:> `:dog: :( <3` ```\n:heart:\n:(\n``` https://example.test/:dog:?face=:( :wave:');
+  assert.match(result,/<strong>Thank you ❤️<\/strong>/);
+  assert.match(result,/<em>Great 🐶<\/em>/);
+  assert.match(result,/href="https:\/\/example.test\/:dog:\?a=1&amp;b=2"[^>]*>Celebrate 🎉<\/a>/);
+  assert.match(result,/<code>:dog: :\( &lt;3<\/code>/);
+  assert.match(result,/<pre><code>\n:heart:\n:\(\n<\/code><\/pre>/);
+  assert.ok(result.endsWith('https://example.test/:dog:?face=:( 👋'));
+});
+test('native Unicode stays intact and common emoticons render only at text boundaries',async()=>{
+  const h=harness();await h.settle();
+  assert.equal(h.app.formatText('Our sweet dog :( <3 😢'), 'Our sweet dog 😞 ❤️ 😢');
+  assert.equal(h.app.formatText('Hello :-) ;) :D :p'), 'Hello 🙂 😉 😄 😛');
+  assert.equal(h.app.formatText('array:() ratio 12:30 x<3 https://example.test/:/'), 'array:() ratio 12:30 x&lt;3 https://example.test/:/');
+});
+test('unknown emoji names and unsupported tones stay readable without HTML or prototype lookups',async()=>{
+  const h=harness();await h.settle();
+  assert.equal(h.app.formatText(':paws_custom: :constructor: :__proto__: :dog::skin-tone-3:'), ':paws_custom: :constructor: :__proto__: :dog::skin-tone-3:');
+  const result=h.app.formatText('&lt;img src=x onerror=alert(1)&gt; :heart: <javascript:alert(1)|:dog:>');
+  assert.ok(!result.includes('<img')&&!result.includes('href="javascript:'));
+  assert.ok(result.includes('❤️'));assert.ok(result.includes('&lt;img'));
+});
+test('emoji rendering is idempotent across refreshes and clears with private message text on logout',async()=>{
+  const h=harness({message:fixture({text:':wave: *Team :heart:*'})});await h.settle();
+  const markup=h.get('homeSlackBody').innerHTML;await h.app.refresh();assert.equal(h.get('homeSlackBody').innerHTML,markup);
+  h.signOut();assert.equal(h.get('homeSlackBody').innerHTML,'');assert.equal(h.get('homeSlackMessage').hidden,true);
+});
+test('a missing emoji asset leaves the Slack widget operational with readable original text',async()=>{
+  const h=harness({emoji:false,message:fixture({text:'Team :heart: <https://example.test|Details>'})});await h.settle();
+  assert.equal(h.get('homeSlackMessage').hidden,false);assert.match(h.get('homeSlackBody').innerHTML,/Team :heart:/);
+  assert.match(h.get('homeSlackBody').innerHTML,/href="https:\/\/example.test\/"/);
+});
+test('homepage loads the bundled emoji renderer before the widget',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+  assert.ok(html.indexOf('/assets/slack-emoji.js?')<html.indexOf('/assets/home-slack.js?'));
+  const emoji=require('../assets/slack-emoji.js');
+  assert.equal(emoji.resolve('man-woman-girl-boy'),'👨‍👩‍👧‍👦');assert.equal(emoji.resolve('WHITE_CHECK_MARK'),'✅');
+  assert.equal(emoji.resolve('constructor'),'');assert.equal(emoji.resolve('__proto__'),'');
 });

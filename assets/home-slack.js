@@ -8,6 +8,7 @@
   const state = {userId: null, authEpoch: 0, requestId: 0, imageEpoch: 0, loading: false, lastAttempt: 0, urls: new Map()};
   const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
   const decode = value => String(value).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  const emojiText = value => window.PawsSlackEmoji?.toUnicode(String(value ?? '')) ?? String(value ?? '');
   function safeURL(value, slackOnly = false) {
     try {
       const url = new URL(String(value));
@@ -18,16 +19,17 @@
   }
   function link(label, url) {
     const href = safeURL(url);
-    return href ? `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(label)}</a>` : escape(label);
+    return href ? `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(emojiText(label))}</a>` : escape(label);
   }
   // Parse a deliberately small subset of Slack markup; message content never becomes raw HTML.
   function formatText(value) {
     const tokens = [];
     const token = html => {tokens.push(html); return `\u0000${tokens.length - 1}\u0000`;};
     let text = String(value || '').slice(0,40000).replace(/\u0000/g,'');
-    text = text.replace(/```([\s\S]*?)```|`([^`\n]+)`|<([^<>\n]+)>/g, (match, block, code, item) => {
+    text = text.replace(/```([\s\S]*?)```|`([^`\n]+)`|<([^<>\n]+)>|[hH][tT][tT][pP][sS]?:\/\/[^\s<>\u0000]+/g, (match, block, code, item) => {
       if (block !== undefined) return token(`<pre><code>${escape(decode(block))}</code></pre>`);
       if (code !== undefined) return token(`<code>${escape(decode(code))}</code>`);
+      if (item === undefined) return token(escape(decode(match)));
       const [target,...labels] = item.split('|');
       const label = decode(labels.join('|') || target);
       if (/^https?:\/\//i.test(target)) return token(link(label,decode(target)));
@@ -37,7 +39,7 @@
       if (target.startsWith('!date^') && labels.length) return token(escape(label));
       return token(escape(decode(match)));
     });
-    text = escape(decode(text));
+    text = escape(emojiText(decode(text)));
     text = text.replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g,'$1<strong>$2</strong>')
       .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/g,'$1<em>$2</em>')
       .replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s).,!?:;])/g,'$1<s>$2</s>');
