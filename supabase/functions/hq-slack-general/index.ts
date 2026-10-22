@@ -14,7 +14,7 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   const safeLink=value=>{try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&(u.hostname==='slack.com'||u.hostname.endsWith('.slack.com'))?u.href:null;}catch{return null;}};
   const string=value=>typeof value==='string'?value:'';
   const diagnosticReasons=new Set(['MISSING_SUPABASE_URL','MALFORMED_SUPABASE_URL','MISSING_SUPABASE_ANON_KEY','MALFORMED_SUPABASE_ANON_KEY','MISSING_SLACK_BOT_TOKEN','MALFORMED_SLACK_BOT_TOKEN','MISSING_SLACK_TEAM_ID','MALFORMED_SLACK_TEAM_ID','MISSING_SLACK_GENERAL_CHANNEL_ID','MALFORMED_SLACK_GENERAL_CHANNEL_ID','BOT_TEAM_MISMATCH','CHANNEL_ID_MISMATCH','CHANNEL_NOT_GENERAL','CHANNEL_PRIVATE','BOT_NOT_CHANNEL_MEMBER','SLACK_API_ERROR','SLACK_HTTP_ERROR','SLACK_RATE_LIMITED']);
-  const diagnosticMethods=new Set(['auth.test','conversations.info','users.info','conversations.members','conversations.history','chat.getPermalink','files.info']);
+  const diagnosticMethods=new Set(['auth.test','conversations.info','users.info','conversations.members','conversations.history','chat.getPermalink','files.info','emoji.list']);
   const diagnosticErrors=new Set(['missing_scope','not_in_channel','invalid_auth','token_revoked','account_inactive','channel_not_found','access_denied','file_not_found','file_deleted','user_not_found','ekm_access_denied','ratelimited']);
   function diagnose(reason,method,slackError) {
     if(!diagnosticReasons.has(reason))return;
@@ -122,6 +122,49 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
     };
     return (blocks||[]).map(element).filter(Boolean).join('\n');
   }
+  function messageText(message) {
+    return string(message.text)||blockText(message.blocks)||(Array.isArray(message.attachments)?message.attachments.map(a=>string(a.text||a.fallback)).filter(Boolean).join('\n'):'');
+  }
+  function emojiNames(text) {
+    // Match the client's code/link protection and bound both lookup work and image requests.
+    const visible=string(text).slice(0,40000).replace(/```[\s\S]*?```|`[^`\n]+`|<[^<>\n]+>|https?:\/\/[^\s<>]+/gi,match=>/^<https?:\/\/[^|]+\|/i.test(match)?match.slice(match.indexOf('|')+1,-1):'');
+    return [...new Set([...visible.matchAll(/:([a-zA-Z0-9_+\-]{1,100}):/g)].map(match=>match[1]))].slice(0,64);
+  }
+  async function emojiCatalog() {
+    return cached('emoji-catalog',300000,async()=>{
+      // An optional scope/outage must never disable the existing message or attachment feed.
+      try {
+        const res=await request('https://slack.com/api/emoji.list',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(),signal:AbortSignal.timeout(5000),redirect:'error'});
+        if(!res.ok){diagnose(res.status===429?'SLACK_RATE_LIMITED':'SLACK_HTTP_ERROR','emoji.list');return null;}
+        const data=await res.json();
+        if(!data.ok){diagnose('SLACK_API_ERROR','emoji.list',data.error);return null;}
+        return data.emoji&&typeof data.emoji==='object'&&!Array.isArray(data.emoji)?data.emoji:null;
+      }catch{return null;}
+    });
+  }
+  function emojiUrl(value) {
+    try {
+      const url=new URL(value);
+      if(url.protocol==='https:'&&!url.port&&!url.username&&!url.password&&(url.hostname==='emoji.slack-edge.com'||url.hostname==='my.slack.com'&&url.pathname.startsWith('/emoji/')))return url;
+    }catch{}
+    return null;
+  }
+  function resolveEmoji(catalog,name) {
+    const seen=new Set();let target=name;
+    for(let depth=0;depth<16;depth++) {
+      if(seen.has(target))return null;seen.add(target);
+      if(!Object.hasOwn(catalog,target))return target!==name?{alias:target}:null;
+      const value=string(catalog[target]);
+      if(value.startsWith('alias:')){target=value.slice(6);if(!/^[a-zA-Z0-9_+\-]{1,100}$/.test(target))return null;continue;}
+      const url=emojiUrl(value);return url?{url}:null;
+    }
+    return null;
+  }
+  async function customEmojis(text) {
+    const names=emojiNames(text);
+    const catalog=await emojiCatalog();
+    return {ready:catalog!==null,items:names.flatMap(name=>{const resolved=resolveEmoji(catalog||{},name);return resolved?[{name,...(resolved.url?{image:true}:{alias:resolved.alias})}]:[];})};
+  }
   async function messageView(message) {
     if(!message)return null;
     let author=string(message.bot_profile?.name||message.username)||'Team member';
@@ -140,10 +183,8 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       if((imageTypes.has(f.mimetype)||f.mimetype==='image/unknown')&&!f.is_external&&images.length<12)images.push({id:f.id,title,alt:string(f.alt_txt)||title});
       else files.push({id:f.id,title,permalink:safeLink(f.permalink)||link});
     }
-    let text=string(message.text);
-    if(!text)text=blockText(message.blocks);
-    if(!text&&Array.isArray(message.attachments))text=message.attachments.map(a=>string(a.text||a.fallback)).filter(Boolean).join('\n');
-    return {ts:message.ts,text,author:{name:author},permalink:link,images,files};
+    const text=messageText(message),emoji=await customEmojis(text);
+    return {ts:message.ts,text,author:{name:author},permalink:link,images,files,custom_emojis:emoji.items,custom_emoji_ready:emoji.ready};
   }
   function imageUrl(value,redirect=false) {
     try {
@@ -183,6 +224,32 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
     }
     fail(502,'IMAGE_UNAVAILABLE');
   }
+  async function emojiResponse(body) {
+    if(!/^[a-zA-Z0-9_+\-]{1,100}$/.test(body.emoji_name||'')||!/^\d+\.\d+$/.test(body.message_ts||''))fail(400,'INVALID_REQUEST');
+    const message=await latest();
+    if(!message||message.ts!==body.message_ts||!emojiNames(messageText(message)).includes(body.emoji_name))fail(404,'IMAGE_UNAVAILABLE');
+    const resolved=resolveEmoji(await emojiCatalog()||{},body.emoji_name);
+    if(!resolved?.url)fail(404,'IMAGE_UNAVAILABLE');
+    let url=resolved.url;
+    for(let redirect=0;redirect<4;redirect++) {
+      // Custom emoji CDN URLs never receive the bot token, even after redirects.
+      const res=await request(url.href,{redirect:'manual',signal:AbortSignal.timeout(10000)});
+      if([301,302,303,307,308].includes(res.status)) {
+        const location=res.headers.get('Location');await res.body?.cancel();
+        url=location&&emojiUrl(new URL(location,url).href);if(!url)fail(502,'IMAGE_UNAVAILABLE');continue;
+      }
+      if(!res.ok)fail(502,'IMAGE_UNAVAILABLE');
+      const type=string(res.headers.get('Content-Type')).split(';')[0].trim().toLowerCase(),limit=1024*1024;
+      if(!imageTypes.has(type)||Number(res.headers.get('Content-Length')||0)>limit){await res.body?.cancel();fail(413,'IMAGE_UNAVAILABLE');}
+      if(!res.body)fail(502,'IMAGE_UNAVAILABLE');
+      const reader=res.body.getReader(),chunks=[];let length=0;
+      try{while(true){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>limit)fail(413,'IMAGE_UNAVAILABLE');chunks.push(value);}}finally{await reader.cancel().catch(()=>{});}
+      const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+      if(!matchesImage(bytes,type))fail(502,'IMAGE_UNAVAILABLE');
+      return new Response(bytes,{headers:{...headers,'Content-Type':type,'Content-Length':String(length),'Content-Disposition':'inline'}});
+    }
+    fail(502,'IMAGE_UNAVAILABLE');
+  }
   return async function handler(req) {
     if(req.headers.get('Origin')&&req.headers.get('Origin')!==origin)return json({error:{code:'ACCESS_DENIED'}},403);
     if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
@@ -191,9 +258,10 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       if(Number(req.headers.get('Content-Length')||0)>4096)fail(400,'INVALID_REQUEST');
       const raw=await req.text();if(raw.length>4096)fail(400,'INVALID_REQUEST');
       let body;try{body=JSON.parse(raw);}catch{fail(400,'INVALID_REQUEST');}
-      if(!body||!['message','image'].includes(body.action))fail(400,'INVALID_REQUEST');
+      if(!body||!['message','image','emoji'].includes(body.action))fail(400,'INVALID_REQUEST');
       await authorize(req);
       if(body.action==='image')return await imageResponse(body);
+      if(body.action==='emoji')return await emojiResponse(body);
       return json({message:await messageView(await latest()),updated_at:new Date(now()).toISOString()});
     }catch(error){
       const status=error instanceof Failure?error.status:502,code=error instanceof Failure?error.code:'UNAVAILABLE';

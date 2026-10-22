@@ -16,7 +16,7 @@ const message=(extra={})=>({type:'message',user:AUTHOR,text:'A synthetic team up
 const file=(extra={})=>({id:FILE,title:'Fixture image',mimetype:'image/png',is_external:false,url_private:'https://files.slack.com/files-pri/TTEST-FIMAGE/fixture.png',...extra});
 async function environment(options={}){
  const {createHandler}=await loaded;
- const state={clock:Date.parse('2026-10-02T15:00:00Z'),user:account(),approved:true,members:[VIEWER],messages:[message()],files:{[FILE]:file()},users:{},calls:[],diagnostics:[],intercept:null,...options};
+ const state={clock:Date.parse('2026-10-02T15:00:00Z'),user:account(),approved:true,members:[VIEWER],messages:[message()],files:{[FILE]:file()},emojis:{},users:{},calls:[],diagnostics:[],intercept:null,...options};
  const env={SUPABASE_URL:PROJECT,SUPABASE_ANON_KEY:'fixture-public-key',SLACK_BOT_TOKEN:'fixture-private-token',SLACK_TEAM_ID:TEAM,SLACK_GENERAL_CHANNEL_ID:CHANNEL,...options.env};
  const mock=async(input,init={})=>{
   const url=new URL(input),headers=new Headers(init.headers),params=init.body instanceof URLSearchParams?Object.fromEntries(init.body):{};
@@ -24,7 +24,7 @@ async function environment(options={}){
   state.calls.push(call);const custom=await state.intercept?.(call,state);if(custom!==undefined)return custom;
   if(url.origin===PROJECT&&url.pathname==='/auth/v1/user')return state.user?json(state.user):json({message:'Invalid token'},401);
   if(url.origin===PROJECT&&url.pathname==='/rest/v1/hq_tour_staff')return json(state.approved?[{user_id:state.user.id}]:[]);
-  if(url.hostname==='files.slack.com'||url.hostname.endsWith('.slack-edge.com'))return new Response(PNG,{headers:{'Content-Type':'image/png'}});
+  if(url.hostname==='files.slack.com'||url.hostname.endsWith('.slack-edge.com')||url.hostname==='my.slack.com')return new Response(PNG,{headers:{'Content-Type':'image/png'}});
   assert.equal(url.hostname,'slack.com',`Unexpected upstream host ${url.hostname}`);
   switch(call.api){
    case 'auth.test':return json({ok:true,team_id:TEAM});
@@ -34,6 +34,7 @@ async function environment(options={}){
    case 'conversations.history':return json({ok:true,messages:state.messages,response_metadata:{next_cursor:''}});
    case 'chat.getPermalink':return json({ok:true,permalink:`https://fixture.slack.com/archives/${CHANNEL}/p${params.message_ts.replace('.','')}`});
    case 'files.info':return state.files[params.file]?json({ok:true,file:state.files[params.file]}):json({ok:false,error:'file_not_found'});
+   case 'emoji.list':return json({ok:true,emoji:state.emojis});
    default:assert.fail(`Unexpected Slack API ${call.api}`);
   }
  };
@@ -267,4 +268,110 @@ test('HTML, SVG, false image signatures and oversized image bodies never reach t
 });
 test('upstream failures expose no token or exception detail',async()=>{
  const h=await environment({intercept:call=>{if(call.api==='conversations.history')throw new Error('fixture-private-token sensitive upstream detail');}});await errorIs(await h.request(),502,'UNAVAILABLE');
+});
+
+const emojiURL=name=>`https://emoji.slack-edge.com/${TEAM}/${name}/fixture.png`;
+const emojiRequest=(name='paws',ts=message().ts)=>({action:'emoji',emoji_name:name,message_ts:ts});
+const emojiCalls=h=>h.state.calls.filter(call=>['emoji.slack-edge.com','my.slack.com'].includes(new URL(call.url).hostname));
+
+test('custom emoji readiness can be checked even when the current post contains no emoji names',async()=>{
+ const ready=await environment();const good=await (await ready.request()).json();assert.equal(good.message.custom_emoji_ready,true);assert.deepEqual(good.message.custom_emojis,[]);
+ const denied=await environment({intercept:call=>call.api==='emoji.list'?json({ok:false,error:'missing_scope'}):undefined});const response=await denied.request();assert.equal(response.status,200);assert.equal((await response.json()).message.custom_emoji_ready,false);
+});
+
+test('custom emoji metadata resolves workspace aliases and standard aliases without exposing a catalog or URLs',async()=>{
+ const h=await environment({messages:[message({text:':paws: :party: :approved: :heart: :paws: :unknown:'})],emojis:{paws:emojiURL('paws'),party:'alias:paws',approved:'alias:white_check_mark',heart:emojiURL('custom-heart'),unused:emojiURL('unused')}});
+ const response=await h.request(),body=await response.json();assert.equal(response.status,200);
+ assert.deepEqual(body.message.custom_emojis,[{name:'paws',image:true},{name:'party',image:true},{name:'approved',alias:'white_check_mark'},{name:'heart',image:true}]);
+ assert.doesNotMatch(JSON.stringify(body),/emoji\.slack-edge\.com|my\.slack\.com\/emoji|fixture-private-token|unused/);
+ assert.equal(h.calls('emoji.list').length,1);assert.equal(h.calls('emoji.list')[0].headers.get('Authorization'),'Bearer fixture-private-token');
+});
+
+test('custom emoji discovery follows visible message fallback and skips code and URL destinations',async()=>{
+ const text=':paws: `:code:` ``` :block: ``` <https://example.test/:path:|:label:> https://example.test/:bare:';
+ const names=['paws','code','block','path','label','bare'],emojis=Object.fromEntries(names.map(name=>[name,emojiURL(name)]));
+ const h=await environment({messages:[message({text})],emojis});const body=await (await h.request()).json();assert.deepEqual(body.message.custom_emojis,[{name:'paws',image:true},{name:'label',image:true}]);
+ for(const name of names.filter(name=>!['paws','label'].includes(name)))await errorIs(await h.request(emojiRequest(name)),404,'IMAGE_UNAVAILABLE');
+ assert.equal((await h.request(emojiRequest('label'))).status,200,'visible link labels may contain custom emoji');
+ const blocks=await environment({messages:[message({text:'',blocks:[{type:'rich_text',elements:[{type:'rich_text_section',elements:[{type:'emoji',name:'paws'}]}]}]})],emojis:{paws:emojiURL('paws')}});
+ const blockBody=await (await blocks.request()).json();assert.equal(blockBody.message.text,':paws:');assert.deepEqual(blockBody.message.custom_emojis,[{name:'paws',image:true}]);
+ const attachment=await environment({messages:[message({text:'',attachments:[{fallback:':paws:'}]})],emojis:{paws:emojiURL('paws')}});assert.deepEqual((await (await attachment.request()).json()).message.custom_emojis,[{name:'paws',image:true}]);
+});
+
+test('emoji catalog lookup is coalesced and cached for five minutes while authorization remains fresh',async()=>{
+ const h=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')}});
+ const responses=await Promise.all([h.request(),h.request(),h.request()]);assert.ok(responses.every(response=>response.status===200));assert.equal(h.calls('emoji.list').length,1);
+ h.advance(299999);assert.equal((await h.request()).status,200);assert.equal(h.calls('emoji.list').length,1);
+ h.advance(2);assert.equal((await h.request()).status,200);assert.equal(h.calls('emoji.list').length,2);
+ assert.equal(h.state.calls.filter(call=>call.url.includes('/auth/v1/user')).length,5);assert.equal(h.state.calls.filter(call=>call.url.includes('/rest/v1/hq_tour_staff')).length,5);
+});
+
+test('missing emoji scope, HTTP errors, rate limits, malformed payloads and network failures preserve the post and image feed',async()=>{
+ for(const failure of [()=>json({ok:false,error:'missing_scope',needed:'sensitive-scope-details'}),()=>new Response(null,{status:500}),()=>new Response(null,{status:429,headers:{'Retry-After':'300'}}),()=>new Response('invalid JSON',{headers:{'Content-Type':'application/json'}}),()=>json({ok:true,emoji:[]}),()=>{throw new Error('private upstream token detail');}]){
+  const h=await environment({messages:[message({text:'Team :paws:',files:[file()]})],intercept:call=>call.api==='emoji.list'?failure():undefined});
+  const response=await h.request(),body=await response.json();assert.equal(response.status,200);assert.equal(body.message.text,'Team :paws:');assert.deepEqual(body.message.custom_emojis,[]);assert.equal(body.message.images.length,1);assert.doesNotMatch(JSON.stringify(body),/sensitive-scope-details|private upstream token detail/);
+  assert.equal((await h.request({action:'image',file_id:FILE,message_ts:message().ts})).status,200);
+  h.advance(30001);assert.equal((await h.request()).status,200,'optional emoji failure cannot set shared Slack cooldown');assert.equal(h.calls('conversations.history').length,2);
+ }
+});
+
+test('custom metadata is bounded to 64 unique used shortcodes and ignores inherited object keys',async()=>{
+ const names=Array.from({length:70},(_,index)=>`custom_${index}`),h=await environment({messages:[message({text:names.map(name=>`:${name}:`).join(' ')+` :${names[0]}:`})],emojis:Object.fromEntries(names.map(name=>[name,emojiURL(name)]))});
+ const body=await (await h.request()).json();assert.equal(body.message.custom_emojis.length,64);assert.equal(new Set(body.message.custom_emojis.map(item=>item.name)).size,64);assert.ok(body.message.custom_emojis.every(item=>names.includes(item.name)&&item.image===true));
+ const plain=await environment({messages:[message({text:':constructor: :__proto__: :prototype:'})]});assert.deepEqual((await (await plain.request()).json()).message.custom_emojis,[]);
+});
+
+test('custom emoji alias cycles, malformed targets and excessive chains cannot leak or loop',async()=>{
+ const longChain=Object.fromEntries(Array.from({length:22},(_,index)=>[`long_${index}`,index===21?emojiURL('end'):`alias:long_${index+1}`]));
+ const h=await environment({messages:[message({text:':self: :cycle_a: :bad: :long_0: :near_0:'})],emojis:{self:'alias:self',cycle_a:'alias:cycle_b',cycle_b:'alias:cycle_a',bad:'alias:https://evil.example',...longChain,...Object.fromEntries(Array.from({length:15},(_,index)=>[`near_${index}`,index===14?emojiURL('near-end'):`alias:near_${index+1}`]))}});
+ const body=await (await h.request()).json();assert.deepEqual(body.message.custom_emojis,[{name:'near_0',image:true}]);
+ for(const name of ['self','cycle_a','bad','long_0'])await errorIs(await h.request(emojiRequest(name)),404,'IMAGE_UNAVAILABLE');
+ assert.equal(emojiCalls(h).length,0);assert.equal(h.calls('emoji.list').length,1);
+});
+
+test('custom emoji bytes require current user approval and active workspace membership even with warm metadata',async()=>{
+ const h=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')}});assert.equal((await h.request()).status,200);
+ await errorIs(await h.request(emojiRequest(),{headers:{Authorization:null}}),401,'AUTH_REQUIRED');assert.equal(emojiCalls(h).length,0);
+ h.state.approved=false;await errorIs(await h.request(emojiRequest()),403,'ACCESS_DENIED');assert.equal(emojiCalls(h).length,0);
+ h.state.approved=true;h.state.users[VIEWER]={id:VIEWER,team_id:TEAM,is_bot:false,deleted:true};h.advance(30001);await errorIs(await h.request(emojiRequest()),403,'ACCESS_DENIED');assert.equal(emojiCalls(h).length,0);
+});
+
+test('emoji proxy accepts only the current post used original name and never a caller-selected URL',async()=>{
+ const h=await environment({messages:[message({text:':party:'})],emojis:{party:'alias:paws',paws:emojiURL('paws'),unrelated:emojiURL('unrelated')}});
+ for(const name of ['paws','unrelated'])await errorIs(await h.request(emojiRequest(name)),404,'IMAGE_UNAVAILABLE');
+ await errorIs(await h.request(emojiRequest('party','1770000000.000000')),404,'IMAGE_UNAVAILABLE');
+ for(const name of ['',':party:','https://evil.example','../paws','paws" onclick="x','a'.repeat(101)])await errorIs(await h.request(emojiRequest(name)),400,'INVALID_REQUEST');
+ assert.equal(emojiCalls(h).length,0);
+ const response=await h.request({...emojiRequest('party'),url:'http://169.254.169.254/latest/meta-data'});assert.equal(response.status,200);assert.equal(emojiCalls(h).length,1);assert.equal(emojiCalls(h)[0].url,emojiURL('paws'));assert.ok(h.state.calls.every(call=>!call.url.includes('169.254.169.254')));
+ h.state.messages=[message({ts:'1770000001.000123',text:'Newer post'})];h.advance(30001);await errorIs(await h.request(emojiRequest('party')),404,'IMAGE_UNAVAILABLE');assert.equal(emojiCalls(h).length,1);
+});
+
+test('custom emoji raster responses are private and neither supported CDN host receives a bearer token',async()=>{
+ for(const url of [emojiURL('paws'),'https://my.slack.com/emoji/paws/fixture.png']){
+  const h=await environment({messages:[message({text:':paws:'})],emojis:{paws:url}}),response=await h.request(emojiRequest());assert.equal(response.status,200);assert.equal(response.headers.get('Content-Type'),'image/png');assert.equal(response.headers.get('Content-Length'),String(PNG.length));assert.equal(response.headers.get('Cache-Control'),'private, no-store');assert.equal(response.headers.get('Access-Control-Allow-Origin'),ORIGIN);assert.equal(response.headers.get('X-Content-Type-Options'),'nosniff');assert.deepEqual(new Uint8Array(await response.arrayBuffer()),PNG);
+  assert.equal(emojiCalls(h).length,1);assert.equal(emojiCalls(h)[0].headers.get('Authorization'),null);assert.equal(emojiCalls(h)[0].redirect,'manual');
+ }
+});
+
+test('custom emoji URL allowlist rejects foreign, credentialed, plain HTTP, nonstandard-port and non-emoji legacy paths',async()=>{
+ for(const url of ['https://evil.example/paws.png','https://emoji.slack-edge.com.evil.example/paws.png','https://cdn.slack-edge.com/paws.png','http://emoji.slack-edge.com/paws.png','https://user:pass@emoji.slack-edge.com/paws.png','https://emoji.slack-edge.com:444/paws.png','https://my.slack.com/files/paws.png','https://my.slack.com/emoji.evil/paws.png','http://my.slack.com/emoji/paws.png']){
+  const h=await environment({messages:[message({text:':paws:'})],emojis:{paws:url}});await errorIs(await h.request(emojiRequest()),404,'IMAGE_UNAVAILABLE');assert.equal(emojiCalls(h).length,0);assert.ok(h.state.calls.every(call=>!call.url.includes('evil.example')));
+ }
+});
+
+test('custom emoji redirects remain on the exact allowlist without credentials and loops are bounded',async()=>{
+ const h=await environment({messages:[message({text:':paws:'})],emojis:{paws:'https://my.slack.com/emoji/paws/fixture.png'},intercept:call=>new URL(call.url).hostname==='my.slack.com'?new Response(null,{status:302,headers:{Location:emojiURL('paws')}}):undefined});assert.equal((await h.request(emojiRequest())).status,200);assert.equal(emojiCalls(h).length,2);assert.ok(emojiCalls(h).every(call=>call.headers.get('Authorization')===null));
+ for(const location of ['https://evil.example/paws.png','https://cdn.slack-edge.com/paws.png','http://emoji.slack-edge.com/paws.png','https://my.slack.com/files/paws.png']){
+  const blocked=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')},intercept:call=>new URL(call.url).hostname==='emoji.slack-edge.com'?new Response(null,{status:302,headers:{Location:location}}):undefined});await errorIs(await blocked.request(emojiRequest()),502,'IMAGE_UNAVAILABLE');assert.equal(emojiCalls(blocked).length,1);assert.ok(!blocked.state.calls.some(call=>call.url===location));
+ }
+ const loop=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')},intercept:call=>new URL(call.url).hostname==='emoji.slack-edge.com'?new Response(null,{status:302,headers:{Location:'/again.png'}}):undefined});await errorIs(await loop.request(emojiRequest()),502,'IMAGE_UNAVAILABLE');assert.equal(emojiCalls(loop).length,4);
+});
+
+test('custom emoji proxy rejects active formats, bad signatures and bodies above one MiB while leaving attachments at their own limit',async()=>{
+ for(const [type,bytes,status] of [['text/html','<html>login</html>',413],['image/svg+xml','<svg/>',413],['image/png','not a PNG',502],['image/png',new Uint8Array(1024*1024+1),413]]){
+  const h=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')},intercept:call=>new URL(call.url).hostname==='emoji.slack-edge.com'?new Response(bytes,{headers:{'Content-Type':type}}):undefined});await errorIs(await h.request(emojiRequest()),status,'IMAGE_UNAVAILABLE');
+ }
+ const advertised=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')},intercept:call=>new URL(call.url).hostname==='emoji.slack-edge.com'?new Response(PNG,{headers:{'Content-Type':'image/png','Content-Length':String(1024*1024+1)}}):undefined});await errorIs(await advertised.request(emojiRequest()),413,'IMAGE_UNAVAILABLE');
+ const max=new Uint8Array(1024*1024);max.set(PNG);const exact=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')},intercept:call=>new URL(call.url).hostname==='emoji.slack-edge.com'?new Response(max,{headers:{'Content-Type':'image/png'}}):undefined});assert.equal((await exact.request(emojiRequest())).status,200);
+ const attachment=await environment({messages:[message({files:[file()]})],intercept:call=>new URL(call.url).hostname==='files.slack.com'?new Response(max,{headers:{'Content-Type':'image/png'}}):undefined});assert.equal((await attachment.request({action:'image',file_id:FILE,message_ts:message().ts})).status,200);
 });

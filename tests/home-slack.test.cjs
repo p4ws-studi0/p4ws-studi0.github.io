@@ -18,7 +18,11 @@ function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_
       addEventListener(name,fn){(events[name]??=[]).push(fn);},
       setAttribute(k,v){attributes[k]=v;},removeAttribute(k){delete attributes[k];delete n[k];},
       showModal(){n.open=true;},close(){n.open=false;},focus(){},
-      querySelector(selector){const id=selector.match(/data-slack-image="(.*?)"/)?.[1];return id&&n.innerHTML.includes(`data-slack-image="${id}"`)?node('image-'+id):null;}
+      querySelector(selector){if(selector==='img')return n.innerHTML.includes('<img ')?node(id+'-img'):null;const image=selector.match(/data-slack-image="(.*?)"/)?.[1];return image&&n.innerHTML.includes(`data-slack-image="${image}"`)?node('image-'+image):null;},
+      querySelectorAll(selector){
+        const name=selector.match(/data-slack-emoji="(.*?)"/)?.[1];
+        return [...n.innerHTML.matchAll(/<span class="home-slack-emoji" data-slack-emoji="([^"]+)">/g)].filter(match=>!name||match[1]===name).map((match,index)=>{const slot=node(`emoji-${match[1]}-${index}`);slot.dataset={slackEmoji:match[1]};return slot;});
+      }
     };nodes.set(id,n);return n;
   }
   const api={calls:[],requests:[],session,message,handler,now:Date.parse('2026-10-02T15:00:00Z')};
@@ -211,4 +215,43 @@ test('homepage loads the bundled emoji renderer before the widget',()=>{
   const emoji=require('../assets/slack-emoji.js');
   assert.equal(emoji.resolve('man-woman-girl-boy'),'👨‍👩‍👧‍👦');assert.equal(emoji.resolve('WHITE_CHECK_MARK'),'✅');
   assert.equal(emoji.resolve('constructor'),'');assert.equal(emoji.resolve('__proto__'),'');
+});
+
+test('custom emoji take precedence over standard names and aliases resolve without changing code or URLs',async()=>{
+  const h=harness();await h.settle();
+  const custom=[{name:'dog',image:true},{name:'paws_party',image:true},{name:'thanks',alias:'heart'}];
+  const html=h.app.formatText('*Team :paws_party:* :dog: :thanks: `:paws_party:` https://example.test/:dog: <https://example.test/:dog:|:paws_party:>',custom);
+  assert.match(html,/<strong>Team <span class="home-slack-emoji" data-slack-emoji="paws_party">:paws_party:<\/span><\/strong>/);
+  assert.match(html,/data-slack-emoji="dog"/);assert.ok(html.includes('❤️'));
+  assert.match(html,/<code>:paws_party:<\/code>/);assert.ok(html.includes('https://example.test/:dog:'));
+  assert.match(html,/href="https:\/\/example.test\/:dog:"[^>]*><span class="home-slack-emoji"/);
+  assert.ok(!html.includes('🐶'));
+});
+test('custom emoji use one authenticated binary request per name and preserve animated GIF bytes',async()=>{
+  const payload=fixture({text:':paws_party: :paws_party:',custom_emojis:[{name:'paws_party',image:true}]});
+  const bytes=Uint8Array.from([71,73,70,56,57,97,255,254,128,0]);
+  const h=harness({handler:body=>body.action==='message'?{data:payload,error:null}:new Response(bytes,{headers:{'Content-Type':'image/gif'}})});await h.settle();
+  assert.deepEqual(h.api.calls.map(call=>call.action),['message','emoji']);
+  const request=h.api.requests[1];assert.equal(request.transport,'fetch');assert.equal(JSON.parse(request.body).emoji_name,'paws_party');assert.equal(JSON.parse(request.body).message_ts,payload.message.ts);
+  assert.equal(request.headers.Authorization,'Bearer fixture-user-jwt');assert.equal(request.credentials,'omit');
+  assert.equal(h.createdBlobs[0].type,'image/gif');assert.deepEqual(new Uint8Array(await h.createdBlobs[0].arrayBuffer()),bytes);
+  assert.equal(h.app.state.emojiUrls.size,1);assert.match(h.get('emoji-paws_party-0').innerHTML,/<img src="blob:test-0" alt=":paws_party:"/);
+  assert.match(h.get('emoji-paws_party-1').innerHTML,/blob:test-0/);
+  await h.app.refresh();await flush();assert.ok(h.revoked.includes('blob:test-0'));
+  h.signOut();assert.equal(h.app.state.emojiUrls.size,0);assert.equal(h.get('homeSlackBody').innerHTML,'');
+});
+test('optional emoji failures keep shortcodes readable and reject unsafe or oversized images',async()=>{
+  for(const response of [new Response('unavailable',{status:502}),new Response('<svg/>',{headers:{'Content-Type':'image/svg+xml'}}),new Response(new Uint8Array(1024*1024+1),{headers:{'Content-Type':'image/png'}})]){
+    const h=harness({handler:body=>body.action==='message'?{data:fixture({text:':paws:',custom_emojis:[{name:'paws',image:true}]}),error:null}:response});await h.settle();
+    assert.equal(h.get('homeSlackMessage').hidden,false);assert.match(h.get('homeSlackBody').innerHTML,/>:paws:<\/span>/);assert.equal(h.created.length,0);
+  }
+  const h=harness();await h.settle();assert.equal(h.app.formatText(':paws:',[{name:'paws" onerror="x',image:true},{name:'paws',alias:'<script>'}]),':paws:');
+});
+test('revoked access and logout suppress late emoji bytes and release all existing emoji objects',async()=>{
+  const pending=deferred();const payload=fixture({text:':paws:',custom_emojis:[{name:'paws',image:true}]});
+  const h=harness({handler:body=>body.action==='message'?{data:payload,error:null}:pending.promise});await h.settle();
+  h.listeners['window:paws-access-revoked']();pending.resolve(new Response('bytes',{headers:{'Content-Type':'image/png'}}));await flush();assert.equal(h.created.length,0);assert.equal(h.get('homeSlackBody').innerHTML,'');
+  const ready=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['GIF89a'],{type:'image/gif'}),error:null})});await ready.settle();
+  ready.listeners['window:pagehide']();assert.equal(ready.app.state.emojiUrls.size,0);assert.equal(ready.revoked.length,1);
+  const denied=harness({handler:body=>body.action==='message'?{data:payload,error:null}:new Response('{}',{status:403,headers:{'Content-Type':'application/json'}})});await denied.settle();assert.equal(denied.get('homeSlackBody').innerHTML,'');assert.equal(denied.get('homeSlackMessage').hidden,true);
 });

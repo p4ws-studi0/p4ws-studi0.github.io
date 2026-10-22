@@ -5,7 +5,7 @@
   if (!widget) return;
   const $ = id => document.getElementById(id);
   const imageEndpoint = 'https://dppjgglaeieevsfwsbii.supabase.co/functions/v1/hq-slack-general';
-  const state = {userId: null, authEpoch: 0, requestId: 0, imageEpoch: 0, loading: false, lastAttempt: 0, urls: new Map()};
+  const state = {userId: null, authEpoch: 0, requestId: 0, imageEpoch: 0, loading: false, lastAttempt: 0, urls: new Map(), emojiUrls: new Map()};
   const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
   const decode = value => String(value).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
   const emojiText = value => window.PawsSlackEmoji?.toUnicode(String(value ?? '')) ?? String(value ?? '');
@@ -17,29 +17,41 @@
       return url.href;
     } catch { return ''; }
   }
-  function link(label, url) {
+  function link(label, url, renderLabel=value=>escape(emojiText(value))) {
     const href = safeURL(url);
-    return href ? `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${escape(emojiText(label))}</a>` : escape(label);
+    return href ? `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${renderLabel(label)}</a>` : escape(label);
   }
   // Parse a deliberately small subset of Slack markup; message content never becomes raw HTML.
-  function formatText(value) {
+  function formatText(value, customEmojis=[]) {
     const tokens = [];
     const token = html => {tokens.push(html); return `\u0000${tokens.length - 1}\u0000`;};
-    let text = String(value || '').slice(0,40000).replace(/\u0000/g,'');
+    const custom=new Map((Array.isArray(customEmojis)?customEmojis:[]).slice(0,64).filter(item=>/^[a-zA-Z0-9_+\-]{1,100}$/.test(item?.name||'')).map(item=>[item.name,item]));
+    let count=0;
+    const inline=value=>{
+      const images=[];
+      const text=String(value).replace(/:([a-zA-Z0-9_+\-]{1,100}):/g,(literal,name)=>{
+        const item=custom.get(name);if(!item)return literal;
+        if(item.image===true&&count++<256){images.push(`<span class="home-slack-emoji" data-slack-emoji="${name}">${escape(literal)}</span>`);return `\u0001${images.length-1}\u0001`;}
+        return /^[a-zA-Z0-9_+\-]{1,100}$/.test(item.alias||'') ? (window.PawsSlackEmoji?.resolve(item.alias)||literal) : literal;
+      });
+      return escape(emojiText(text)).replace(/\u0001(\d+)\u0001/g,(_,index)=>images[Number(index)]||'');
+    };
+    let text = String(value || '').slice(0,40000).replace(/[\u0000\u0001]/g,'');
     text = text.replace(/```([\s\S]*?)```|`([^`\n]+)`|<([^<>\n]+)>|[hH][tT][tT][pP][sS]?:\/\/[^\s<>\u0000]+/g, (match, block, code, item) => {
       if (block !== undefined) return token(`<pre><code>${escape(decode(block))}</code></pre>`);
       if (code !== undefined) return token(`<code>${escape(decode(code))}</code>`);
       if (item === undefined) return token(escape(decode(match)));
       const [target,...labels] = item.split('|');
       const label = decode(labels.join('|') || target);
-      if (/^https?:\/\//i.test(target)) return token(link(label,decode(target)));
+      if (/^https?:\/\//i.test(target)) return token(link(label,decode(target),inline));
       if (target.startsWith('@')) return token(escape(labels.length ? `@${label}` : '@team member'));
       if (target.startsWith('#')) return token(escape(labels.length ? `#${label}` : '#channel'));
       if (/^!(here|channel|everyone)$/.test(target)) return token(escape('@'+target.slice(1)));
       if (target.startsWith('!date^') && labels.length) return token(escape(label));
       return token(escape(decode(match)));
     });
-    text = escape(emojiText(decode(text)));
+    // Protect custom emoji HTML from the subsequent Slack emphasis formatter too.
+    text = inline(decode(text)).replace(/<span class="home-slack-emoji"[^>]*>[^<]*<\/span>/g,token);
     text = text.replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?:;])/g,'$1<strong>$2</strong>')
       .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?:;])/g,'$1<em>$2</em>')
       .replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s).,!?:;])/g,'$1<s>$2</s>');
@@ -61,11 +73,15 @@
     $('homeSlackImageTitle').textContent = '';
     state.urls.forEach(item => URL.revokeObjectURL(item.url));
     state.urls.clear();
+    state.emojiUrls.forEach(url=>URL.revokeObjectURL(url));
+    state.emojiUrls.clear();
+    $('homeSlackBody').querySelectorAll('[data-slack-emoji]').forEach(slot=>{slot.textContent=`:${slot.dataset.slackEmoji}:`;});
     $('homeSlackImages').innerHTML = '';
     $('homeSlackImages').hidden = true;
   }
   function clearMessage(text) {
     clearImages();
+    widget.removeAttribute('data-custom-emoji-status');
     $('homeSlackMessage').hidden = true;
     $('homeSlackBody').innerHTML = '';
     $('homeSlackAuthor').textContent = '';
@@ -99,7 +115,7 @@
     const controller = new AbortController();
     try {
       return await Promise.race([
-        body.action==='image' ? fetchImage(body,current,controller.signal) : supabaseClient.functions.invoke('hq-slack-general',{body}),
+        ['image','emoji'].includes(body.action) ? fetchImage(body,current,controller.signal) : supabaseClient.functions.invoke('hq-slack-general',{body}),
         new Promise((_,reject) => {timer = setTimeout(() => {controller.abort();reject(new Error('TIMEOUT'));},20000);})
       ]);
     } finally {clearTimeout(timer);}
@@ -148,10 +164,33 @@
       }
     }
   }
+  async function loadEmoji(name,messageTs,current,imageEpoch) {
+    const valid=()=>current()&&imageEpoch===state.imageEpoch;
+    const slots=()=>$('homeSlackBody').querySelectorAll(`[data-slack-emoji="${name}"]`);
+    try {
+      const {data,error}=await invoke({action:'emoji',emoji_name:name,message_ts:messageTs},valid);
+      if(!valid())return;
+      if(error){
+        if(imageError(error)){clearMessage('This Slack update is unavailable.');setStatus('Your Slack access may have changed. Try Refresh.',true);}
+        return;
+      }
+      if(!(data instanceof Blob)||!/^image\/(png|jpeg|jpg|gif|webp|avif)$/i.test(data.type)||data.size>1024*1024||!slots().length)return;
+      const url=URL.createObjectURL(data);state.emojiUrls.set(name,url);
+      slots().forEach(slot=>{
+        slot.innerHTML=`<img src="${escape(url)}" alt=":${name}:" title=":${name}:" decoding="async">`;
+        slot.querySelector('img')?.addEventListener('error',()=>{
+          if(!valid())return;
+          slots().forEach(item=>{item.textContent=`:${name}:`;});
+          URL.revokeObjectURL(url);state.emojiUrls.delete(name);
+        },{once:true});
+      });
+    }catch{/* Keep the readable shortcode if optional custom emoji loading fails. */}
+  }
   function render(payload,current) {
     clearImages();
     const message = payload?.message;
     if (!message) {clearMessage('No messages in #general yet.'); return;}
+    widget.setAttribute('data-custom-emoji-status',message.custom_emoji_ready===true?'ready':message.custom_emoji_ready===false?'unavailable':'unknown');
     const name = String(message.author?.name || 'Slack member').slice(0,200);
     const date = new Date(Number(message.ts) * 1000);
     const validDate = Number.isFinite(date.getTime());
@@ -160,7 +199,7 @@
     $('homeSlackTime').textContent = validDate ? new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(date) : '';
     if (validDate) $('homeSlackTime').setAttribute('datetime',date.toISOString());
     $('homeSlackTime').setAttribute('title',validDate ? `${date.toLocaleString('en-US',{timeZone:'America/New_York'})} Eastern time` : '');
-    $('homeSlackBody').innerHTML = formatText(message.text);
+    $('homeSlackBody').innerHTML = formatText(message.text,message.custom_emojis);
     $('homeSlackBody').hidden = !String(message.text || '').trim();
     const permalink = safeURL(message.permalink,true);
     $('homeSlackOpen').hidden = !permalink;
@@ -181,9 +220,11 @@
     widget.classList.remove('is-empty');
     const imageEpoch = state.imageEpoch;
     // Keep private image requests bounded, including when a message contains a gallery.
+    const emojiNames=[...new Set([...$('homeSlackBody').querySelectorAll('[data-slack-emoji]')].map(slot=>slot.dataset.slackEmoji))].slice(0,64);
+    const jobs=[...images.map(file=>()=>loadImage(file,message.ts,current,imageEpoch)),...emojiNames.map(name=>()=>loadEmoji(name,message.ts,current,imageEpoch))];
     let next = 0;
-    const worker = async () => {while (current() && imageEpoch === state.imageEpoch && next < images.length) await loadImage(images[next++],message.ts,current,imageEpoch);};
-    for (let i=0;i<Math.min(3,images.length);i++) void worker();
+    const worker = async () => {while (current() && imageEpoch === state.imageEpoch && next < jobs.length) await jobs[next++]();};
+    for (let i=0;i<Math.min(3,jobs.length);i++) void worker();
   }
   async function refresh({automatic = false} = {}) {
     if (state.loading || (automatic && (document.hidden || $('homeSlackImageDialog').open || Date.now() - state.lastAttempt < 10000))) return;
@@ -256,6 +297,10 @@
   window.addEventListener('focus',()=>refresh({automatic:true}));
   window.addEventListener('online',()=>refresh({automatic:true}));
   window.addEventListener('pagehide',clearImages);
+  window.addEventListener('paws-access-revoked',()=>{
+    state.authEpoch++;state.requestId++;state.loading=false;state.userId=null;
+    clearMessage('This Slack update is unavailable.');setStatus('Your workspace access has changed.',true);controls();
+  });
   document.addEventListener('visibilitychange',()=> {if (!document.hidden) void refresh({automatic:true});});
   setInterval(()=>refresh({automatic:true}),60000);
   if (typeof supabaseClient !== 'undefined') {
