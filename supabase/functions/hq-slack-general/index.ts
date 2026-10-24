@@ -165,12 +165,24 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
     const catalog=await emojiCatalog();
     return {ready:catalog!==null,items:names.flatMap(name=>{const resolved=resolveEmoji(catalog||{},name);return resolved?[{name,...(resolved.url?{image:true}:{alias:resolved.alias})}]:[];})};
   }
+  function avatarUrl(value) {
+    try {
+      const url=new URL(value);
+      if(url.protocol==='https:'&&!url.port&&!url.username&&!url.password&&['avatars.slack-edge.com','a.slack-edge.com'].includes(url.hostname))return url;
+    }catch{}
+    return null;
+  }
+  function profileAvatar(profile) {
+    return [profile?.image_72,profile?.image_48,profile?.image_192,profile?.image_32].map(avatarUrl).find(Boolean)||null;
+  }
   async function messageView(message) {
     if(!message)return null;
     let author=string(message.bot_profile?.name||message.username)||'Team member';
+    let avatar=profileAvatar(message.bot_profile?.icons);
     if(message.user) {
       const user=await userInfo(message.user);
       author=string(user?.profile?.display_name).trim()||string(user?.profile?.real_name).trim()||string(user?.real_name).trim()||author;
+      avatar=user?.id===message.user?profileAvatar(user.profile):null;
     }
     const link=await cached(`link:${message.ts}`,300000,async()=>safeLink((await slack('chat.getPermalink',{channel,message_ts:message.ts})).permalink));
     const images=[],files=[];
@@ -184,7 +196,7 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       else files.push({id:f.id,title,permalink:safeLink(f.permalink)||link});
     }
     const text=messageText(message),emoji=await customEmojis(text);
-    return {ts:message.ts,text,author:{name:author},permalink:link,images,files,custom_emojis:emoji.items,custom_emoji_ready:emoji.ready};
+    return {ts:message.ts,text,author:{name:author,avatar:!!avatar},permalink:link,images,files,custom_emojis:emoji.items,custom_emoji_ready:emoji.ready};
   }
   function imageUrl(value,redirect=false) {
     try {
@@ -230,13 +242,24 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
     if(!message||message.ts!==body.message_ts||!emojiNames(messageText(message)).includes(body.emoji_name))fail(404,'IMAGE_UNAVAILABLE');
     const resolved=resolveEmoji(await emojiCatalog()||{},body.emoji_name);
     if(!resolved?.url)fail(404,'IMAGE_UNAVAILABLE');
-    let url=resolved.url;
+    return publicRasterResponse(resolved.url,emojiUrl);
+  }
+  async function avatarResponse(body) {
+    if(!/^\d+\.\d+$/.test(body.message_ts||''))fail(400,'INVALID_REQUEST');
+    const message=await latest();if(!message||message.ts!==body.message_ts)fail(404,'IMAGE_UNAVAILABLE');
+    let url;
+    if(message.user){const user=await userInfo(message.user);url=user?.id===message.user?profileAvatar(user.profile):null;}
+    else url=profileAvatar(message.bot_profile?.icons);
+    if(!url)fail(404,'IMAGE_UNAVAILABLE');
+    return publicRasterResponse(url,avatarUrl);
+  }
+  async function publicRasterResponse(url,allowedUrl) {
     for(let redirect=0;redirect<4;redirect++) {
-      // Custom emoji CDN URLs never receive the bot token, even after redirects.
+      // Profile/emoji CDN URLs never receive the bot token, even after redirects.
       const res=await request(url.href,{redirect:'manual',signal:AbortSignal.timeout(10000)});
       if([301,302,303,307,308].includes(res.status)) {
         const location=res.headers.get('Location');await res.body?.cancel();
-        url=location&&emojiUrl(new URL(location,url).href);if(!url)fail(502,'IMAGE_UNAVAILABLE');continue;
+        url=location&&allowedUrl(new URL(location,url).href);if(!url)fail(502,'IMAGE_UNAVAILABLE');continue;
       }
       if(!res.ok)fail(502,'IMAGE_UNAVAILABLE');
       const type=string(res.headers.get('Content-Type')).split(';')[0].trim().toLowerCase(),limit=1024*1024;
@@ -258,10 +281,11 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       if(Number(req.headers.get('Content-Length')||0)>4096)fail(400,'INVALID_REQUEST');
       const raw=await req.text();if(raw.length>4096)fail(400,'INVALID_REQUEST');
       let body;try{body=JSON.parse(raw);}catch{fail(400,'INVALID_REQUEST');}
-      if(!body||!['message','image','emoji'].includes(body.action))fail(400,'INVALID_REQUEST');
+      if(!body||!['message','image','emoji','avatar'].includes(body.action))fail(400,'INVALID_REQUEST');
       await authorize(req);
       if(body.action==='image')return await imageResponse(body);
       if(body.action==='emoji')return await emojiResponse(body);
+      if(body.action==='avatar')return await avatarResponse(body);
       return json({message:await messageView(await latest()),updated_at:new Date(now()).toISOString()});
     }catch(error){
       const status=error instanceof Failure?error.status:502,code=error instanceof Failure?error.code:'UNAVAILABLE';

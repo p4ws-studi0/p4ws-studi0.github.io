@@ -16,7 +16,7 @@ function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_
     const n={id,hidden:false,disabled:false,open:false,innerHTML:'',textContent:'',attributes,events,
       classList:{add:k=>classes.add(k),remove:k=>classes.delete(k),toggle(k,on){if(on)classes.add(k);else classes.delete(k);}},
       addEventListener(name,fn){(events[name]??=[]).push(fn);},
-      setAttribute(k,v){attributes[k]=v;},removeAttribute(k){delete attributes[k];delete n[k];},
+      setAttribute(k,v){attributes[k]=v;},getAttribute(k){return attributes[k]??null;},removeAttribute(k){delete attributes[k];delete n[k];},
       showModal(){n.open=true;},close(){n.open=false;},focus(){},
       querySelector(selector){if(selector==='img')return n.innerHTML.includes('<img ')?node(id+'-img'):null;const image=selector.match(/data-slack-image="(.*?)"/)?.[1];return image&&n.innerHTML.includes(`data-slack-image="${image}"`)?node('image-'+image):null;},
       querySelectorAll(selector){
@@ -254,4 +254,34 @@ test('revoked access and logout suppress late emoji bytes and release all existi
   const ready=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['GIF89a'],{type:'image/gif'}),error:null})});await ready.settle();
   ready.listeners['window:pagehide']();assert.equal(ready.app.state.emojiUrls.size,0);assert.equal(ready.revoked.length,1);
   const denied=harness({handler:body=>body.action==='message'?{data:payload,error:null}:new Response('{}',{status:403,headers:{'Content-Type':'application/json'}})});await denied.settle();assert.equal(denied.get('homeSlackBody').innerHTML,'');assert.equal(denied.get('homeSlackMessage').hidden,true);
+});
+
+test('author profile photos use protected binary transport and keep the existing avatar dimensions',async()=>{
+  const payload=fixture({author:{name:'Test Staff',avatar:true}}),bytes=Uint8Array.from([255,216,255,224,0,128]);
+  const h=harness({handler:body=>body.action==='message'?{data:payload,error:null}:new Response(bytes,{headers:{'Content-Type':'image/jpeg'}})});await h.settle();
+  assert.deepEqual(h.api.calls.map(call=>call.action),['message','avatar']);assert.deepEqual(h.api.calls[1],{action:'avatar',message_ts:payload.message.ts});
+  assert.equal(h.api.requests[1].transport,'fetch');assert.equal(h.api.requests[1].headers.Authorization,'Bearer fixture-user-jwt');assert.equal(h.api.requests[1].credentials,'omit');
+  assert.equal(h.get('homeSlackInitials').getAttribute('data-initials'),'TS');assert.match(h.get('homeSlackInitials').innerHTML,/<img src="blob:test-0" alt="" decoding="async">/);
+  assert.equal(h.app.state.avatarUrl,'blob:test-0');assert.deepEqual(new Uint8Array(await h.createdBlobs[0].arrayBuffer()),bytes);
+  const css=fs.readFileSync(path.join(__dirname,'../assets/home-slack.css'),'utf8');assert.match(css,/\.home-slack-avatar img[^}]*object-fit: cover/);
+  await h.app.refresh();await flush();assert.ok(h.revoked.includes('blob:test-0'));h.signOut();assert.equal(h.app.state.avatarUrl,null);assert.equal(h.get('homeSlackInitials').textContent,'');
+});
+test('missing or failed optional avatars preserve initials while revoked access clears the post',async()=>{
+  const noPhoto=harness({message:fixture({author:{name:'No Photo'}})});await noPhoto.settle();assert.deepEqual(noPhoto.api.calls.map(call=>call.action),['message']);assert.equal(noPhoto.get('homeSlackInitials').textContent,'NP');
+  for(const response of [new Response('{}',{status:404}),new Response('bad',{headers:{'Content-Type':'image/svg+xml'}}),new Response(new Uint8Array(1024*1024+1),{headers:{'Content-Type':'image/png'}})]){
+    const h=harness({handler:body=>body.action==='message'?{data:fixture({author:{name:'Test Staff',avatar:true}}),error:null}:response});await h.settle();
+    assert.equal(h.get('homeSlackInitials').textContent,'TS');assert.equal(h.get('homeSlackMessage').hidden,false);assert.equal(h.created.length,0);
+  }
+  const denied=harness({handler:body=>body.action==='message'?{data:fixture({author:{name:'Test Staff',avatar:true}}),error:null}:new Response('{}',{status:403})});await denied.settle();assert.equal(denied.get('homeSlackMessage').hidden,true);assert.equal(denied.get('homeSlackInitials').textContent,'');
+});
+test('late profile photo responses never reappear after a newer post or workspace revocation',async()=>{
+  const pending=deferred();let reads=0;
+  const h=harness({handler:body=>body.action==='avatar'?pending.promise:{data:++reads===1?fixture({author:{name:'Old Author',avatar:true}}):fixture({author:{name:'New Author'}}),error:null}});await h.settle();
+  await h.app.refresh();pending.resolve(new Response('bytes',{headers:{'Content-Type':'image/png'}}));await flush();assert.equal(h.created.length,0);assert.equal(h.get('homeSlackInitials').textContent,'NA');
+  const late=deferred(),r=harness({handler:body=>body.action==='avatar'?late.promise:{data:fixture({author:{name:'Test Staff',avatar:true}}),error:null}});await r.settle();r.listeners['window:paws-access-revoked']();late.resolve(new Response('bytes',{headers:{'Content-Type':'image/png'}}));await flush();assert.equal(r.created.length,0);assert.equal(r.get('homeSlackInitials').textContent,'');
+});
+test('photo decode errors restore initials and page exit releases successful photos',async()=>{
+  const h=harness({handler:body=>({data:body.action==='message'?fixture({author:{name:'Test Staff',avatar:true}}):new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
+  h.get('homeSlackInitials-img').events.error[0]();assert.equal(h.get('homeSlackInitials').textContent,'TS');assert.equal(h.app.state.avatarUrl,null);assert.equal(h.revoked.length,1);
+  await h.app.refresh();await flush();h.listeners['window:pagehide']();assert.equal(h.app.state.avatarUrl,null);assert.equal(h.revoked.length,2);assert.equal(h.get('homeSlackInitials').textContent,'TS');
 });

@@ -1,6 +1,6 @@
 # Homepage Slack widget
 
-The homepage displays the newest post in the workspace's public `#general` channel, its author and Eastern timestamp, attached images, and a link to open the post in Slack. Standard Slack emoji shortcodes, aliases, skin tones, and common text emoticons render as native emoji using a bundled, pinned Unicode mapping. Custom workspace emojis and aliases render inline, including animated GIFs, through the authenticated server proxy. Code and URL destinations remain literal. Unknown/unavailable custom emojis remain readable as text. The widget checks for updates every minute while visible. Images open in an enlarged viewer; other attachments link to Slack.
+The homepage displays the newest post in the workspace's public `#general` channel, its author's name and profile photo, Eastern timestamp, attached images, and a link to open the post in Slack. Profile photos use the existing `users:read` permission and fall back to initials when missing or unavailable. Standard Slack emoji shortcodes, aliases, skin tones, and common text emoticons render as native emoji using a bundled, pinned Unicode mapping. Custom workspace emojis and aliases render inline, including animated GIFs, through the authenticated server proxy. Code and URL destinations remain literal. Unknown/unavailable custom emojis remain readable as text. The widget checks for updates every minute while visible. Images open in an enlarged viewer; other attachments link to Slack.
 
 ## Connect Slack
 
@@ -21,12 +21,13 @@ The homepage displays the newest post in the workspace's public `#general` chann
 
 ## Access and storage
 
-- Every message/image/emoji request validates the Supabase user and their active row in the existing `hq_tour_staff` approval table using that user's JWT and RLS. No service-role key is used.
+- Every message/image/emoji/profile-photo request validates the Supabase user and their active row in the existing `hq_tour_staff` approval table using that user's JWT and RLS. No service-role key is used.
 - The user's provider-owned Slack identity must match the configured workspace, and they must be an active workspace member. User-editable profile metadata cannot grant access. All verified active workspace members, including guests, have the same widget access.
 - The server confirms that the bot belongs to this workspace and has joined its actual public general channel. It accepts no caller-selected channel.
 - Slack data is not stored in the database. In-memory message/user caches last up to 30 seconds; configuration/permalink/custom-emoji catalog caches last up to five minutes. HQ approval is rechecked on each request. Optional emoji lookup failures are cached briefly and never disable the rest of the feed or set its rate-limit cooldown.
 - Private image URLs and bot credentials never reach browser code. Images are proxied only for files attached to the current post, restricted to Slack download hosts, raster formats, and 8 MiB per image. Up to 12 image previews are shown; remaining attachments link to Slack. External image URLs and SVGs are not embedded.
 - Custom emoji responses expose only used names and alias metadata, never the workspace catalog or CDN URLs. The proxy binds each original emoji name to the current post, follows at most 16 aliases and four URL hops, and accepts only Slack's emoji CDN/legacy emoji path, verified raster formats, and 1 MiB per emoji. The CDN receives no bot token. Up to 64 unique names and 256 inline occurrences are rendered, with three shared concurrent image requests.
+- Profile photos expose only an availability flag. The authenticated proxy derives the current post author's `image_72` (or a small-size fallback) from Slack's user profile or bot icons, verifies the returned user ID, and accepts only exact Slack avatar CDN hosts (`avatars.slack-edge.com`, `a.slack-edge.com`), raster bytes, and 1 MiB. Caller-supplied URLs/user IDs are ignored. Photo requests share the three-worker limit and never send the bot token to the CDN.
 - Responses use `private, no-store`; browser image/emoji URLs are revoked on refresh, logout, workspace-access revocation, and page exit. Access errors clear previously displayed private content. A revoked Slack membership can take up to the 30-second server cache plus the next homepage refresh to disappear.
 
 ## Files and checks

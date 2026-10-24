@@ -375,3 +375,76 @@ test('custom emoji proxy rejects active formats, bad signatures and bodies above
  const max=new Uint8Array(1024*1024);max.set(PNG);const exact=await environment({messages:[message({text:':paws:'})],emojis:{paws:emojiURL('paws')},intercept:call=>new URL(call.url).hostname==='emoji.slack-edge.com'?new Response(max,{headers:{'Content-Type':'image/png'}}):undefined});assert.equal((await exact.request(emojiRequest())).status,200);
  const attachment=await environment({messages:[message({files:[file()]})],intercept:call=>new URL(call.url).hostname==='files.slack.com'?new Response(max,{headers:{'Content-Type':'image/png'}}):undefined});assert.equal((await attachment.request({action:'image',file_id:FILE,message_ts:message().ts})).status,200);
 });
+
+const avatarURL='https://avatars.slack-edge.com/2026-10-24/fixture_author_72.png';
+const avatarRequest=(ts=message().ts)=>({action:'avatar',message_ts:ts});
+const authorWithAvatar=(profile={})=>({id:AUTHOR,team_id:TEAM,deleted:false,is_bot:false,profile:{display_name:'Fixture author',image_72:avatarURL,...profile}});
+const avatarCalls=h=>h.state.calls.filter(call=>['avatars.slack-edge.com','a.slack-edge.com'].includes(new URL(call.url).hostname));
+
+test('post author photo metadata is only a boolean and reuses the existing users.info lookup',async()=>{
+ const h=await environment({users:{[AUTHOR]:authorWithAvatar()}}),response=await h.request(),body=await response.json();assert.equal(response.status,200);assert.deepEqual(body.message.author,{name:'Fixture author',avatar:true});
+ assert.doesNotMatch(JSON.stringify(body),/avatars\.slack-edge\.com|fixture_author_72|image_72|fixture-private-token/);
+ assert.equal(avatarCalls(h).length,0);assert.equal(h.calls('users.info').filter(call=>call.params.user===AUTHOR).length,1);
+ const photo=await h.request(avatarRequest());assert.equal(photo.status,200);assert.equal(h.calls('users.info').filter(call=>call.params.user===AUTHOR).length,1,'cached existing users:read data serves the photo');
+ assert.ok(h.state.calls.filter(call=>call.api).every(call=>['auth.test','conversations.info','users.info','conversations.history','chat.getPermalink','emoji.list'].includes(call.api)));
+});
+
+test('avatar requests reauthorize viewers and cannot bypass current workspace approval or Slack deactivation',async()=>{
+ const h=await environment({users:{[AUTHOR]:authorWithAvatar()}});assert.equal((await h.request()).status,200);
+ await errorIs(await h.request(avatarRequest(),{headers:{Authorization:null}}),401,'AUTH_REQUIRED');assert.equal(avatarCalls(h).length,0);
+ h.state.approved=false;await errorIs(await h.request(avatarRequest()),403,'ACCESS_DENIED');assert.equal(avatarCalls(h).length,0);
+ h.state.approved=true;h.state.users[VIEWER]={id:VIEWER,team_id:TEAM,deleted:true,is_bot:false};h.advance(30001);await errorIs(await h.request(avatarRequest()),403,'ACCESS_DENIED');assert.equal(avatarCalls(h).length,0);
+});
+
+test('avatar bytes are bound to the latest post author and ignore caller-selected users or URLs',async()=>{
+ const h=await environment({users:{[AUTHOR]:authorWithAvatar()}});
+ for(const ts of ['',null,'not-a-timestamp','1770000000','https://evil.example'])await errorIs(await h.request(avatarRequest(ts)),400,'INVALID_REQUEST');
+ await errorIs(await h.request(avatarRequest('1770000000.000000')),404,'IMAGE_UNAVAILABLE');assert.equal(avatarCalls(h).length,0);
+ const photo=await h.request({...avatarRequest(),user_id:'UUNRELATED',url:'http://169.254.169.254/latest/meta-data'});assert.equal(photo.status,200);assert.equal(avatarCalls(h).length,1);assert.equal(avatarCalls(h)[0].url,avatarURL);assert.ok(h.calls('users.info').every(call=>call.params.user!=='UUNRELATED'));assert.ok(h.state.calls.every(call=>!call.url.includes('169.254.169.254')));
+ h.state.messages=[message({ts:'1770000001.000123',user:'UNEWAUTHOR'})];h.advance(30001);await errorIs(await h.request(avatarRequest()),404,'IMAGE_UNAVAILABLE');assert.equal(avatarCalls(h).length,1);
+});
+
+test('missing photos and mismatched author profile IDs retain the post without advertising an avatar',async()=>{
+ for(const author of [authorWithAvatar({image_72:null}),authorWithAvatar({image_72:''}),authorWithAvatar({image_72:'https://evil.example/photo.png'}),{...authorWithAvatar(),id:'UUNRELATED'}]){
+  const h=await environment({users:{[AUTHOR]:author}}),response=await h.request(),body=await response.json();assert.equal(response.status,200);assert.equal(body.message.text,'A synthetic team update');assert.equal(body.message.author.avatar,false);await errorIs(await h.request(avatarRequest()),404,'IMAGE_UNAVAILABLE');assert.equal(avatarCalls(h).length,0);
+ }
+ const fallback=await environment({users:{[AUTHOR]:authorWithAvatar({image_72:'https://evil.example/photo.png',image_192:avatarURL})}});assert.equal((await (await fallback.request()).json()).message.author.avatar,true);assert.equal((await fallback.request(avatarRequest())).status,200);assert.equal(avatarCalls(fallback)[0].url,avatarURL);
+});
+
+test('bot posts can use their current message icon without a separate profile API or scope',async()=>{
+ const icon='https://a.slack-edge.com/80588/img/plugins/app/service_72.png';
+ const h=await environment({messages:[message({user:undefined,subtype:'bot_message',bot_profile:{name:'Fixture app',icons:{image_72:icon}}})]}),body=await (await h.request()).json();assert.deepEqual(body.message.author,{name:'Fixture app',avatar:true});
+ const photo=await h.request(avatarRequest());assert.equal(photo.status,200);assert.equal(avatarCalls(h)[0].url,icon);assert.equal(h.calls('bots.info').length,0);assert.equal(h.calls('users.info').filter(call=>call.params.user===AUTHOR).length,0);
+ const noIcon=await environment({messages:[message({user:undefined,subtype:'bot_message',bot_profile:{name:'Fixture app'}})]});assert.deepEqual((await (await noIcon.request()).json()).message.author,{name:'Fixture app',avatar:false});await errorIs(await noIcon.request(avatarRequest()),404,'IMAGE_UNAVAILABLE');
+});
+
+test('both approved avatar hosts return private raster bytes without receiving a bearer token',async()=>{
+ for(const url of [avatarURL,'https://a.slack-edge.com/80588/img/avatars/default.png']){
+  const h=await environment({users:{[AUTHOR]:authorWithAvatar({image_72:url})}}),photo=await h.request(avatarRequest());assert.equal(photo.status,200);assert.equal(photo.headers.get('Content-Type'),'image/png');assert.equal(photo.headers.get('Content-Length'),String(PNG.length));assert.equal(photo.headers.get('Cache-Control'),'private, no-store');assert.equal(photo.headers.get('Access-Control-Allow-Origin'),ORIGIN);assert.equal(photo.headers.get('X-Content-Type-Options'),'nosniff');assert.deepEqual(new Uint8Array(await photo.arrayBuffer()),PNG);
+  assert.equal(avatarCalls(h).length,1);assert.equal(avatarCalls(h)[0].headers.get('Authorization'),null);assert.equal(avatarCalls(h)[0].redirect,'manual');
+ }
+});
+
+test('avatar URL allowlist excludes foreign, lookalike, credentialed, insecure, alternate-port and other Slack CDN hosts',async()=>{
+ for(const url of ['https://evil.example/avatar.png','https://avatars.slack-edge.com.evil.example/avatar.png','https://cdn.slack-edge.com/avatar.png','https://emoji.slack-edge.com/avatar.png','https://secure.gravatar.com/avatar/fixture','http://avatars.slack-edge.com/avatar.png','https://user:pass@avatars.slack-edge.com/avatar.png','https://avatars.slack-edge.com:444/avatar.png']){
+  const h=await environment({users:{[AUTHOR]:authorWithAvatar({image_72:url})}}),body=await (await h.request()).json();assert.equal(body.message.author.avatar,false);await errorIs(await h.request(avatarRequest()),404,'IMAGE_UNAVAILABLE');assert.equal(avatarCalls(h).length,0);assert.ok(h.state.calls.every(call=>!call.url.includes('evil.example')&&!call.url.includes('gravatar.com')));
+ }
+});
+
+test('avatar redirects are revalidated without credentials and redirect loops remain bounded',async()=>{
+ const allowed='https://a.slack-edge.com/80588/img/avatars/default.png';
+ const h=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(null,{status:302,headers:{Location:allowed}}):undefined});assert.equal((await h.request(avatarRequest())).status,200);assert.equal(avatarCalls(h).length,2);assert.ok(avatarCalls(h).every(call=>call.headers.get('Authorization')===null));
+ for(const location of ['https://evil.example/avatar.png','https://emoji.slack-edge.com/avatar.png','http://a.slack-edge.com/avatar.png','https://user:pass@a.slack-edge.com/avatar.png']){
+  const blocked=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(null,{status:302,headers:{Location:location}}):undefined});await errorIs(await blocked.request(avatarRequest()),502,'IMAGE_UNAVAILABLE');assert.equal(avatarCalls(blocked).length,1);assert.ok(blocked.state.calls.every(call=>call.url!==location));
+ }
+ const loop=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(null,{status:302,headers:{Location:'/again.png'}}):undefined});await errorIs(await loop.request(avatarRequest()),502,'IMAGE_UNAVAILABLE');assert.equal(avatarCalls(loop).length,4);
+});
+
+test('avatar proxy enforces raster MIME, image signatures and the one MiB limit without exposing upstream details',async()=>{
+ for(const [type,bytes,status] of [['text/html','<html>login</html>',413],['image/svg+xml','<svg/>',413],['image/png','not a PNG',502],['image/png',new Uint8Array(1024*1024+1),413]]){
+  const h=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(bytes,{headers:{'Content-Type':type}}):undefined});await errorIs(await h.request(avatarRequest()),status,'IMAGE_UNAVAILABLE');
+ }
+ const advertised=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(PNG,{headers:{'Content-Type':'image/png','Content-Length':String(1024*1024+1)}}):undefined});await errorIs(await advertised.request(avatarRequest()),413,'IMAGE_UNAVAILABLE');
+ const max=new Uint8Array(1024*1024);max.set(PNG);const exact=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(max,{headers:{'Content-Type':'image/png'}}):undefined});assert.equal((await exact.request(avatarRequest())).status,200);
+ const failure=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>{if(new URL(call.url).hostname==='avatars.slack-edge.com')throw new Error('fixture-private-token sensitive CDN detail');}});await errorIs(await failure.request(avatarRequest()),502,'UNAVAILABLE');
+});
