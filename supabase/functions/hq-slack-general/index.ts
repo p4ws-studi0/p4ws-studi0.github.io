@@ -5,6 +5,7 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   const trimmed=value=>typeof value==='string'?value.trim():value;
   const token=trimmed(env.SLACK_BOT_TOKEN), team=trimmed(env.SLACK_TEAM_ID), channel=trimmed(env.SLACK_GENERAL_CHANNEL_ID);
   const cache=new Map(),pending=new Map();let cooldown=0;
+  const assetCache=new Map(),assetPending=new Map();let assetBytes=0;
   const MAX_IMAGE=8*1024*1024;
   const imageTypes=new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif']);
   class Failure extends Error {constructor(status,code){super(code);this.status=status;this.code=code;}}
@@ -42,6 +43,14 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
     return data;
   }
   async function userInfo(id) {return cached(`user:${id}`,30000,async()=>{const data=await slack('users.info',{user:id});return data.user;});}
+  async function concurrent(items,limit,read) {
+    const values=new Array(items.length);let next=0,failed=false;
+    const workers=Array.from({length:Math.min(limit,items.length)},async()=>{
+      while(!failed&&next<items.length){const index=next++;try{values[index]=await read(items[index],index);}catch(error){failed=true;throw error;}}
+    });
+    const settled=await Promise.allSettled(workers),failure=settled.find(result=>result.status==='rejected');
+    if(failure)throw failure.reason;return values;
+  }
   async function authorize(req) {
     const bearer=req.headers.get('Authorization');if(!/^Bearer\s+\S+$/i.test(bearer||''))fail(401,'AUTH_REQUIRED');
     if(!project){diagnose('MISSING_SUPABASE_URL');fail(503,'CONNECTION_REQUIRED');}
@@ -163,7 +172,9 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   async function customEmojis(text) {
     const names=emojiNames(text);
     const catalog=await emojiCatalog();
-    return {ready:catalog!==null,items:names.flatMap(name=>{const resolved=resolveEmoji(catalog||{},name);return resolved?[{name,...(resolved.url?{image:true}:{alias:resolved.alias})}]:[];})};
+    const images=new Map();
+    const items=names.flatMap(name=>{const resolved=resolveEmoji(catalog||{},name);if(resolved?.url)images.set(name,resolved.url);return resolved?[{name,...(resolved.url?{image:true}:{alias:resolved.alias})}]:[];});
+    return {ready:catalog!==null,items,images};
   }
   function avatarUrl(value) {
     try {
@@ -175,28 +186,45 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   function profileAvatar(profile) {
     return [profile?.image_72,profile?.image_48,profile?.image_192,profile?.image_32].map(avatarUrl).find(Boolean)||null;
   }
-  async function messageView(message) {
-    if(!message)return null;
+  async function assetKey(url) {
+    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(url.href));
+    return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
+  }
+  async function messageView(message,includeMedia=false) {
+    if(!message)return {view:null,assets:[]};
+    const text=messageText(message);
+    const [user,link,hydrated,emoji]=await Promise.all([
+      message.user?userInfo(message.user):Promise.resolve(null),
+      cached(`link:${message.ts}`,300000,async()=>safeLink((await slack('chat.getPermalink',{channel,message_ts:message.ts})).permalink)),
+      concurrent(messageFiles(message),3,async file=>{
+        if(!file.mimetype||file.mimetype==='image/unknown'||file.file_access==='check_file_info') {
+          try{return (await slack('files.info',{file:file.id})).file||file;}
+          catch(error){if(error.code==='CONNECTION_REQUIRED'||error.code==='RATE_LIMITED')throw error;}
+        }
+        return file;
+      }),
+      customEmojis(text)
+    ]);
     let author=string(message.bot_profile?.name||message.username)||'Team member';
     let avatar=profileAvatar(message.bot_profile?.icons);
     if(message.user) {
-      const user=await userInfo(message.user);
       author=string(user?.profile?.display_name).trim()||string(user?.profile?.real_name).trim()||string(user?.real_name).trim()||author;
       avatar=user?.id===message.user?profileAvatar(user.profile):null;
     }
-    const link=await cached(`link:${message.ts}`,300000,async()=>safeLink((await slack('chat.getPermalink',{channel,message_ts:message.ts})).permalink));
     const images=[],files=[];
-    for(let f of messageFiles(message)) {
-      if(!f.mimetype||f.mimetype==='image/unknown'||f.file_access==='check_file_info') {
-        try {f=(await slack('files.info',{file:f.id})).file||f;}
-        catch(error){if(error.code==='CONNECTION_REQUIRED'||error.code==='RATE_LIMITED')throw error;}
-      }
+    for(const f of hydrated) {
       const title=string(f.title||f.name)||'Attachment';
       if((imageTypes.has(f.mimetype)||f.mimetype==='image/unknown')&&!f.is_external&&images.length<12)images.push({id:f.id,title,alt:string(f.alt_txt)||title});
       else files.push({id:f.id,title,permalink:safeLink(f.permalink)||link});
     }
-    const text=messageText(message),emoji=await customEmojis(text);
-    return {ts:message.ts,text,author:{name:author,avatar:!!avatar},permalink:link,images,files,custom_emojis:emoji.items,custom_emoji_ready:emoji.ready};
+    const authorView={name:author,avatar:!!avatar},assets=[];
+    if(includeMedia) {
+      if(avatar){authorView.avatar_key=await assetKey(avatar);assets.push({key:authorView.avatar_key,url:avatar,allowed:avatarUrl});}
+      await Promise.all(emoji.items.map(async item=>{if(item.image){const url=emoji.images.get(item.name);item.key=await assetKey(url);}}));
+      const seen=new Set();
+      for(const item of emoji.items)if(item.image&&seen.size<8){const url=emoji.images.get(item.name);if(!seen.has(url.href)){seen.add(url.href);assets.push({key:item.key,url,allowed:emojiUrl});}}
+    }
+    return {view:{ts:message.ts,text,author:authorView,permalink:link,images,files,custom_emojis:emoji.items,custom_emoji_ready:emoji.ready},assets};
   }
   function imageUrl(value,redirect=false) {
     try {
@@ -253,10 +281,12 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
     if(!url)fail(404,'IMAGE_UNAVAILABLE');
     return publicRasterResponse(url,avatarUrl);
   }
-  async function publicRasterResponse(url,allowedUrl) {
+  async function downloadRaster(url,allowedUrl,signal) {
     for(let redirect=0;redirect<4;redirect++) {
+      signal.throwIfAborted();
       // Profile/emoji CDN URLs never receive the bot token, even after redirects.
-      const res=await request(url.href,{redirect:'manual',signal:AbortSignal.timeout(10000)});
+      const res=await request(url.href,{redirect:'manual',signal});
+      if(signal.aborted){await res.body?.cancel();signal.throwIfAborted();}
       if([301,302,303,307,308].includes(res.status)) {
         const location=res.headers.get('Location');await res.body?.cancel();
         url=location&&allowedUrl(new URL(location,url).href);if(!url)fail(502,'IMAGE_UNAVAILABLE');continue;
@@ -266,12 +296,66 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       if(!imageTypes.has(type)||Number(res.headers.get('Content-Length')||0)>limit){await res.body?.cancel();fail(413,'IMAGE_UNAVAILABLE');}
       if(!res.body)fail(502,'IMAGE_UNAVAILABLE');
       const reader=res.body.getReader(),chunks=[];let length=0;
-      try{while(true){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>limit)fail(413,'IMAGE_UNAVAILABLE');chunks.push(value);}}finally{await reader.cancel().catch(()=>{});}
+      const cancel=()=>{void reader.cancel().catch(()=>{});};signal.addEventListener('abort',cancel,{once:true});
+      try{while(true){signal.throwIfAborted();const {done,value}=await reader.read();signal.throwIfAborted();if(done)break;length+=value.length;if(length>limit)fail(413,'IMAGE_UNAVAILABLE');chunks.push(value);}}finally{signal.removeEventListener('abort',cancel);await reader.cancel().catch(()=>{});}
       const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
       if(!matchesImage(bytes,type))fail(502,'IMAGE_UNAVAILABLE');
-      return new Response(bytes,{headers:{...headers,'Content-Type':type,'Content-Length':String(length),'Content-Disposition':'inline'}});
+      return {bytes,type};
     }
     fail(502,'IMAGE_UNAVAILABLE');
+  }
+  function pruneAssets() {
+    for(const [key,entry]of assetCache)if(entry.until<=now()){assetCache.delete(key);assetBytes-=entry.bytes.length;}
+  }
+  function storeAsset(key,asset) {
+    pruneAssets();const prior=assetCache.get(key);if(prior){assetBytes-=prior.bytes.length;assetCache.delete(key);}
+    while(assetCache.size>=64||assetBytes+asset.bytes.length>8*1024*1024){const oldest=assetCache.keys().next().value;if(oldest===undefined)break;assetBytes-=assetCache.get(oldest).bytes.length;assetCache.delete(oldest);}
+    assetCache.set(key,{...asset,until:now()+300000});assetBytes+=asset.bytes.length;
+  }
+  async function rasterAsset(url,allowedUrl,signal) {
+    signal?.throwIfAborted();pruneAssets();const key=url.href,hit=assetCache.get(key);
+    if(hit){assetCache.delete(key);assetCache.set(key,hit);return hit;}
+    let entry=assetPending.get(key);
+    if(!entry) {
+      if(assetPending.size>=64)fail(502,'IMAGE_UNAVAILABLE');
+      const controller=new AbortController();entry={controller,waiters:0,done:false,promise:null};
+      const timer=setTimeout(()=>controller.abort(),10000);
+      entry.promise=downloadRaster(url,allowedUrl,controller.signal).then(asset=>{controller.signal.throwIfAborted();storeAsset(key,asset);return asset;}).finally(()=>{entry.done=true;clearTimeout(timer);if(assetPending.get(key)===entry)assetPending.delete(key);});
+      assetPending.set(key,entry);
+    }
+    entry.waiters++;
+    return new Promise((resolve,reject)=>{
+      let finished=false;
+      const finish=(callback,value)=>{
+        if(finished)return;finished=true;signal?.removeEventListener('abort',abort);entry.waiters--;
+        if(!entry.waiters&&!entry.done){entry.controller.abort();if(assetPending.get(key)===entry)assetPending.delete(key);}
+        callback(value);
+      };
+      const abort=()=>finish(reject,new DOMException('Asset request aborted','AbortError'));
+      signal?.addEventListener('abort',abort,{once:true});entry.promise.then(asset=>finish(resolve,asset),error=>finish(reject,error));
+      if(signal?.aborted)abort();
+    });
+  }
+  async function publicRasterResponse(url,allowedUrl) {
+    const {bytes,type}=await rasterAsset(url,allowedUrl);
+    return new Response(bytes,{headers:{...headers,'Content-Type':type,'Content-Length':String(bytes.length),'Content-Disposition':'inline'}});
+  }
+  function base64(bytes) {
+    let binary='';for(let offset=0;offset<bytes.length;offset+=8192)binary+=String.fromCharCode(...bytes.subarray(offset,offset+8192));return btoa(binary);
+  }
+  async function inlineMedia(assets,knownMedia) {
+    const known=new Set((Array.isArray(knownMedia)?knownMedia:[]).slice(0,65).filter(key=>typeof key==='string'&&/^[a-f0-9]{64}$/.test(key)));
+    const selected=assets.filter(asset=>!known.has(asset.key));if(!selected.length)return [];
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),800);
+    try {
+      const results=await concurrent(selected,3,async asset=>{
+        if(controller.signal.aborted)return null;
+        try{const value=await rasterAsset(asset.url,asset.allowed,controller.signal);return controller.signal.aborted?null:{key:asset.key,...value};}catch{return null;}
+      });
+      const media=[];let size=0;
+      for(const asset of results)if(asset&&asset.bytes.length<=64*1024&&size+asset.bytes.length<=256*1024){size+=asset.bytes.length;media.push({key:asset.key,type:asset.type,data:base64(asset.bytes)});}
+      return media;
+    }finally{clearTimeout(timer);controller.abort();}
   }
   return async function handler(req) {
     if(req.headers.get('Origin')&&req.headers.get('Origin')!==origin)return json({error:{code:'ACCESS_DENIED'}},403);
@@ -286,7 +370,8 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       if(body.action==='image')return await imageResponse(body);
       if(body.action==='emoji')return await emojiResponse(body);
       if(body.action==='avatar')return await avatarResponse(body);
-      return json({message:await messageView(await latest()),updated_at:new Date(now()).toISOString()});
+      const includeMedia=body.include_media===true,{view,assets}=await messageView(await latest(),includeMedia);
+      return json({message:view,...(includeMedia?{media:await inlineMedia(assets,body.known_media)}:{}),updated_at:new Date(now()).toISOString()});
     }catch(error){
       const status=error instanceof Failure?error.status:502,code=error instanceof Failure?error.code:'UNAVAILABLE';
       return json({error:{code}},status,status===429?{'Retry-After':String(Math.max(1,Math.ceil((cooldown-now())/1000)))}:{});

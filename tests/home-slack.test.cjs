@@ -58,7 +58,7 @@ function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_
   class TestURL extends URL {static createObjectURL(blob){const url='blob:test-'+created.length;created.push(url);createdBlobs.push(blob);return url;}static revokeObjectURL(url){revoked.push(url);}}
   class TestDate extends Date {constructor(...args){super(...(args.length?args:[api.now]));}static now(){return api.now;}}
   let timerId=0;
-  const context=vm.createContext({document,window,supabaseClient:client,URL:TestURL,Date:TestDate,Blob,AbortController,fetch,Intl,console,
+  const context=vm.createContext({document,window,supabaseClient:client,URL:TestURL,Date:TestDate,Blob,AbortController,fetch,Intl,console,atob,
     setTimeout(fn,delay){timers.set(++timerId,{fn,delay});return timerId;},clearTimeout(id){timers.delete(id);},setInterval(fn,delay){intervals.push({fn,delay});}});
   if(emoji)vm.runInContext(emojiSource,context);
   vm.runInContext(source.replace("  $('homeSlackRefresh').addEventListener", "  globalThis.__slack = {state,refresh,formatText,safeURL,clearImages};\n  $('homeSlackRefresh').addEventListener"),context);
@@ -284,4 +284,54 @@ test('photo decode errors restore initials and page exit releases successful pho
   const h=harness({handler:body=>({data:body.action==='message'?fixture({author:{name:'Test Staff',avatar:true}}):new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
   h.get('homeSlackInitials-img').events.error[0]();assert.equal(h.get('homeSlackInitials').textContent,'TS');assert.equal(h.app.state.avatarUrl,null);assert.equal(h.revoked.length,1);
   await h.app.refresh();await flush();h.listeners['window:pagehide']();assert.equal(h.app.state.avatarUrl,null);assert.equal(h.revoked.length,2);assert.equal(h.get('homeSlackInitials').textContent,'TS');
+});
+
+const smallKey=letter=>letter.repeat(64);
+const inlineAsset=(key,type='image/png',bytes=Buffer.from([137,80,78,71,13,10,26,10]))=>({key,type,data:bytes.toString('base64')});
+const bundledFixture=()=>({...fixture({text:':paws:',author:{name:'Test Staff',avatar:true,avatar_key:smallKey('a')},custom_emojis:[{name:'paws',image:true,key:smallKey('b')}]}),media:[inlineAsset(smallKey('a')),inlineAsset(smallKey('b'),'image/gif',Buffer.from('GIF89a'))]});
+test('small photos and emojis render from the authorized message bundle without extra image requests',async()=>{
+  const h=harness({message:bundledFixture()});await h.settle();
+  assert.deepEqual(h.api.calls.map(call=>call.action),['message']);assert.equal(h.api.calls[0].include_media,true);assert.deepEqual(Array.from(h.api.calls[0].known_media),[]);
+  assert.equal(h.created.length,2);assert.equal(h.app.state.smallMedia.size,2);assert.match(h.get('homeSlackInitials').innerHTML,/blob:test-0/);assert.match(h.get('emoji-paws-0').innerHTML,/blob:test-1/);
+  assert.equal(h.get('homeSlackWidget').getAttribute('data-slack-inline-media'),'2');
+  assert.equal(h.createdBlobs[1].type,'image/gif');assert.deepEqual(Buffer.from(await h.createdBlobs[1].arrayBuffer()),Buffer.from('GIF89a'));
+});
+test('unchanged media are reused after fresh message authorization instead of redownloading on refresh',async()=>{
+  let h;h=harness({handler:body=>{
+    assert.equal(body.action,'message','cached small media must not make additional requests');
+    return {data:{...bundledFixture(),media:body.known_media.length?[]:bundledFixture().media},error:null};
+  }});await h.settle();await h.app.refresh();await flush();
+  assert.deepEqual(h.api.calls.map(call=>call.action),['message','message']);assert.deepEqual(Array.from(h.api.calls[1].known_media),[smallKey('a'),smallKey('b')]);assert.equal(h.created.length,2);assert.equal(h.revoked.length,0);
+  assert.equal(h.get('homeSlackWidget').getAttribute('data-slack-reused-media'),'2');assert.match(h.get('homeSlackInitials').innerHTML,/blob:test-0/);assert.match(h.get('emoji-paws-0').innerHTML,/blob:test-1/);
+  h.signOut();assert.equal(h.app.state.smallMedia.size,0);assert.equal(h.revoked.length,2);
+});
+test('a changed photo revision replaces only that asset even when the Slack timestamp stays the same',async()=>{
+  const h=harness({message:bundledFixture()});await h.settle();const changed=bundledFixture();changed.message.author.avatar_key=smallKey('c');changed.media=[inlineAsset(smallKey('c'))];h.api.message=changed;
+  await h.app.refresh();await flush();assert.deepEqual(h.revoked,['blob:test-0']);assert.equal(h.created.length,3);assert.match(h.get('homeSlackInitials').innerHTML,/blob:test-2/);assert.match(h.get('emoji-paws-0').innerHTML,/blob:test-1/);
+  h.api.message=fixture({text:'A new post with no media'});await h.app.refresh();assert.equal(h.app.state.smallMedia.size,0);assert.equal(new Set(h.revoked).size,3);
+});
+test('invalid or unrelated inline images fall back to existing authenticated requests',async()=>{
+  for(const invalid of [inlineAsset(smallKey('c')),inlineAsset(smallKey('a'),'image/svg+xml',Buffer.from('<svg/>')),{key:smallKey('a'),type:'image/png',data:'bad><base64'},inlineAsset(smallKey('a'),'image/png',Buffer.alloc(65537))]){
+    const data=bundledFixture();data.media=[invalid];data.message.custom_emojis=[];data.message.text='Photo';
+    const h=harness({handler:body=>({data:body.action==='message'?data:new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
+    assert.deepEqual(h.api.calls.map(call=>call.action),['message','avatar']);assert.equal(h.created.length,1);assert.equal(h.api.requests[1].headers.Authorization,'Bearer fixture-user-jwt');
+  }
+});
+test('warm small-media caches cannot survive access denial, changed accounts or late responses after logout',async()=>{
+  const h=harness({message:bundledFixture()});await h.settle();h.api.handler=()=>({data:null,error:{context:new Response(JSON.stringify({error:{code:'ACCESS_DENIED'}}),{status:403,headers:{'Content-Type':'application/json'}})}});await h.app.refresh();assert.equal(h.app.state.smallMedia.size,0);assert.equal(h.revoked.length,2);assert.equal(h.get('homeSlackBody').innerHTML,'');
+  const other=harness({message:bundledFixture()});await other.settle();other.api.session={user:{id:'other-staff'},access_token:'other-jwt'};await other.app.refresh();await flush();assert.deepEqual(Array.from(other.api.calls[1].known_media),[]);assert.ok(other.revoked.includes('blob:test-0')&&other.revoked.includes('blob:test-1'));
+  const pending=deferred(),late=harness({handler:()=>pending.promise});await flush();late.signOut();pending.resolve({data:bundledFixture(),error:null});await flush();assert.equal(late.created.length,0);assert.equal(late.app.state.smallMedia.size,0);
+});
+test('custom emojis are scheduled ahead of attachment galleries and known key requests remain bounded',async()=>{
+  const pending=deferred();const payload=fixture({text:':first: :second:',author:{name:'Test Staff',avatar:true},custom_emojis:[{name:'first',image:true},{name:'second',image:true}],images:[{id:'F1'},{id:'F2'},{id:'F3'},{id:'F4'}]});
+  const h=harness({handler:body=>body.action==='message'?{data:payload,error:null}:pending.promise});await h.settle();assert.deepEqual(h.api.calls.slice(1).map(call=>call.action),['avatar','emoji','emoji']);
+  h.signOut();pending.resolve(new Response('bytes',{headers:{'Content-Type':'image/png'}}));await flush();
+  const many=harness();await many.settle();for(let i=0;i<65;i++)many.app.state.smallMedia.set(i.toString(16).padStart(64,'0'),{url:'blob:cached-'+i,size:1});await many.app.refresh();assert.equal(many.api.calls[1].known_media.length,48);assert.ok(JSON.stringify(many.api.calls[1]).length<4096);
+});
+test('aliases share one bundled image and an oversized combined bundle falls back within its byte budget',async()=>{
+  const alias=fixture({text:':first: :second:',custom_emojis:[{name:'first',image:true,key:smallKey('a')},{name:'second',image:true,key:smallKey('a')}]});alias.media=[inlineAsset(smallKey('a'))];
+  const shared=harness({message:alias});await shared.settle();assert.equal(shared.created.length,1);assert.deepEqual(shared.api.calls.map(call=>call.action),['message']);assert.equal(shared.app.state.emojiUrls.get('first'),shared.app.state.emojiUrls.get('second'));shared.signOut();assert.equal(shared.revoked.length,1);
+  const names=Array.from({length:9},(_,i)=>'custom_'+i),keys=names.map((_,i)=>i.toString(16).padStart(64,'0'));
+  const payload=fixture({text:names.map(name=>':'+name+':').join(' '),custom_emojis:names.map((name,i)=>({name,image:true,key:keys[i]}))});payload.media=keys.map(key=>inlineAsset(key,'image/png',Buffer.alloc(65536)));
+  const limited=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['bytes'],{type:'image/png'}),error:null})});await limited.settle();assert.equal(limited.get('homeSlackWidget').getAttribute('data-slack-inline-media'),'4');assert.equal(limited.api.calls.filter(call=>call.action==='emoji').length,5);
 });

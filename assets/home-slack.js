@@ -5,7 +5,9 @@
   if (!widget) return;
   const $ = id => document.getElementById(id);
   const imageEndpoint = 'https://dppjgglaeieevsfwsbii.supabase.co/functions/v1/hq-slack-general';
-  const state = {userId: null, authEpoch: 0, requestId: 0, imageEpoch: 0, loading: false, lastAttempt: 0, urls: new Map(), emojiUrls: new Map(), avatarUrl: null};
+  const state = {userId: null, authEpoch: 0, requestId: 0, imageEpoch: 0, loading: false, lastAttempt: 0, urls: new Map(), emojiUrls: new Map(), avatarUrl: null, smallMedia: new Map()};
+  const mediaKey=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value)?value:'';
+  const rasterBlob=data=>data instanceof Blob&&/^image\/(png|jpeg|jpg|gif|webp|avif)$/i.test(data.type)&&data.size<=1024*1024;
   const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
   const decode = value => String(value).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
   const emojiText = value => window.PawsSlackEmoji?.toUnicode(String(value ?? '')) ?? String(value ?? '');
@@ -65,7 +67,7 @@
     $('homeSlackRefresh').disabled = state.loading;
     widget.setAttribute('aria-busy',String(state.loading));
   }
-  function clearImages() {
+  function clearImages({keepKeys=new Set()}={}) {
     state.imageEpoch++;
     if ($('homeSlackImageDialog').open) $('homeSlackImageDialog').close();
     $('homeSlackLargeImage').removeAttribute('src');
@@ -73,9 +75,11 @@
     $('homeSlackImageTitle').textContent = '';
     state.urls.forEach(item => URL.revokeObjectURL(item.url));
     state.urls.clear();
-    state.emojiUrls.forEach(url=>URL.revokeObjectURL(url));
+    const managed=new Set([...state.smallMedia.values()].map(item=>item.url));
+    for(const [key,item]of state.smallMedia)if(!keepKeys.has(key)){URL.revokeObjectURL(item.url);state.smallMedia.delete(key);}
+    new Set([...state.emojiUrls.values(),state.avatarUrl].filter(Boolean)).forEach(url=>{if(!managed.has(url))URL.revokeObjectURL(url);});
     state.emojiUrls.clear();
-    if(state.avatarUrl){URL.revokeObjectURL(state.avatarUrl);state.avatarUrl=null;}
+    state.avatarUrl=null;
     const initials=$('homeSlackInitials');initials.textContent=initials.getAttribute('data-initials')||'';
     $('homeSlackBody').querySelectorAll('[data-slack-emoji]').forEach(slot=>{slot.textContent=`:${slot.dataset.slackEmoji}:`;});
     $('homeSlackImages').innerHTML = '';
@@ -84,6 +88,8 @@
   function clearMessage(text) {
     clearImages();
     widget.removeAttribute('data-custom-emoji-status');
+    widget.removeAttribute('data-slack-inline-media');
+    widget.removeAttribute('data-slack-reused-media');
     $('homeSlackMessage').hidden = true;
     $('homeSlackBody').innerHTML = '';
     $('homeSlackAuthor').textContent = '';
@@ -127,6 +133,55 @@
     // Only inspect the HTTP status. Server/provider error details never appear in the widget.
     return [401,403].includes(error?.context?.status);
   }
+  function rememberSmallMedia(data,key) {
+    const known=mediaKey(key)&&state.smallMedia.get(key);if(known)return known.url;
+    const url=URL.createObjectURL(data);
+    const size=[...state.smallMedia.values()].reduce((sum,item)=>sum+item.size,0);
+    if(mediaKey(key)&&data.size<=65536&&state.smallMedia.size<65&&size+data.size<=4*1024*1024)state.smallMedia.set(key,{url,size:data.size});
+    return url;
+  }
+  function forgetSmallMedia(key,url) {
+    if(mediaKey(key)&&state.smallMedia.get(key)?.url===url)state.smallMedia.delete(key);
+    URL.revokeObjectURL(url);
+  }
+  function acceptInlineMedia(items,wanted) {
+    let bytes=0,count=0;
+    for(const item of (Array.isArray(items)?items:[]).slice(0,9)) {
+      const key=mediaKey(item?.key);
+      if(!key||!wanted.has(key)||state.smallMedia.has(key)||typeof item.data!=='string'||item.data.length>87384||!/^[a-zA-Z0-9+/]*={0,2}$/.test(item.data))continue;
+      try {
+        const raw=atob(item.data);if(raw.length>65536||bytes+raw.length>262144)continue;
+        const data=new Blob([Uint8Array.from(raw,character=>character.charCodeAt(0))],{type:String(item.type||'')});
+        if(!rasterBlob(data))continue;
+        const url=rememberSmallMedia(data,key);
+        if(!state.smallMedia.has(key)){URL.revokeObjectURL(url);continue;}
+        bytes+=data.size;count++;
+      }catch{/* A malformed optional bundle falls back to the protected image endpoint. */}
+    }
+    return count;
+  }
+  function showEmoji(name,url,key,valid) {
+    const slots=()=>$('homeSlackBody').querySelectorAll(`[data-slack-emoji="${name}"]`);
+    state.emojiUrls.set(name,url);
+    slots().forEach(slot=>{
+      slot.innerHTML=`<img src="${escape(url)}" alt=":${name}:" title=":${name}:" decoding="async">`;
+      slot.querySelector('img')?.addEventListener('error',()=>{
+        if(!valid())return;
+        slots().forEach(item=>{item.textContent=`:${name}:`;});
+        forgetSmallMedia(key,url);state.emojiUrls.delete(name);
+      },{once:true});
+    });
+  }
+  function showAvatar(url,key,valid) {
+    const slot=$('homeSlackInitials');state.avatarUrl=url;
+    // The adjacent author name identifies this decorative photo to assistive technology.
+    slot.innerHTML=`<img src="${escape(url)}" alt="" decoding="async">`;
+    slot.querySelector('img')?.addEventListener('error',()=>{
+      if(!valid())return;
+      slot.textContent=slot.getAttribute('data-initials')||'';
+      forgetSmallMedia(key,url);state.avatarUrl=null;
+    },{once:true});
+  }
   async function loadImage(file, messageTs, current, imageEpoch) {
     const valid = () => current() && imageEpoch === state.imageEpoch;
     const slot = () => $('homeSlackImages').querySelector(`[data-slack-image="${file.id}"]`);
@@ -167,52 +222,45 @@
       }
     }
   }
-  async function loadEmoji(name,messageTs,current,imageEpoch) {
+  async function loadEmoji(name,messageTs,current,imageEpoch,key) {
     const valid=()=>current()&&imageEpoch===state.imageEpoch;
     const slots=()=>$('homeSlackBody').querySelectorAll(`[data-slack-emoji="${name}"]`);
     try {
+      const cached=mediaKey(key)&&state.smallMedia.get(key);
+      if(cached&&valid()){showEmoji(name,cached.url,key,valid);return;}
       const {data,error}=await invoke({action:'emoji',emoji_name:name,message_ts:messageTs},valid);
       if(!valid())return;
       if(error){
         if(imageError(error)){clearMessage('This Slack update is unavailable.');setStatus('Your Slack access may have changed. Try Refresh.',true);}
         return;
       }
-      if(!(data instanceof Blob)||!/^image\/(png|jpeg|jpg|gif|webp|avif)$/i.test(data.type)||data.size>1024*1024||!slots().length)return;
-      const url=URL.createObjectURL(data);state.emojiUrls.set(name,url);
-      slots().forEach(slot=>{
-        slot.innerHTML=`<img src="${escape(url)}" alt=":${name}:" title=":${name}:" decoding="async">`;
-        slot.querySelector('img')?.addEventListener('error',()=>{
-          if(!valid())return;
-          slots().forEach(item=>{item.textContent=`:${name}:`;});
-          URL.revokeObjectURL(url);state.emojiUrls.delete(name);
-        },{once:true});
-      });
+      if(!rasterBlob(data)||!slots().length)return;
+      showEmoji(name,rememberSmallMedia(data,key),key,valid);
     }catch{/* Keep the readable shortcode if optional custom emoji loading fails. */}
   }
-  async function loadAvatar(messageTs,current,imageEpoch) {
+  async function loadAvatar(messageTs,current,imageEpoch,key) {
     const valid=()=>current()&&imageEpoch===state.imageEpoch;
     try {
+      const cached=mediaKey(key)&&state.smallMedia.get(key);
+      if(cached&&valid()){showAvatar(cached.url,key,valid);return;}
       const {data,error}=await invoke({action:'avatar',message_ts:messageTs},valid);
       if(!valid())return;
       if(error){
         if(imageError(error)){clearMessage('This Slack update is unavailable.');setStatus('Your Slack access may have changed. Try Refresh.',true);}
         return;
       }
-      if(!(data instanceof Blob)||!/^image\/(png|jpeg|jpg|gif|webp|avif)$/i.test(data.type)||data.size>1024*1024)return;
-      const slot=$('homeSlackInitials'),url=URL.createObjectURL(data);state.avatarUrl=url;
-      // The adjacent author name identifies this decorative photo to assistive technology.
-      slot.innerHTML=`<img src="${escape(url)}" alt="" decoding="async">`;
-      slot.querySelector('img')?.addEventListener('error',()=>{
-        if(!valid())return;
-        slot.textContent=slot.getAttribute('data-initials')||'';
-        URL.revokeObjectURL(url);state.avatarUrl=null;
-      },{once:true});
+      if(!rasterBlob(data))return;
+      showAvatar(rememberSmallMedia(data,key),key,valid);
     }catch{/* Keep the author's initials if the optional profile image is unavailable. */}
   }
   function render(payload,current) {
-    clearImages();
     const message = payload?.message;
     if (!message) {clearMessage('No messages in #general yet.'); return;}
+    const customImages=(Array.isArray(message.custom_emojis)?message.custom_emojis:[]).slice(0,64).filter(item=>item?.image===true&&/^[a-zA-Z0-9_+\-]{1,100}$/.test(item?.name||''));
+    const wanted=new Set([message.author?.avatar===true?message.author.avatar_key:'',...customImages.map(item=>item.key)].map(mediaKey).filter(Boolean));
+    clearImages({keepKeys:wanted});
+    widget.setAttribute('data-slack-reused-media',String(state.smallMedia.size));
+    widget.setAttribute('data-slack-inline-media',String(acceptInlineMedia(payload.media,wanted)));
     widget.setAttribute('data-custom-emoji-status',message.custom_emoji_ready===true?'ready':message.custom_emoji_ready===false?'unavailable':'unknown');
     const name = String(message.author?.name || 'Slack member').slice(0,200);
     const date = new Date(Number(message.ts) * 1000);
@@ -245,7 +293,8 @@
     const imageEpoch = state.imageEpoch;
     // Keep private image requests bounded, including when a message contains a gallery.
     const emojiNames=[...new Set([...$('homeSlackBody').querySelectorAll('[data-slack-emoji]')].map(slot=>slot.dataset.slackEmoji))].slice(0,64);
-    const jobs=[...(message.author?.avatar===true?[()=>loadAvatar(message.ts,current,imageEpoch)]:[]),...images.map(file=>()=>loadImage(file,message.ts,current,imageEpoch)),...emojiNames.map(name=>()=>loadEmoji(name,message.ts,current,imageEpoch))];
+    const keys=new Map(customImages.map(item=>[item.name,mediaKey(item.key)]));
+    const jobs=[...(message.author?.avatar===true?[()=>loadAvatar(message.ts,current,imageEpoch,message.author.avatar_key)]:[]),...emojiNames.map(name=>()=>loadEmoji(name,message.ts,current,imageEpoch,keys.get(name))),...images.map(file=>()=>loadImage(file,message.ts,current,imageEpoch))];
     let next = 0;
     const worker = async () => {while (current() && imageEpoch === state.imageEpoch && next < jobs.length) await jobs[next++]();};
     for (let i=0;i<Math.min(3,jobs.length);i++) void worker();
@@ -269,8 +318,9 @@
         return;
       }
       if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(auth.session);
+      if(state.userId&&state.userId!==auth.session.user.id)clearMessage('Loading the latest Slack update…');
       state.userId = auth.session.user.id;
-      const {data,error} = await invoke({action:'message'});
+      const {data,error} = await invoke({action:'message',include_media:true,known_media:[...state.smallMedia.keys()].slice(0,48)});
       if (!current()) return;
       if (error || !data || !Object.hasOwn(data,'message')) throw error || new Error('Invalid response');
       render(data,current);

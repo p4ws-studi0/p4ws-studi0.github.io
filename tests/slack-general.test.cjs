@@ -3,6 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const {createHash}=require('node:crypto');
 const source=fs.readFileSync(path.join(__dirname,'../supabase/functions/hq-slack-general/index.ts'),'utf8');
 const loaded=import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const UUID='00000000-0000-4000-8000-000000000001';
@@ -447,4 +448,112 @@ test('avatar proxy enforces raster MIME, image signatures and the one MiB limit 
  const advertised=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(PNG,{headers:{'Content-Type':'image/png','Content-Length':String(1024*1024+1)}}):undefined});await errorIs(await advertised.request(avatarRequest()),413,'IMAGE_UNAVAILABLE');
  const max=new Uint8Array(1024*1024);max.set(PNG);const exact=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(max,{headers:{'Content-Type':'image/png'}}):undefined});assert.equal((await exact.request(avatarRequest())).status,200);
  const failure=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>{if(new URL(call.url).hostname==='avatars.slack-edge.com')throw new Error('fixture-private-token sensitive CDN detail');}});await errorIs(await failure.request(avatarRequest()),502,'UNAVAILABLE');
+});
+
+const keyOf=url=>createHash('sha256').update(url).digest('hex');
+const inlineRequest=(known=[])=>({action:'message',include_media:true,known_media:known});
+const flush=()=>new Promise(resolve=>setImmediate(resolve));
+async function until(condition){for(let step=0;step<200;step++){if(condition())return;await flush();}assert.fail('Expected asynchronous work to start');}
+
+test('inline media is opt-in and includes opaque image keys plus exact validated bytes without exposing source URLs',async()=>{
+ const h=await environment({messages:[message({text:':paws: :party: :thanks:'})],users:{[AUTHOR]:authorWithAvatar()},emojis:{paws:emojiURL('paws'),party:'alias:paws',thanks:'alias:heart'}});
+ const ordinary=await (await h.request()).json();assert.equal(Object.hasOwn(ordinary,'media'),false);assert.equal(Object.hasOwn(ordinary.message.author,'avatar_key'),false);assert.ok(ordinary.message.custom_emojis.every(item=>!Object.hasOwn(item,'key')));assert.equal(avatarCalls(h).length+emojiCalls(h).length,0);
+ const response=await h.request(inlineRequest()),body=await response.json();assert.equal(response.status,200);assert.equal(body.message.author.avatar_key,keyOf(avatarURL));assert.deepEqual(body.message.custom_emojis,[{name:'paws',image:true,key:keyOf(emojiURL('paws'))},{name:'party',image:true,key:keyOf(emojiURL('paws'))},{name:'thanks',alias:'heart'}]);
+ assert.deepEqual(body.media.map(item=>item.key),[keyOf(avatarURL),keyOf(emojiURL('paws'))]);for(const item of body.media){assert.equal(item.type,'image/png');assert.deepEqual(new Uint8Array(Buffer.from(item.data,'base64')),PNG);assert.match(item.key,/^[a-f0-9]{64}$/);}
+ assert.doesNotMatch(JSON.stringify(body),/avatars\.slack-edge\.com|emoji\.slack-edge\.com|fixture-private-token|url_private/);assert.equal(avatarCalls(h).length,1);assert.equal(emojiCalls(h).length,1);
+ const empty=await environment({messages:[]});const noMessage=await (await empty.request(inlineRequest())).json();assert.equal(noMessage.message,null);assert.deepEqual(noMessage.media,[]);
+});
+
+test('known media keys skip inline downloads but never remove current metadata keys or bypass authentication',async()=>{
+ const h=await environment({messages:[message({text:':paws:'})],users:{[AUTHOR]:authorWithAvatar()},emojis:{paws:emojiURL('paws')}});
+ const response=await h.request(inlineRequest([keyOf(avatarURL),keyOf(emojiURL('paws'))])),body=await response.json();assert.deepEqual(body.media,[]);assert.equal(body.message.author.avatar_key,keyOf(avatarURL));assert.equal(body.message.custom_emojis[0].key,keyOf(emojiURL('paws')));assert.equal(avatarCalls(h).length+emojiCalls(h).length,0);
+ h.state.approved=false;await errorIs(await h.request(inlineRequest([keyOf(avatarURL)])),403,'ACCESS_DENIED');assert.equal(avatarCalls(h).length,0);
+ const invalid=await environment({users:{[AUTHOR]:authorWithAvatar()}});const invalidKnown=await (await invalid.request(inlineRequest(['not-a-key',null,123,keyOf(avatarURL).toUpperCase()]))).json();assert.equal(invalidKnown.media.length,1);assert.equal(avatarCalls(invalid).length,1);
+ const bounded=await environment({users:{[AUTHOR]:authorWithAvatar()}});const beyondLimit=await (await bounded.request(inlineRequest([...Array(65).fill('x'),keyOf(avatarURL)]))).json();assert.equal(beyondLimit.media.length,1,'a key beyond the bounded known-media list is ignored');
+});
+
+test('inline selection prioritizes the avatar and limits emoji downloads to eight distinct URLs while keying all entries',async()=>{
+ const names=Array.from({length:12},(_,index)=>`bundle_${index}`),h=await environment({messages:[message({text:':alias_first: '+names.map(name=>`:${name}:`).join(' ')})],users:{[AUTHOR]:authorWithAvatar()},emojis:{alias_first:`alias:${names[0]}`,...Object.fromEntries(names.map(name=>[name,emojiURL(name)]))}});
+ const body=await (await h.request(inlineRequest())).json();assert.equal(body.media.length,9);assert.equal(body.media[0].key,keyOf(avatarURL));assert.equal(new Set(body.media.map(item=>item.key)).size,9);assert.equal(avatarCalls(h).length,1);assert.equal(emojiCalls(h).length,8);assert.equal(body.message.custom_emojis.length,13);assert.ok(body.message.custom_emojis.every(item=>/^[a-f0-9]{64}$/.test(item.key)));assert.equal(body.message.custom_emojis[0].key,body.message.custom_emojis[1].key);
+ assert.ok(body.message.custom_emojis.slice(-4).every(item=>!body.media.some(asset=>asset.key===item.key)),'later emoji retain keys for protected fallback requests');
+});
+
+test('inline media applies per-item and total byte budgets while retaining larger valid assets for protected fallback',async()=>{
+ const names=Array.from({length:8},(_,index)=>`sized_${index}`),small=new Uint8Array(60*1024);small.set(PNG);
+ const h=await environment({messages:[message({text:names.map(name=>`:${name}:`).join(' ')})],users:{[AUTHOR]:authorWithAvatar()},emojis:Object.fromEntries(names.map(name=>[name,emojiURL(name)])),intercept:call=>['avatars.slack-edge.com','emoji.slack-edge.com'].includes(new URL(call.url).hostname)?new Response(small,{headers:{'Content-Type':'image/png'}}):undefined});
+ const body=await (await h.request(inlineRequest())).json(),sizes=body.media.map(item=>Buffer.from(item.data,'base64').length);assert.equal(body.media.length,4);assert.ok(sizes.every(size=>size<=64*1024));assert.ok(sizes.reduce((sum,size)=>sum+size,0)<=256*1024);assert.equal(body.media[0].key,keyOf(avatarURL));
+ const large=new Uint8Array(64*1024+1);large.set(PNG);const fallback=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?new Response(large,{headers:{'Content-Type':'image/png'}}):undefined});
+ assert.deepEqual((await (await fallback.request(inlineRequest())).json()).media,[]);assert.equal(avatarCalls(fallback).length,1);const response=await fallback.request(avatarRequest());assert.equal(response.status,200);assert.equal(Number(response.headers.get('Content-Length')),large.length);assert.equal(avatarCalls(fallback).length,1,'the larger protected response uses the validated byte cache');
+});
+
+test('metadata lookups start independently and hydrate files with at most three simultaneous upstream requests',async()=>{
+ let release;const gate=new Promise(resolve=>{release=resolve;}),started=new Set();let activeFiles=0,maxFiles=0;
+ const ids=Array.from({length:6},(_,index)=>`FFILE${index}`),h=await environment({messages:[message({files:ids.map(id=>({id}))})],files:Object.fromEntries(ids.map(id=>[id,file({id})])),intercept:async call=>{
+  if(call.api==='users.info'&&call.params.user===AUTHOR||call.api==='chat.getPermalink'||call.api==='emoji.list'){started.add(call.api==='users.info'?'author':call.api);await gate;}
+  if(call.api==='files.info'){started.add(call.params.file);activeFiles++;maxFiles=Math.max(maxFiles,activeFiles);try{await gate;}finally{activeFiles--;}}
+ }});
+ const request=h.request();try{await until(()=>started.has('author')&&started.has('chat.getPermalink')&&started.has('emoji.list')&&ids.slice(0,3).every(id=>started.has(id)));assert.equal(maxFiles,3);assert.equal(h.calls('files.info').length,3);}finally{release();}
+ const response=await request,body=await response.json();assert.equal(response.status,200);assert.deepEqual(body.message.images.map(item=>item.id),ids);assert.equal(h.calls('files.info').length,6);assert.equal(maxFiles,3);
+});
+
+test('inline raster workers are limited to three simultaneous CDN downloads',async()=>{
+ let release;const gate=new Promise(resolve=>{release=resolve;});let active=0,maximum=0;
+ const names=Array.from({length:8},(_,index)=>`parallel_${index}`),h=await environment({messages:[message({text:names.map(name=>`:${name}:`).join(' ')})],users:{[AUTHOR]:authorWithAvatar()},emojis:Object.fromEntries(names.map(name=>[name,emojiURL(name)])),intercept:async call=>{
+  if(['avatars.slack-edge.com','emoji.slack-edge.com'].includes(new URL(call.url).hostname)){active++;maximum=Math.max(maximum,active);try{await gate;}finally{active--;}return new Response(PNG,{headers:{'Content-Type':'image/png'}});}
+ }});
+ const request=h.request(inlineRequest());try{await until(()=>active===3);assert.equal(maximum,3);assert.equal(avatarCalls(h).length+emojiCalls(h).length,3);}finally{release();}
+ const body=await (await request).json();assert.equal(body.media.length,9);assert.equal(maximum,3);
+});
+
+test('validated byte cache is shared by bundled media and protected actions but never bypasses current approval or post binding',async()=>{
+ const h=await environment({messages:[message({text:':paws:'})],users:{[AUTHOR]:authorWithAvatar()},emojis:{paws:emojiURL('paws')}});assert.equal((await h.request(inlineRequest())).status,200);assert.equal(avatarCalls(h).length+emojiCalls(h).length,2);
+ assert.equal((await h.request(avatarRequest())).status,200);assert.equal((await h.request(emojiRequest())).status,200);assert.equal((await h.request(inlineRequest())).status,200);assert.equal(avatarCalls(h).length+emojiCalls(h).length,2);
+ h.state.approved=false;await errorIs(await h.request(avatarRequest()),403,'ACCESS_DENIED');await errorIs(await h.request(inlineRequest()),403,'ACCESS_DENIED');h.state.approved=true;
+ h.state.messages=[message({ts:'1770000001.000123',text:'Newer post'})];h.advance(30001);await errorIs(await h.request(emojiRequest()),404,'IMAGE_UNAVAILABLE');await errorIs(await h.request(avatarRequest()),404,'IMAGE_UNAVAILABLE');assert.equal(avatarCalls(h).length+emojiCalls(h).length,2);
+ h.advance(270000);assert.equal((await h.request(avatarRequest('1770000001.000123'))).status,200);assert.equal(avatarCalls(h).length,2,'bytes expire after five minutes even while the account remains authorized');
+});
+
+test('simultaneous protected asset requests coalesce one CDN download and failed assets are not cached',async()=>{
+ let release;const gate=new Promise(resolve=>{release=resolve;});
+ const h=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:async call=>{if(new URL(call.url).hostname==='avatars.slack-edge.com'){await gate;return new Response(PNG,{headers:{'Content-Type':'image/png'}});}}});
+ const first=h.request(avatarRequest()),second=h.request(avatarRequest());try{await until(()=>avatarCalls(h).length===1);await flush();assert.equal(avatarCalls(h).length,1);}finally{release();}assert.ok((await Promise.all([first,second])).every(response=>response.status===200));assert.equal(avatarCalls(h).length,1);
+ let count=0;const failure=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>new URL(call.url).hostname==='avatars.slack-edge.com'?(++count===1?new Response('not-image',{headers:{'Content-Type':'image/png'}}):new Response(PNG,{headers:{'Content-Type':'image/png'}})):undefined});
+ assert.deepEqual((await (await failure.request(inlineRequest())).json()).media,[]);assert.equal((await failure.request(avatarRequest())).status,200);assert.equal(avatarCalls(failure).length,2);
+});
+
+test('asset URL revisions produce new opaque keys and inline bytes even when the browser reports an older version as known',async()=>{
+ const h=await environment({users:{[AUTHOR]:authorWithAvatar()}}),first=await (await h.request(inlineRequest())).json(),oldKey=first.message.author.avatar_key,newUrl='https://avatars.slack-edge.com/2026-10-25/updated_author_72.png';
+ h.state.users[AUTHOR]=authorWithAvatar({image_72:newUrl});h.advance(30001);const next=await (await h.request(inlineRequest([oldKey]))).json();assert.notEqual(next.message.author.avatar_key,oldKey);assert.equal(next.message.author.avatar_key,keyOf(newUrl));assert.deepEqual(next.media.map(item=>item.key),[keyOf(newUrl)]);assert.equal(avatarCalls(h).length,2);assert.doesNotMatch(JSON.stringify(next),/avatars\.slack-edge\.com/);
+});
+
+test('small-media cache evicts by both its 64-entry limit and eight MiB byte budget',async()=>{
+ const names=Array.from({length:64},(_,index)=>`cache_${index}`),h=await environment({messages:[message({text:names.map(name=>`:${name}:`).join(' ')})],users:{[AUTHOR]:authorWithAvatar()},emojis:Object.fromEntries(names.map(name=>[name,emojiURL(name)]))});
+ for(const name of names)assert.equal((await h.request(emojiRequest(name))).status,200);assert.equal(emojiCalls(h).length,64);assert.equal((await h.request(avatarRequest())).status,200);assert.equal((await h.request(emojiRequest(names[0]))).status,200);assert.equal(emojiCalls(h).length,65,'adding a 65th asset evicts the oldest entry');
+ const large=new Uint8Array(1024*1024);large.set(PNG);const budget=await environment({messages:[message({text:names.slice(0,9).map(name=>`:${name}:`).join(' ')})],emojis:Object.fromEntries(names.slice(0,9).map(name=>[name,emojiURL(name)])),intercept:call=>new URL(call.url).hostname==='emoji.slack-edge.com'?new Response(large,{headers:{'Content-Type':'image/png'}}):undefined});
+ for(const name of names.slice(0,9))assert.equal((await budget.request(emojiRequest(name))).status,200);assert.equal(emojiCalls(budget).length,9);assert.equal((await budget.request(emojiRequest(names[0]))).status,200);assert.equal(emojiCalls(budget).length,10,'nine one-MiB assets cannot remain cached together');
+});
+
+test('slow optional inline downloads abort within the shared deadline and do not poison later protected fallback',async()=>{
+ let aborted=0;const h=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:call=>{
+  if(new URL(call.url).hostname==='avatars.slack-edge.com')return new Promise((resolve,reject)=>{call.signal.addEventListener('abort',()=>{aborted++;reject(new DOMException('Aborted','AbortError'));},{once:true});});
+ }}),start=performance.now(),response=await h.request(inlineRequest()),body=await response.json();
+ assert.equal(response.status,200);assert.deepEqual(body.media,[]);assert.equal(body.message.author.avatar_key,keyOf(avatarURL));assert.equal(aborted,1);assert.ok(performance.now()-start<2500,'optional assets cannot consume the normal ten-second proxy timeout');
+ h.state.intercept=null;assert.equal((await h.request(avatarRequest())).status,200);assert.equal(avatarCalls(h).length,2);
+});
+
+test('an inline deadline cannot abort a concurrent protected request sharing the same raster download',async()=>{
+ let release,aborted=false;const gate=new Promise(resolve=>{release=resolve;}),h=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:async call=>{
+  if(new URL(call.url).hostname==='avatars.slack-edge.com'){call.signal.addEventListener('abort',()=>{aborted=true;},{once:true});await gate;return new Response(PNG,{headers:{'Content-Type':'image/png'}});}
+ }});
+ const bundled=h.request(inlineRequest());await until(()=>avatarCalls(h).length===1);const protectedRequest=h.request(avatarRequest());await flush();await flush();
+ try{const body=await (await bundled).json();assert.deepEqual(body.media,[]);assert.equal(aborted,false,'one subscriber deadline cannot cancel another authorized viewer');}finally{release();}
+ assert.equal((await protectedRequest).status,200);assert.equal(avatarCalls(h).length,1);
+});
+
+test('late upstream completion after an inline deadline cannot mutate a sent payload or enter the byte cache',async()=>{
+ let release;const gate=new Promise(resolve=>{release=resolve;}),h=await environment({users:{[AUTHOR]:authorWithAvatar()},intercept:async call=>{
+  if(new URL(call.url).hostname==='avatars.slack-edge.com'){await gate;return new Response(PNG,{headers:{'Content-Type':'image/png'}});}
+ }});
+ const response=await h.request(inlineRequest()),body=await response.json();assert.deepEqual(body.media,[]);release();await flush();await flush();assert.deepEqual(body.media,[]);
+ h.state.intercept=null;assert.equal((await h.request(avatarRequest())).status,200);assert.equal(avatarCalls(h).length,2,'an aborted optional download does not become a hidden cached success');
 });
