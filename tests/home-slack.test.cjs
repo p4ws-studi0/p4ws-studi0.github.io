@@ -8,24 +8,42 @@ const emojiSource = fs.readFileSync(path.join(__dirname,'../assets/slack-emoji.j
 const fixture = (patch={}) => ({message:{ts:'1790953200.000001',text:'Hello *team*',author:{name:'Test Staff'},permalink:'https://paws.slack.com/archives/C1/p1790953200000001',images:[],files:[],...patch},updated_at:'2026-10-02T15:00:00Z'});
 const deferred = () => {let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
 async function flush(){for(let pass=0;pass<3;pass++){for(let i=0;i<60;i++)await Promise.resolve();await new Promise(setImmediate);}}
-function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_token:'fixture-user-jwt'},emoji=true}={}) {
+function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_token:'fixture-user-jwt'},emoji=true,access}={}) {
   const nodes=new Map(),listeners={},auth=[],timers=new Map(),intervals=[],created=[],createdBlobs=[],revoked=[];
+  let dynamicId=0;
+  const escape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const decode=value=>String(value).replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
   function node(id) {
     if (nodes.has(id)) return nodes.get(id);
     const classes=new Set(),events={},attributes={};
-    const n={id,hidden:false,disabled:false,open:false,innerHTML:'',textContent:'',attributes,events,
+    const n={id,hidden:false,disabled:false,open:false,textContent:'',attributes,events,children:[],parentNode:null,
       classList:{add:k=>classes.add(k),remove:k=>classes.delete(k),toggle(k,on){if(on)classes.add(k);else classes.delete(k);}},
       addEventListener(name,fn){(events[name]??=[]).push(fn);},
       setAttribute(k,v){attributes[k]=v;},getAttribute(k){return attributes[k]??null;},removeAttribute(k){delete attributes[k];delete n[k];},
       showModal(){n.open=true;},close(){n.open=false;},focus(){},
-      querySelector(selector){if(selector==='img')return n.innerHTML.includes('<img ')?node(id+'-img'):null;const image=selector.match(/data-slack-image="(.*?)"/)?.[1];return image&&n.innerHTML.includes(`data-slack-image="${image}"`)?node('image-'+image):null;},
+      remove(){if(n.parentNode)n.parentNode.children=n.parentNode.children.filter(child=>child!==n);n.parentNode=null;},
+      replaceChildren(...children){n.children=children;for(const child of children)child.parentNode=n;},
+      querySelector(selector){if(selector==='img')return n.childImage||(n.innerHTML.includes('<img ')?node(id+'-img'):null);if(selector==='span')return n.childCaption||null;const image=selector.match(/data-slack-image="(.*?)"/)?.[1];return n.children.find(child=>child.dataset?.slackImage===image)||(image&&n.innerHTML.includes(`data-slack-image="${image}"`)?node('image-'+image):null);},
       querySelectorAll(selector){
         const name=selector.match(/data-slack-emoji="(.*?)"/)?.[1];
         return [...n.innerHTML.matchAll(/<span class="home-slack-emoji" data-slack-emoji="([^"]+)">/g)].filter(match=>!name||match[1]===name).map((match,index)=>{const slot=node(`emoji-${match[1]}-${index}`);slot.dataset={slackEmoji:match[1]};return slot;});
       }
-    };nodes.set(id,n);return n;
+    };
+    n.dataset=new Proxy({}, {set(target,key,value){target[key]=value;if(key==='slackImage')nodes.set('image-'+value,n);return true;}});
+    let markup='';Object.defineProperty(n,'innerHTML',{get(){
+      if(n.children.length)return n.children.map(child=>`<button type="button" data-slack-image="${escape(child.dataset.slackImage)}">${child.innerHTML}</button>`).join('');
+      if(n.childImage)return `<img src="${escape(n.childImage.src)}" alt="${escape(n.childImage.alt)}" loading="lazy" decoding="async"><span>${escape(n.childCaption.textContent)}</span>`;
+      return markup;
+    },set(value){
+      markup=value;n.children=[];n.childImage=null;n.childCaption=null;
+      if(n.tagName==='BUTTON'&&value.startsWith('<img ')){
+        n.childImage=node(id+'-img-'+(++dynamicId));n.childImage.src=decode(value.match(/src="([^"]*)"/)?.[1]||'');n.childImage.alt=decode(value.match(/alt="([^"]*)"/)?.[1]||'');
+        n.childCaption=node(id+'-caption-'+dynamicId);n.childCaption.textContent=decode(value.match(/<span>([\s\S]*?)<\/span>/)?.[1]||'');
+      }
+    }});
+    nodes.set(id,n);return n;
   }
-  const api={calls:[],requests:[],session,message,handler,now:Date.parse('2026-10-02T15:00:00Z')};
+  const api={calls:[],requests:[],session,message,handler,access,membershipChecks:0,sessionChecks:0,now:Date.parse('2026-10-02T15:00:00Z')};
   async function respond(body) {
     api.calls.push(body);
     const result=api.handler ? await api.handler(body) : {data:api.message,error:null};
@@ -48,17 +66,17 @@ function harness({message=fixture(),handler,session={user:{id:'staff-1'},access_
     const data=type==='application/json'?await response.json():['application/octet-stream','application/pdf'].includes(type)?await response.blob():await response.text();
     return {data,error:null,response};
   }
-  const client={auth:{async getSession(){return {data:{session:api.session},error:null};},onAuthStateChange(fn){auth.push(fn);}},functions:{async invoke(name,{body}){return sdkInvoke(body);}}};
+  const client={auth:{async getSession(){api.sessionChecks++;return {data:{session:api.session},error:null};},onAuthStateChange(fn){auth.push(fn);}},functions:{async invoke(name,{body}){return sdkInvoke(body);}}};
   const fetch=async(url,options)=>{
     const body=JSON.parse(options.body);api.requests.push({transport:'fetch',url,body,...options});
     return respond(body);
   };
-  const document={hidden:false,getElementById:node,addEventListener(name,fn){listeners['document:'+name]=fn;}};
+  const document={hidden:false,getElementById:node,createElement(tag){const created=node('dynamic-'+(++dynamicId));created.tagName=tag.toUpperCase();return created;},addEventListener(name,fn){listeners['document:'+name]=fn;}};
   const window={addEventListener(name,fn){listeners['window:'+name]=fn;}};
   class TestURL extends URL {static createObjectURL(blob){const url='blob:test-'+created.length;created.push(url);createdBlobs.push(blob);return url;}static revokeObjectURL(url){revoked.push(url);}}
   class TestDate extends Date {constructor(...args){super(...(args.length?args:[api.now]));}static now(){return api.now;}}
   let timerId=0;
-  const context=vm.createContext({document,window,supabaseClient:client,URL:TestURL,Date:TestDate,Blob,AbortController,fetch,Intl,console,atob,
+  const context=vm.createContext({document,window,supabaseClient:client,ensureHqWorkspaceAccess:async session=>{api.membershipChecks++;if(api.access)return api.access(session);return {allowed:true};},URL:TestURL,Date:TestDate,Blob,AbortController,fetch,Intl,console,atob,
     setTimeout(fn,delay){timers.set(++timerId,{fn,delay});return timerId;},clearTimeout(id){timers.delete(id);},setInterval(fn,delay){intervals.push({fn,delay});}});
   if(emoji)vm.runInContext(emojiSource,context);
   vm.runInContext(source.replace("  $('homeSlackRefresh').addEventListener", "  globalThis.__slack = {state,refresh,formatText,safeURL,clearImages};\n  $('homeSlackRefresh').addEventListener"),context);
@@ -104,7 +122,7 @@ test('network/access failures clear earlier private text, links, and images',asy
   h.api.handler=()=>{throw Error('raw sensitive provider information');};await h.app.refresh();
   assert.ok(!h.get('homeSlackStatus').textContent.includes('raw sensitive'));
 });
-test('images use authenticated blob requests, accessible enlargement, and revoke on refresh/logout',async()=>{
+test('images use authenticated blob requests, preserve enlargement on unchanged refresh, and revoke on logout',async()=>{
   const payload=fixture({images:[{id:'F123',title:'Playtime',alt:'Dogs playing'}]});
   const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['image bytes'],{type:'image/png'}),error:null})});await h.settle();
   assert.deepEqual(h.api.calls.map(c=>c.action),['message','image']);
@@ -112,8 +130,8 @@ test('images use authenticated blob requests, accessible enlargement, and revoke
   assert.equal(h.created.length,1);assert.match(h.get('image-F123').innerHTML,/alt="Dogs playing"/);
   await h.click('homeSlackImages',{target:{closest:()=>({dataset:{slackImage:'F123'}})}});
   assert.equal(h.get('homeSlackImageDialog').open,true);assert.equal(h.get('homeSlackLargeImage').src,'blob:test-0');
-  await h.app.refresh();await flush();assert.ok(h.revoked.includes('blob:test-0'));assert.equal(h.get('homeSlackImageDialog').open,false);
-  h.signOut();assert.equal(h.get('homeSlackMessage').hidden,true);assert.equal(h.app.state.urls.size,0);assert.equal(h.revoked.length,2);
+  await h.app.refresh();await flush();assert.equal(h.revoked.length,0);assert.equal(h.get('homeSlackImageDialog').open,true);assert.equal(h.created.length,1);
+  h.signOut();assert.equal(h.get('homeSlackMessage').hidden,true);assert.equal(h.app.state.urls.size,0);assert.equal(h.revoked.length,1);assert.equal(h.get('homeSlackImageDialog').open,false);
 });
 test('image bytes bypass SDK text parsing and use a fresh user JWT without cookies or URL credentials',async()=>{
   const bytes=Uint8Array.from([137,80,78,71,13,10,26,10,255,254,128,0,195,40]);
@@ -283,7 +301,7 @@ test('late profile photo responses never reappear after a newer post or workspac
 test('photo decode errors restore initials and page exit releases successful photos',async()=>{
   const h=harness({handler:body=>({data:body.action==='message'?fixture({author:{name:'Test Staff',avatar:true}}):new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
   h.get('homeSlackInitials-img').events.error[0]();assert.equal(h.get('homeSlackInitials').textContent,'TS');assert.equal(h.app.state.avatarUrl,null);assert.equal(h.revoked.length,1);
-  await h.app.refresh();await flush();h.listeners['window:pagehide']();assert.equal(h.app.state.avatarUrl,null);assert.equal(h.revoked.length,2);assert.equal(h.get('homeSlackInitials').textContent,'TS');
+  await h.app.refresh();await flush();h.listeners['window:pagehide']();assert.equal(h.app.state.avatarUrl,null);assert.equal(h.revoked.length,2);assert.equal(h.get('homeSlackInitials').textContent,'');assert.equal(h.get('homeSlackBody').innerHTML,'');
 });
 
 const smallKey=letter=>letter.repeat(64);
@@ -334,4 +352,109 @@ test('aliases share one bundled image and an oversized combined bundle falls bac
   const names=Array.from({length:9},(_,i)=>'custom_'+i),keys=names.map((_,i)=>i.toString(16).padStart(64,'0'));
   const payload=fixture({text:names.map(name=>':'+name+':').join(' '),custom_emojis:names.map((name,i)=>({name,image:true,key:keys[i]}))});payload.media=keys.map(key=>inlineAsset(key,'image/png',Buffer.alloc(65536)));
   const limited=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['bytes'],{type:'image/png'}),error:null})});await limited.settle();assert.equal(limited.get('homeSlackWidget').getAttribute('data-slack-inline-media'),'4');assert.equal(limited.api.calls.filter(call=>call.action==='emoji').length,5);
+});
+
+test('50 unchanged authorized refreshes reuse the same attachment bytes, blob URL, button and image node',async()=>{
+  const payload=fixture({images:[{id:'F1',title:'Playtime',alt:'Dogs playing'}]});
+  const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['image bytes'],{type:'image/png'}),error:null})});await h.settle();
+  const button=h.get('image-F1'),image=button.querySelector('img');
+  for(let i=0;i<50;i++){h.api.now+=60000;await h.app.refresh({automatic:true});}
+  await flush();
+  assert.equal(h.api.calls.filter(call=>call.action==='message').length,51);assert.equal(h.api.membershipChecks,51);
+  assert.equal(h.api.calls.filter(call=>call.action==='image').length,1);assert.equal(h.api.requests.filter(request=>request.transport==='fetch').length,1);
+  assert.equal(h.created.length,1);assert.equal(h.revoked.length,0);assert.equal(h.get('image-F1'),button);assert.equal(button.querySelector('img'),image);
+  assert.equal(h.app.state.urls.get('F1').url,'blob:test-0');assert.equal(h.app.state.urls.get('F1').size,11);assert.equal(h.app.state.attachmentPending.size,0);
+});
+test('editing text, caption or alt text keeps the attachment and lightbox while updating readable metadata',async()=>{
+  let payload=fixture({images:[{id:'F1',title:'Original',alt:'Original alt'}]});
+  const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
+  const button=h.get('image-F1'),image=button.querySelector('img');
+  await h.click('homeSlackImages',{target:{closest:()=>({dataset:{slackImage:'F1'}})}});
+  payload=fixture({text:'Edited post',images:[{id:'F1',title:'New <caption>',alt:'New alt "quoted"'}]});await h.app.refresh();await flush();
+  assert.equal(h.get('homeSlackBody').innerHTML,'Edited post');assert.equal(h.get('image-F1'),button);assert.equal(button.querySelector('img'),image);
+  assert.equal(image.alt,'New alt "quoted"');assert.equal(button.querySelector('span').textContent,'New <caption>');assert.equal(button.getAttribute('aria-label'),'Enlarge image: New <caption>');
+  assert.equal(h.get('homeSlackImageDialog').open,true);assert.equal(h.get('homeSlackLargeImage').src,'blob:test-0');assert.equal(h.get('homeSlackLargeImage').alt,'New alt "quoted"');assert.equal(h.get('homeSlackImageTitle').textContent,'New <caption>');
+  assert.equal(h.api.calls.filter(call=>call.action==='image').length,1);assert.equal(h.created.length,1);assert.equal(h.revoked.length,0);
+});
+test('a new latest message replaces attachment bytes even if Slack reuses the same file ID',async()=>{
+  let payload=fixture({images:[{id:'F1'}]});const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
+  const oldButton=h.get('image-F1');await h.click('homeSlackImages',{target:{closest:()=>({dataset:{slackImage:'F1'}})}});
+  payload=fixture({ts:'1790953260.000002',images:[{id:'F1'}]});await h.app.refresh();await flush();
+  assert.deepEqual(h.api.calls.filter(call=>call.action==='image').map(call=>call.message_ts),['1790953200.000001','1790953260.000002']);
+  assert.notEqual(h.get('image-F1'),oldButton);assert.deepEqual(h.revoked,['blob:test-0']);assert.equal(h.app.state.urls.get('F1').url,'blob:test-1');assert.equal(h.get('homeSlackImageDialog').open,false);
+});
+test('gallery additions, removals and reordering reuse only current-message files and revoke removed images',async()=>{
+  let payload=fixture({images:[{id:'F1'},{id:'F2'}]});const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
+  const first=h.get('image-F1'),second=h.get('image-F2'),secondUrl=h.app.state.urls.get('F2').url;
+  payload=fixture({images:[{id:'F2'},{id:'F1'},{id:'F3'}]});await h.app.refresh();await flush();
+  assert.equal(h.get('image-F1'),first);assert.equal(h.get('image-F2'),second);assert.deepEqual(h.get('homeSlackImages').children.map(button=>button.dataset.slackImage),['F2','F1','F3']);
+  assert.deepEqual(h.api.calls.filter(call=>call.action==='image').map(call=>call.file_id),['F1','F2','F3']);assert.equal(h.revoked.length,0);
+  payload=fixture({images:[{id:'F2'}]});await h.app.refresh();await flush();assert.equal(h.app.state.urls.size,1);assert.equal(h.app.state.urls.get('F2').url,secondUrl);assert.equal(h.app.state.imageButtons.size,1);assert.equal(h.revoked.length,2);
+  payload=fixture({text:'Same post, attachments removed',images:[]});await h.app.refresh();assert.equal(h.app.state.urls.size,0);assert.equal(h.app.state.imageButtons.size,0);assert.equal(h.get('homeSlackImages').hidden,true);assert.equal(h.get('homeSlackImages').innerHTML,'');assert.equal(h.revoked.length,3);
+});
+test('warm attachment caches cannot bypass a fresh failed workspace check',async()=>{
+  const payload=fixture({images:[{id:'F1'}]});const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
+  await h.click('homeSlackImages',{target:{closest:()=>({dataset:{slackImage:'F1'}})}});const requests=h.api.calls.length;
+  h.api.access=()=>{throw new Error('Access could not be verified');};await h.app.refresh();
+  assert.equal(h.api.membershipChecks,2);assert.equal(h.api.calls.length,requests);assert.equal(h.app.state.urls.size,0);assert.equal(h.get('homeSlackImages').innerHTML,'');assert.equal(h.get('homeSlackMessage').hidden,true);assert.equal(h.get('homeSlackImageDialog').open,false);assert.deepEqual(h.revoked,['blob:test-0']);
+});
+test('an unchanged partial gallery keeps completed files, aborts old downloads and retries only unfinished files',async()=>{
+  const pending=deferred();let secondReads=0;
+  const payload=fixture({images:[{id:'F1'},{id:'F2'}]});const h=harness({handler:body=>{
+    if(body.action==='message')return {data:payload,error:null};
+    if(body.file_id==='F2'&&++secondReads===1)return pending.promise;
+    return {data:new Blob([body.file_id],{type:'image/png'}),error:null};
+  }});await h.settle();
+  const first=h.get('image-F1'),firstUrl=h.app.state.urls.get('F1').url,oldRequest=h.api.requests.find(request=>request.transport==='fetch'&&JSON.parse(request.body).file_id==='F2');
+  assert.equal(oldRequest.signal.aborted,false);await h.app.refresh();await flush();assert.equal(oldRequest.signal.aborted,true);
+  assert.equal(h.get('image-F1'),first);assert.equal(h.app.state.urls.get('F1').url,firstUrl);assert.equal(h.api.calls.filter(call=>call.action==='image'&&call.file_id==='F1').length,1);assert.equal(h.api.calls.filter(call=>call.action==='image'&&call.file_id==='F2').length,2);
+  assert.equal(h.app.state.urls.size,2);assert.equal(h.created.length,2);assert.equal(h.revoked.length,0);assert.equal(h.app.state.attachmentPending.size,0);
+  pending.resolve(new Response('stale bytes',{headers:{'Content-Type':'image/png'}}));await flush();assert.equal(h.created.length,2);assert.equal(h.app.state.urls.get('F1').url,firstUrl);
+});
+test('failed downloads and image decode errors retry without redownloading good attachments',async()=>{
+  let badReads=0;const payload=fixture({images:[{id:'F1'},{id:'F2'},{id:'F3'}]});const h=harness({handler:body=>{
+    if(body.action==='message')return {data:payload,error:null};
+    if(body.file_id==='F2'&&++badReads===1)return new Response('{}',{status:404});
+    return {data:new Blob(['bytes'],{type:'image/png'}),error:null};
+  }});await h.settle();
+  const goodUrl=h.app.state.urls.get('F1').url,third=h.get('image-F3').querySelector('img');
+  third.events.error[0]();assert.equal(h.app.state.urls.size,1);assert.match(h.get('image-F2').innerHTML,/Image unavailable/);assert.match(h.get('image-F3').innerHTML,/Image unavailable/);
+  await h.app.refresh();await flush();assert.equal(h.app.state.urls.size,3);assert.equal(h.app.state.urls.get('F1').url,goodUrl);
+  assert.equal(h.api.calls.filter(call=>call.action==='image'&&call.file_id==='F1').length,1);assert.equal(h.api.calls.filter(call=>call.action==='image'&&call.file_id==='F2').length,2);assert.equal(h.api.calls.filter(call=>call.action==='image'&&call.file_id==='F3').length,2);
+  assert.equal(h.revoked.length,1);
+});
+test('logout, revocation and pagehide abort in-flight attachments and late bytes cannot recreate cleared caches',async()=>{
+  for(const event of ['logout','revocation','pagehide']){
+    const pending=deferred(),payload=fixture({images:[{id:'F1'},{id:'F2'}]});const h=harness({handler:body=>body.action==='message'?{data:payload,error:null}:body.file_id==='F2'?pending.promise:{data:new Blob(['bytes'],{type:'image/png'}),error:null}});await h.settle();
+    const request=h.api.requests.find(request=>request.transport==='fetch'&&JSON.parse(request.body).file_id==='F2');
+    if(event==='logout')h.signOut();else h.listeners['window:'+(event==='revocation'?'paws-access-revoked':'pagehide')]();
+    assert.equal(request.signal.aborted,true,event);assert.equal(h.app.state.urls.size,0,event);assert.equal(h.app.state.imageButtons.size,0,event);assert.equal(h.app.state.attachmentPending.size,0,event);assert.equal(h.get('homeSlackImages').innerHTML,'',event);
+    pending.resolve(new Response('old bytes',{headers:{'Content-Type':'image/png'}}));await flush();assert.equal(h.created.length,1,event);assert.equal(h.revoked.length,1,event);
+  }
+});
+test('an account switch cannot reuse previous attachment blobs or let late responses and decode errors replace new files',async()=>{
+  const pending=deferred();let reads=0;const payload=fixture({images:[{id:'F1'},{id:'F2'}]});const h=harness({handler:body=>{
+    if(body.action==='message')return {data:payload,error:null};
+    if(body.file_id==='F2'&&++reads===1)return pending.promise;
+    return {data:new Blob(['current bytes'],{type:'image/png'}),error:null};
+  }});await h.settle();
+  const oldImage=h.get('image-F1').querySelector('img'),oldRequest=h.api.requests.find(request=>request.transport==='fetch'&&JSON.parse(request.body).file_id==='F2');
+  h.api.session={user:{id:'other-staff'},access_token:'other-jwt'};await h.app.refresh();await flush();assert.equal(oldRequest.signal.aborted,true);assert.equal(h.revoked.length,1);assert.equal(h.created.length,3);
+  const newUrl=h.app.state.urls.get('F1').url;assert.notEqual(newUrl,'blob:test-0');oldImage.events.error[0]();assert.equal(h.app.state.urls.get('F1').url,newUrl);
+  pending.resolve(new Response('old private bytes',{headers:{'Content-Type':'image/png'}}));await flush();assert.equal(h.created.length,3);assert.equal(h.app.state.urls.get('F1').url,newUrl);
+  const imageRequests=h.api.requests.filter(request=>request.transport==='fetch');assert.ok(imageRequests.slice(2).every(request=>request.headers.Authorization==='Bearer other-jwt'));
+});
+test('attachment caches retain at most the current 12-image gallery and reject files above 8 MiB',async()=>{
+  let payload=fixture({images:Array.from({length:15},(_,i)=>({id:'F'+i}))});const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob([new Uint8Array(body.file_id==='F0'?8*1024*1024+1:64)],{type:'image/png'}),error:null})});await h.settle();
+  for(let i=0;i<20&&h.app.state.attachmentPending.size;i++)await flush();
+  assert.equal(h.api.calls.filter(call=>call.action==='image').length,12);assert.equal(h.app.state.imageButtons.size,12);assert.equal(h.app.state.urls.size,11);assert.equal(h.app.state.urls.has('F0'),false);assert.match(h.get('image-F0').innerHTML,/Image unavailable/);
+  assert.ok([...h.app.state.urls.values()].reduce((sum,item)=>sum+item.size,0)<=96*1024*1024);
+  for(let i=0;i<3;i++){payload=fixture({ts:`17909532${i+1}.000002`,images:[{id:'F1'}]});await h.app.refresh();await flush();assert.equal(h.app.state.urls.size,1);assert.equal(h.app.state.imageButtons.size,1);assert.equal(h.created.length-h.revoked.length,1);}
+  assert.doesNotMatch(source,/localStorage|sessionStorage|indexedDB/);
+});
+test('pagehide invalidates pending metadata and BFCache restore reauthorizes instead of reviving cached blobs',async()=>{
+  const pending=deferred(),payload=fixture({images:[{id:'F1'}]});const h=harness({handler:body=>({data:body.action==='message'?payload:new Blob(['bytes'],{type:'image/png'}),error:null})});await h.settle();
+  h.api.handler=()=>pending.promise;const refresh=h.app.refresh();await flush();h.listeners['window:pagehide']();assert.equal(h.app.state.urls.size,0);
+  pending.resolve({data:fixture({text:'Private late metadata',images:[{id:'F2'}]}),error:null});await refresh;await flush();assert.equal(h.app.state.urls.size,0);assert.doesNotMatch(h.get('homeSlackBody').innerHTML,/Private late metadata/);
+  h.api.handler=body=>({data:body.action==='message'?payload:new Blob(['new bytes'],{type:'image/png'}),error:null});h.listeners['window:pageshow']({persisted:true});await flush();assert.equal(h.app.state.urls.size,1);assert.equal(h.created.length,2);assert.equal(h.revoked.length,1);assert.equal(h.api.membershipChecks,3);
 });

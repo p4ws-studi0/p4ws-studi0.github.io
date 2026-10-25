@@ -5,7 +5,8 @@
   if (!widget) return;
   const $ = id => document.getElementById(id);
   const imageEndpoint = 'https://dppjgglaeieevsfwsbii.supabase.co/functions/v1/hq-slack-general';
-  const state = {userId: null, authEpoch: 0, requestId: 0, imageEpoch: 0, loading: false, lastAttempt: 0, urls: new Map(), emojiUrls: new Map(), avatarUrl: null, smallMedia: new Map()};
+  const MAX_IMAGES=12,MAX_IMAGE_BYTES=8*1024*1024,MAX_GALLERY_BYTES=MAX_IMAGES*MAX_IMAGE_BYTES;
+  const state = {userId: null, authEpoch: 0, requestId: 0, imageEpoch: 0, loading: false, lastAttempt: 0, urls: new Map(), imageButtons:new Map(), attachmentOrder:[], attachmentPending:new Map(), openImageId:null, emojiUrls: new Map(), avatarUrl: null, smallMedia: new Map()};
   const mediaKey=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value)?value:'';
   const rasterBlob=data=>data instanceof Blob&&/^image\/(png|jpeg|jpg|gif|webp|avif)$/i.test(data.type)&&data.size<=1024*1024;
   const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
@@ -67,14 +68,23 @@
     $('homeSlackRefresh').disabled = state.loading;
     widget.setAttribute('aria-busy',String(state.loading));
   }
-  function clearImages({keepKeys=new Set()}={}) {
-    state.imageEpoch++;
+  function cancelAttachmentRequests() {
+    for(const pending of state.attachmentPending.values())pending.controller.abort();
+    state.attachmentPending.clear();
+  }
+  function closeImage() {
+    state.openImageId=null;
     if ($('homeSlackImageDialog').open) $('homeSlackImageDialog').close();
     $('homeSlackLargeImage').removeAttribute('src');
-    $('homeSlackLargeImage').alt = '';
-    $('homeSlackImageTitle').textContent = '';
-    state.urls.forEach(item => URL.revokeObjectURL(item.url));
-    state.urls.clear();
+    $('homeSlackLargeImage').alt='';
+    $('homeSlackImageTitle').textContent='';
+  }
+  function clearImages({keepKeys=new Set(),keepAttachments=new Set()}={}) {
+    state.imageEpoch++;
+    cancelAttachmentRequests();
+    if(!keepAttachments.has(state.urls.get(state.openImageId)?.key))closeImage();
+    for(const [id,item]of state.urls)if(!keepAttachments.has(item.key)){URL.revokeObjectURL(item.url);state.urls.delete(id);}
+    for(const [id,entry]of state.imageButtons)if(!keepAttachments.has(entry.key)){entry.button.remove();state.imageButtons.delete(id);}
     const managed=new Set([...state.smallMedia.values()].map(item=>item.url));
     for(const [key,item]of state.smallMedia)if(!keepKeys.has(key)){URL.revokeObjectURL(item.url);state.smallMedia.delete(key);}
     new Set([...state.emojiUrls.values(),state.avatarUrl].filter(Boolean)).forEach(url=>{if(!managed.has(url))URL.revokeObjectURL(url);});
@@ -82,8 +92,7 @@
     state.avatarUrl=null;
     const initials=$('homeSlackInitials');initials.textContent=initials.getAttribute('data-initials')||'';
     $('homeSlackBody').querySelectorAll('[data-slack-emoji]').forEach(slot=>{slot.textContent=`:${slot.dataset.slackEmoji}:`;});
-    $('homeSlackImages').innerHTML = '';
-    $('homeSlackImages').hidden = true;
+    if(!keepAttachments.size){state.attachmentOrder=[];$('homeSlackImages').innerHTML='';$('homeSlackImages').hidden=true;}
   }
   function clearMessage(text) {
     clearImages();
@@ -119,15 +128,18 @@
     if (!response.ok) return {data:null,error:{context:response}};
     return {data:await response.blob(),error:null};
   }
-  async function invoke(body,current=()=>true) {
+  async function invoke(body,current=()=>true,signal) {
     let timer;
     const controller = new AbortController();
+    let abort;
     try {
-      return await Promise.race([
+      const jobs=[
         ['image','emoji','avatar'].includes(body.action) ? fetchImage(body,current,controller.signal) : supabaseClient.functions.invoke('hq-slack-general',{body}),
         new Promise((_,reject) => {timer = setTimeout(() => {controller.abort();reject(new Error('TIMEOUT'));},20000);})
-      ]);
-    } finally {clearTimeout(timer);}
+      ];
+      if(signal)jobs.push(new Promise((_,reject)=>{abort=()=>{controller.abort();reject(new Error('ABORTED'));};if(signal.aborted)abort();else signal.addEventListener('abort',abort,{once:true});}));
+      return await Promise.race(jobs);
+    } finally {clearTimeout(timer);if(abort)signal.removeEventListener('abort',abort);}
   }
   function imageError(error) {
     // Only inspect the HTTP status. Server/provider error details never appear in the widget.
@@ -182,11 +194,63 @@
       forgetSmallMedia(key,url);state.avatarUrl=null;
     },{once:true});
   }
+  const attachmentKey=(messageTs,id)=>`${messageTs}:${id}`;
+  function normalizedImages(message) {
+    if(!/^\d{1,16}\.\d{1,16}$/.test(String(message.ts||'')))return [];
+    const seen=new Set();
+    return (Array.isArray(message.images)?message.images:[]).filter(file=>{
+      if(!/^F[A-Z0-9]{1,30}$/.test(String(file?.id))||seen.has(file.id))return false;
+      seen.add(file.id);return true;
+    }).slice(0,MAX_IMAGES).map(file=>({id:file.id,title:String(file.title||'Attached image').slice(0,200),alt:String(file.alt||file.title||'Image attached to the Slack message').slice(0,500)}));
+  }
+  function unavailableImage(entry,title) {
+    entry.url=null;entry.button.disabled=true;
+    entry.button.innerHTML='<span class="home-slack-image-failed">Image unavailable<br>View it in Slack</span>';
+    entry.button.setAttribute('aria-label',`${title}: image unavailable`);
+  }
+  function showImage(file,item,entry) {
+    item.title=file.title;item.alt=file.alt;
+    const button=entry.button;
+    if(entry.url!==item.url){
+      entry.url=item.url;
+      button.innerHTML=`<img src="${escape(item.url)}" alt="${escape(item.alt)}" loading="lazy" decoding="async"><span>${escape(item.title)}</span>`;
+      const epoch=state.authEpoch;
+      button.querySelector('img')?.addEventListener('error',()=>{
+        if(epoch!==state.authEpoch||state.urls.get(file.id)!==item)return;
+        if(state.openImageId===file.id)closeImage();
+        URL.revokeObjectURL(item.url);state.urls.delete(file.id);unavailableImage(entry,item.title);
+      },{once:true});
+    }else{
+      const image=button.querySelector('img'),caption=button.querySelector('span');
+      if(image)image.alt=item.alt;
+      if(caption)caption.textContent=item.title;
+    }
+    button.disabled=false;button.setAttribute('aria-label',`Enlarge image: ${item.title}`);
+    if(state.openImageId===file.id&&$('homeSlackImageDialog').open){$('homeSlackImageTitle').textContent=item.title;$('homeSlackLargeImage').alt=item.alt;}
+  }
+  function renderImages(images,messageTs) {
+    const order=images.map(file=>attachmentKey(messageTs,file.id)),buttons=[];
+    for(const file of images){
+      const key=attachmentKey(messageTs,file.id);let entry=state.imageButtons.get(file.id);
+      if(!entry||entry.key!==key){
+        const button=document.createElement('button');button.type='button';button.className='home-slack-image';button.dataset.slackImage=file.id;
+        entry={key,button,url:null};state.imageButtons.set(file.id,entry);
+      }
+      const item=state.urls.get(file.id);
+      if(item?.key===key)showImage(file,item,entry);
+      else{entry.url=null;entry.button.disabled=true;entry.button.innerHTML='<span class="home-slack-image-failed">Loading image…</span>';entry.button.setAttribute('aria-label',`Loading image: ${file.title}`);}
+      buttons.push(entry.button);
+    }
+    if(order.length!==state.attachmentOrder.length||order.some((key,index)=>key!==state.attachmentOrder[index]))$('homeSlackImages').replaceChildren(...buttons);
+    state.attachmentOrder=order;$('homeSlackImages').hidden=images.length===0;
+  }
   async function loadImage(file, messageTs, current, imageEpoch) {
     const valid = () => current() && imageEpoch === state.imageEpoch;
-    const slot = () => $('homeSlackImages').querySelector(`[data-slack-image="${file.id}"]`);
+    const key=attachmentKey(messageTs,file.id),entry=state.imageButtons.get(file.id);
+    if(!entry||entry.key!==key||state.urls.get(file.id)?.key===key||state.attachmentPending.has(key))return;
+    const pending={controller:new AbortController()};state.attachmentPending.set(key,pending);
     try {
-      const {data,error} = await invoke({action:'image',file_id:file.id,message_ts:messageTs},valid);
+      const {data,error} = await invoke({action:'image',file_id:file.id,message_ts:messageTs},valid,pending.controller.signal);
       if (!valid()) return;
       if (error) {
         if (imageError(error)) {
@@ -197,30 +261,15 @@
         }
         throw error;
       }
-      if (!(data instanceof Blob) || !/^image\/(png|jpeg|jpg|gif|webp|avif)$/i.test(data.type) || data.size > 8 * 1024 * 1024) throw new Error('Unsupported image');
-      const button = slot();
-      if (!button || !valid()) return;
-      const url = URL.createObjectURL(data);
-      state.urls.set(file.id,{url,title:file.title,alt:file.alt});
-      button.innerHTML = `<img src="${escape(url)}" alt="${escape(file.alt)}" loading="lazy" decoding="async"><span>${escape(file.title)}</span>`;
-      button.disabled = false;
-      button.setAttribute('aria-label',`Enlarge image: ${file.title}`);
-      button.querySelector('img')?.addEventListener('error',()=> {
-        if (!valid()) return;
-        URL.revokeObjectURL(url);
-        state.urls.delete(file.id);
-        button.disabled = true;
-        button.innerHTML = '<span class="home-slack-image-failed">Image unavailable<br>View it in Slack</span>';
-        button.setAttribute('aria-label',`${file.title}: image unavailable`);
-      },{once:true});
+      const bytes=[...state.urls.values()].reduce((sum,item)=>sum+item.size,0);
+      if (!(data instanceof Blob) || !/^image\/(png|jpeg|jpg|gif|webp|avif)$/i.test(data.type) || data.size > MAX_IMAGE_BYTES || state.urls.size>=MAX_IMAGES || bytes+data.size>MAX_GALLERY_BYTES) throw new Error('Unsupported image');
+      if (!valid()||state.imageButtons.get(file.id)!==entry) return;
+      const item={key,url:URL.createObjectURL(data),size:data.size,title:file.title,alt:file.alt};
+      state.urls.set(file.id,item);showImage(file,item,entry);
     } catch {
       if (!valid()) return;
-      const button = slot();
-      if (button) {
-        button.innerHTML = '<span class="home-slack-image-failed">Image unavailable<br>View it in Slack</span>';
-        button.setAttribute('aria-label',`${file.title}: image unavailable`);
-      }
-    }
+      if(state.imageButtons.get(file.id)===entry)unavailableImage(entry,file.title);
+    }finally{if(state.attachmentPending.get(key)===pending)state.attachmentPending.delete(key);}
   }
   async function loadEmoji(name,messageTs,current,imageEpoch,key) {
     const valid=()=>current()&&imageEpoch===state.imageEpoch;
@@ -256,9 +305,10 @@
   function render(payload,current) {
     const message = payload?.message;
     if (!message) {clearMessage('No messages in #general yet.'); return;}
+    const images=normalizedImages(message),keepAttachments=new Set(images.map(file=>attachmentKey(message.ts,file.id)));
     const customImages=(Array.isArray(message.custom_emojis)?message.custom_emojis:[]).slice(0,64).filter(item=>item?.image===true&&/^[a-zA-Z0-9_+\-]{1,100}$/.test(item?.name||''));
     const wanted=new Set([message.author?.avatar===true?message.author.avatar_key:'',...customImages.map(item=>item.key)].map(mediaKey).filter(Boolean));
-    clearImages({keepKeys:wanted});
+    clearImages({keepKeys:wanted,keepAttachments});
     widget.setAttribute('data-slack-reused-media',String(state.smallMedia.size));
     widget.setAttribute('data-slack-inline-media',String(acceptInlineMedia(payload.media,wanted)));
     widget.setAttribute('data-custom-emoji-status',message.custom_emoji_ready===true?'ready':message.custom_emoji_ready===false?'unavailable':'unknown');
@@ -280,13 +330,7 @@
     const files = (Array.isArray(message.files) ? message.files : []).slice(0,20).filter(file => safeURL(file.permalink,true));
     $('homeSlackFiles').innerHTML = files.map(file=>`<a href="${escape(safeURL(file.permalink,true))}" target="_blank" rel="noopener noreferrer">${escape(file.title || 'Attachment')}<span class="home-slack-file-note">Open in Slack ↗</span></a>`).join('');
     $('homeSlackFiles').hidden = files.length === 0;
-    const seen = new Set();
-    const images = (Array.isArray(message.images) ? message.images : []).filter(file=> {
-      if (!/^F[A-Z0-9]{1,30}$/.test(String(file.id)) || seen.has(file.id)) return false;
-      seen.add(file.id); return true;
-    }).slice(0,12).map(file=>({id:file.id,title:String(file.title || 'Attached image').slice(0,200),alt:String(file.alt || file.title || 'Image attached to the Slack message').slice(0,500)}));
-    $('homeSlackImages').innerHTML = images.map(file=>`<button type="button" class="home-slack-image" data-slack-image="${file.id}" aria-label="Loading image: ${escape(file.title)}" disabled><span class="home-slack-image-failed">Loading image…</span></button>`).join('');
-    $('homeSlackImages').hidden = images.length === 0;
+    renderImages(images,message.ts);
     $('homeSlackMessage').hidden = false;
     $('homeSlackEmpty').hidden = true;
     widget.classList.remove('is-empty');
@@ -294,7 +338,7 @@
     // Keep private image requests bounded, including when a message contains a gallery.
     const emojiNames=[...new Set([...$('homeSlackBody').querySelectorAll('[data-slack-emoji]')].map(slot=>slot.dataset.slackEmoji))].slice(0,64);
     const keys=new Map(customImages.map(item=>[item.name,mediaKey(item.key)]));
-    const jobs=[...(message.author?.avatar===true?[()=>loadAvatar(message.ts,current,imageEpoch,message.author.avatar_key)]:[]),...emojiNames.map(name=>()=>loadEmoji(name,message.ts,current,imageEpoch,keys.get(name))),...images.map(file=>()=>loadImage(file,message.ts,current,imageEpoch))];
+    const jobs=[...(message.author?.avatar===true?[()=>loadAvatar(message.ts,current,imageEpoch,message.author.avatar_key)]:[]),...emojiNames.map(name=>()=>loadEmoji(name,message.ts,current,imageEpoch,keys.get(name))),...images.filter(file=>state.urls.get(file.id)?.key!==attachmentKey(message.ts,file.id)).map(file=>()=>loadImage(file,message.ts,current,imageEpoch))];
     let next = 0;
     const worker = async () => {while (current() && imageEpoch === state.imageEpoch && next < jobs.length) await jobs[next++]();};
     for (let i=0;i<Math.min(3,jobs.length);i++) void worker();
@@ -304,6 +348,7 @@
     const epoch = state.authEpoch;
     const requestId = ++state.requestId;
     const current = () => epoch === state.authEpoch && requestId === state.requestId;
+    cancelAttachmentRequests();
     state.lastAttempt = Date.now();
     state.loading = true;
     controls();
@@ -318,6 +363,7 @@
         return;
       }
       if(typeof ensureHqWorkspaceAccess==='function')await ensureHqWorkspaceAccess(auth.session);
+      if(!current())return;
       if(state.userId&&state.userId!==auth.session.user.id)clearMessage('Loading the latest Slack update…');
       state.userId = auth.session.user.id;
       const {data,error} = await invoke({action:'message',include_media:true,known_media:[...state.smallMedia.keys()].slice(0,48)});
@@ -356,6 +402,7 @@
     const button = event.target.closest('[data-slack-image]');
     const item = button && state.urls.get(button.dataset.slackImage);
     if (!item) return;
+    state.openImageId=button.dataset.slackImage;
     $('homeSlackImageTitle').textContent = item.title;
     $('homeSlackLargeImage').src = item.url;
     $('homeSlackLargeImage').alt = item.alt;
@@ -365,12 +412,14 @@
   $('homeSlackImageClose').addEventListener('click',()=>$('homeSlackImageDialog').close());
   $('homeSlackImageDialog').addEventListener('click',event=> {if (event.target === $('homeSlackImageDialog')) $('homeSlackImageDialog').close();});
   $('homeSlackImageDialog').addEventListener('close',()=> {
+    state.openImageId=null;
     $('homeSlackLargeImage').removeAttribute('src');
-    if (Date.now() - state.lastAttempt >= 60000) void refresh({automatic:true});
+    if (state.userId&&Date.now() - state.lastAttempt >= 60000) void refresh({automatic:true});
   });
   window.addEventListener('focus',()=>refresh({automatic:true}));
   window.addEventListener('online',()=>refresh({automatic:true}));
-  window.addEventListener('pagehide',clearImages);
+  window.addEventListener('pagehide',()=>{state.authEpoch++;state.requestId++;state.userId=null;state.loading=false;clearMessage('Loading the latest Slack update…');state.lastAttempt=0;controls();});
+  window.addEventListener('pageshow',event=>{if(event.persisted)void refresh({automatic:true});});
   window.addEventListener('paws-access-revoked',()=>{
     state.authEpoch++;state.requestId++;state.loading=false;state.userId=null;
     clearMessage('This Slack update is unavailable.');setStatus('Your workspace access has changed.',true);controls();
