@@ -17,38 +17,42 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
   <link rel="stylesheet" href="/assets/training.css?v=3" />
-  <link rel="stylesheet" href="/assets/biscuit-baskets.css?v=1" />
+  <link rel="stylesheet" href="/assets/biscuit-baskets.css?v=20261025a" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
   <div class="pt-16 flex">
     <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
     <main id="basketsPage" class="tr-page">
-      <div class="tr-page-heading">
-        <h1>Biscuit baskets</h1>
-        <p>Find a location, open its history, and log a visit. Visit cells save when you leave them.</p>
+      <div class="tr-page-heading bb-page-heading">
+        <div><h1>Biscuit baskets</h1><p>Find a location, see what was dropped off, and log your next visit.</p></div>
+        <span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span>
       </div>
-      <section class="tr-sheet glass" aria-label="Biscuit basket locations">
+      <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+      <section id="directoryView" class="tr-sheet glass" aria-label="Biscuit basket locations">
         <div class="tr-toolbar bb-toolbar">
           <div class="bb-filters">
-            <label class="tr-sr-only" for="searchLocations">Search locations and towns</label><input id="searchLocations" type="search" placeholder="Search locations or towns" />
-            <label class="tr-sr-only" for="townFilter">Filter by town</label><select id="townFilter"><option value="">All towns</option></select>
-            <label class="tr-sr-only" for="statusFilter">Filter by status</label><select id="statusFilter"><option value="">All statuses</option><option value="active">Active</option><option value="closed">Closed</option><option value="do_not_visit">Not returning</option></select>
+            <label class="bb-search" for="searchLocations"><span class="tr-sr-only">Search locations and towns</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4" stroke-linecap="round"/></svg><input id="searchLocations" type="search" placeholder="Find a location or town…" /></label>
+            <div class="bb-filter"><label for="townFilter">Town</label><select id="townFilter" aria-label="Filter by town"><option value="">All towns</option></select></div>
+            <div class="bb-filter"><label for="statusFilter">Status</label><select id="statusFilter" aria-label="Filter by status"><option value="">All statuses</option><option value="active">Active</option><option value="closed">Closed</option><option value="do_not_visit">Not returning</option></select></div>
           </div>
-          <button id="addLocation" disabled type="button" class="tr-button tr-button-primary">Add location</button>
+          <button id="addLocation" disabled type="button" class="tr-button bb-add-location">Add location</button>
         </div>
-        <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
-        <div class="tr-sheet-caption"><span id="rowCount">Loading locations…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
+        <div class="tr-sheet-caption bb-directory-caption"><span id="rowCount">Loading locations…</span><button id="clearFilters" type="button" hidden>Clear filters</button></div>
         <div id="directoryScroll" class="tr-table-scroll" role="region" aria-label="Biscuit basket location directory" tabindex="0">
           <table class="tr-table bb-directory">
-            <caption class="tr-sr-only">Biscuit basket locations, alphabetical by name. Open a location to edit its visit history.</caption>
+            <caption class="tr-sr-only">Biscuit basket locations, alphabetical by name. Open a location to see its visits.</caption>
             <colgroup><col class="bb-col-name" /><col class="bb-col-town" /><col class="bb-col-last" /><col class="bb-col-count" /><col class="bb-col-status" /><col class="bb-col-actions" /></colgroup>
-            <thead><tr><th scope="col">Location</th><th scope="col">Town</th><th scope="col">Last recorded visit</th><th scope="col">Visits</th><th scope="col">Status</th><th scope="col"><span class="tr-sr-only">Actions</span></th></tr></thead>
+            <thead><tr><th scope="col">Location</th><th scope="col">Town</th><th scope="col">Latest entry</th><th scope="col">Visits</th><th scope="col">Status</th><th scope="col"><span class="tr-sr-only">Actions</span></th></tr></thead>
             <tbody id="locationRows"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="tr-empty-state" hidden>No locations found.</div>
+        <div id="emptyState" class="tr-empty-state" hidden><p>No matching locations</p><span>Try a different name or clear your filters.</span></div>
         <div class="tr-sheet-footer"><span>Locations A–Z</span><button id="refreshLogs" type="button" class="tr-refresh">Refresh</button></div>
+      </section>
+      <section id="locationDetailView" hidden aria-label="Location visit history">
+        <button id="backLocations" type="button" class="bb-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h13" stroke-linecap="round" stroke-linejoin="round"/></svg>All locations</button>
+        <div id="locationDetails" class="tr-sheet glass"></div>
       </section>
       <details id="deletedSection" class="tr-deleted-dogs">
         <summary>Deleted locations <span id="deletedCount">0</span></summary>
@@ -70,6 +74,21 @@
       <div class="bb-form-actions"><button id="reloadLocation" type="button" class="tr-button tr-button-subtle" hidden>Reload location</button><button id="saveLocation" type="submit" class="tr-button tr-button-primary">Save location</button></div>
     </form>
   </dialog>
+  <dialog id="visitDialog" class="bb-dialog bb-visit-dialog" aria-labelledby="visitDialogTitle" aria-describedby="visitLocationName">
+    <form id="visitForm" class="bb-form">
+      <div class="bb-form-heading"><div><h2 id="visitDialogTitle">Log visit</h2><p id="visitLocationName" class="bb-form-context"></p></div></div>
+      <p class="bb-form-hint">Only fill in what you know.</p>
+      <div class="bb-form-grid">
+        <div><label for="visitDate">Date</label><input id="visitDate" data-visit-field="visited_on" maxlength="120" placeholder="e.g. 10/25/2026" autocomplete="off" /></div>
+        <div><label for="visitTown">Town at visit</label><input id="visitTown" data-visit-field="town" maxlength="200" autocomplete="off" /></div>
+        <div class="bb-field-wide"><label for="visitItems">Items given</label><textarea id="visitItems" data-visit-field="items_given" maxlength="20000" rows="2" placeholder="e.g. Biscuit basket and flyers"></textarea></div>
+        <div class="bb-field-wide"><label for="visitContact">Spoke to</label><input id="visitContact" data-visit-field="spoke_to" maxlength="500" placeholder="Name or role, if known" autocomplete="off" /></div>
+        <div class="bb-field-wide"><label for="visitNotes">Notes</label><textarea id="visitNotes" data-visit-field="notes" maxlength="20000" rows="3" placeholder="Anything useful for the next visit"></textarea></div>
+      </div>
+      <p id="visitFormError" class="tr-form-error" role="alert"></p>
+      <div class="bb-form-actions"><button id="reloadVisit" type="button" class="tr-button tr-button-subtle" hidden>Reload visit</button><button id="closeVisitDialog" type="button" class="tr-button bb-cancel">Cancel</button><button id="saveVisit" type="submit" class="tr-button tr-button-primary">Save visit</button></div>
+    </form>
+  </dialog>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/script.js?v=20261025b"></script>
   <script>
@@ -84,6 +103,6 @@
         .catch(error => console.warn(error.message))
     }
   </script>
-  <script src="/assets/biscuit-baskets.js?v=20261020c" defer></script>
+  <script src="/assets/biscuit-baskets.js?v=20261025a" defer></script>
 </body>
 </html>
