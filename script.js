@@ -812,7 +812,7 @@ document.addEventListener('click', e => {
 })
 
 // Shared security code reuses this exact Supabase client and loads before navigation.
-const HQ_ASSET_VERSION = '20261025a'
+const HQ_ASSET_VERSION = '20261025b'
 let hqSecurityAssets = null
 
 function loadHqSharedScript(path, globalName) {
@@ -872,7 +872,7 @@ async function ensureHqAccessController() {
 let hqNavigationScript = null
 let hqActivityScript = null
 function prepareHqActivityLogging() {
-  if (hqActivityScript) return
+  if (!HQ_ACTIVITY_SIGN_IN_RETURN || hqActivityScript) return
   hqActivityScript = loadHqSharedScript('/assets/activity-logger.js', 'PawsActivityLogger')
     .then(api => api.start({client: supabaseClient, ensureAccess: ensureHqWorkspaceAccess, win: window, doc: document, signIn: HQ_ACTIVITY_SIGN_IN_RETURN}))
     .catch(() => { hqActivityScript = null })

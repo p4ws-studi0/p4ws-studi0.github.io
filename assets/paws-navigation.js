@@ -131,7 +131,7 @@
       <div class="desktop-launcher-content" id="desktopAppContent"></div>
       <div class="desktop-launcher-footer">
         <a href="/settings" id="desktopAccount" class="desktop-team" aria-label="Account settings"><span class="desktop-team-avatar" aria-hidden="true">${svg(paths.person,17)}</span><span><strong>Paws HQ</strong><small>Your account</small></span></a>
-        <div class="desktop-footer-actions"><button type="button" id="desktopPrint" class="desktop-footer-button" aria-label="Print current page" title="Print current page">${svg(paths.print,18)}</button><button type="button" id="desktopTheme" class="desktop-footer-button" aria-label="Switch to dark mode" title="Switch theme">${svg(paths.moon,18)}</button><a href="/settings" class="desktop-footer-button" aria-label="Settings" title="Settings">${svg(paths.settings,18)}</a></div>
+        <div class="desktop-footer-actions"><button type="button" id="desktopPrint" class="desktop-footer-button" aria-label="Print current page" title="Print current page">${svg(paths.print,18)}</button><button type="button" id="desktopTheme" class="desktop-footer-button" aria-label="Switch to dark mode" title="Switch theme">${svg(paths.moon,18)}</button><a href="/history" class="desktop-footer-button" aria-label="History" title="History"${currentPath==='/history'?' aria-current="page"':''}><span class="desktop-history-symbol" aria-hidden="true"></span></a><a href="/settings" class="desktop-footer-button" aria-label="Settings" title="Settings">${svg(paths.settings,18)}</a></div>
       </div>
     </section>
     <nav class="desktop-taskbar" aria-label="Paws HQ taskbar">

@@ -1,4 +1,4 @@
-/* Best-effort activity metadata. Never stores form values, URL parameters, or credentials. */
+/* Best-effort OAuth-return metadata. Page visits are never recorded. */
 (function(root,factory){
   const api=factory();
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -18,7 +18,7 @@
     const path=()=>cleanPath(win.location?.pathname||'');
     const allowedPath=()=>path()&&!['/login','/auth/callback/','/404','/report-loading','/template'].includes(path());
     async function record(action) {
-      if(stopped||revoked||doc.hidden||!allowedPath()||!['page_view','sign_in'].includes(action))return;
+      if(stopped||revoked||doc.hidden||!allowedPath()||action!=='sign_in')return;
       const generation=epoch,route=path(),key=action+':'+route;
       if(sent.has(key)||pending.has(key))return;
       pending.add(key);
@@ -36,8 +36,8 @@
       finally{if(generation===epoch)pending.delete(key);}
     }
     function queue() {
-      if(stopped||timer!==null)return;
-      timer=schedule(()=>{timer=null;void record('page_view');if(signIn){signIn=false;void record('sign_in');}},1200);
+      if(!signIn||stopped||timer!==null)return;
+      timer=schedule(()=>{timer=null;void record('sign_in');},1200);
     }
     const reset=()=>{epoch++;sent.clear();pending.clear();if(timer!==null){cancel(timer);timer=null;}};
     const onRevoke=()=>{reset();revoked=true;userId=null;};

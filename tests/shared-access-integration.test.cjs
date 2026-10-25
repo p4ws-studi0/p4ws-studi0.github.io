@@ -76,7 +76,7 @@ test('shared auth keeps the same persistent client and loads security dependenci
   const asset = name => h.scripts.findIndex(src => src.includes(name));
   assert.ok(asset('hq-access.js') < asset('knowledge-base.js'));
   assert.ok(asset('knowledge-base.js') < asset('paws-navigation.js'));
-  assert.ok(h.scripts.every(src => src.includes('v=20261025a')));
+  assert.ok(h.scripts.every(src => src.includes('v=20261025b')));
   assert.equal(h.body.dataset.auth, 'ok');
   assert.equal(h.body.style.opacity, '1');
   assert.deepEqual(h.authMutations, []);

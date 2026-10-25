@@ -1,15 +1,77 @@
 /* Read-only activity history. Every request remains subject to workspace access and RLS. */
 (() => {
   'use strict';
-  const PAGE_SIZE=50,ZONE='America/New_York';
-  const ACTIONS={create:'Added',update:'Updated',delete:'Deleted',restore:'Restored',page_view:'Viewed page',sign_in:'Signed in'};
+  const PAGE_SIZE=50,ZONE='America/New_York',AVATAR_BATCH_SIZE=100,AVATAR_CACHE_SIZE=256,AVATAR_TTL=5*60*1000;
+  const ACTIONS={create:'Added',update:'Updated',delete:'Deleted',restore:'Restored',sign_in:'Signed in'};
   const SECTION_NAMES={'knowledge-base':'Knowledge Base','end-of-day':'End Of Day','k9-cough':'K9 Cough','run-cards':'Run Cards','home':'Home','history':'History'};
   const FIELD_NAMES={bills_100:'$100 bills',bills_50:'$50 bills',bills_20:'$20 bills',bills_10:'$10 bills',bills_5:'$5 bills',bills_1:'$1 bills',staff_name:'Staff name',deleted_at:'Deleted status',session_date:'Session date',tour_date:'Tour date',tour_time:'Tour time',is_completed:'Completed',has_file:'Has file',has_booking:'Has booking'};
-  const state={rows:[],userId:null,epoch:0,request:0,loading:false,authorized:false,hasMore:false,cursor:null,query:'',action:'all',period:'7',startedAt:null,coverageLoaded:false,error:'',debounce:null,lastAttempt:0};
+  const state={rows:[],userId:null,epoch:0,request:0,loading:false,authorized:false,hasMore:false,cursor:null,query:'',action:'all',period:'7',startedAt:null,coverageLoaded:false,error:'',debounce:null,lastAttempt:0,avatarCache:new Map(),avatarPending:new Map(),avatarGeneration:0};
   const $=id=>document.getElementById(id);
   const escape=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const current=(epoch,request)=>state.epoch===epoch&&(request===undefined||state.request===request);
   function recordId(value){if(typeof value==='number')return Number.isSafeInteger(value)&&value>0?String(value):null;return typeof value==='string'&&/^[1-9]\d{0,19}$/.test(value)?value:null;}
+  function actorId(value){return typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)?value.toLowerCase():null;}
+  function avatarUrl(value){
+    if(typeof value!=='string'||value.length>2048||/[\s\\#]/.test(value)||!/^https:\/\/(?:avatars\.slack-edge\.com|a\.slack-edge\.com|secure\.gravatar\.com)\//i.test(value))return null;
+    try{
+      const url=new URL(value);
+      if(url.protocol!=='https:'||url.username||url.password||url.port||url.hash)return null;
+      if(url.hostname==='secure.gravatar.com'&&!/^\/avatar\/[a-f0-9]{32}$/i.test(url.pathname))return null;
+      return url.href;
+    }catch{return null;}
+  }
+  function cachedAvatar(id){const entry=state.avatarCache.get(id);if(!entry)return undefined;if(entry.expires<=Date.now()){state.avatarCache.delete(id);return undefined;}return entry.url;}
+  function cacheAvatar(id,url){state.avatarCache.delete(id);state.avatarCache.set(id,{url,expires:Date.now()+AVATAR_TTL});while(state.avatarCache.size>AVATAR_CACHE_SIZE)state.avatarCache.delete(state.avatarCache.keys().next().value);}
+  function clearAvatarImages(){
+    for(const node of $('historyRows').querySelectorAll('[data-avatar-actor]')){
+      const image=node.querySelector('img');if(image){image.removeAttribute('src');image.remove();}
+      delete node.dataset.avatarUrl;node.classList.remove('has-photo');
+    }
+  }
+  function clearAvatars(){state.avatarGeneration++;state.avatarCache.clear();state.avatarPending.clear();clearAvatarImages();}
+  function paintAvatars(){
+    const epoch=state.epoch,generation=state.avatarGeneration;
+    for(const node of $('historyRows').querySelectorAll('[data-avatar-actor]')){
+      const id=actorId(node.dataset.avatarActor),url=id?cachedAvatar(id):null;
+      if(node.dataset.avatarUrl===url)continue;
+      const previous=node.querySelector('img');if(previous){previous.removeAttribute('src');previous.remove();}
+      delete node.dataset.avatarUrl;node.classList.remove('has-photo');
+      if(!state.authorized||!url)continue;
+      const image=document.createElement('img');
+      image.alt='';image.width=29;image.height=29;image.decoding='async';image.referrerPolicy='no-referrer';
+      const relevant=()=>current(epoch)&&state.avatarGeneration===generation&&state.authorized&&node.isConnected&&node.dataset.avatarUrl===url;
+      image.addEventListener('load',()=>{if(relevant())node.classList.add('has-photo');});
+      image.addEventListener('error',()=>{if(relevant()){cacheAvatar(id,null);paintAvatars();}});
+      node.dataset.avatarUrl=url;node.append(image);image.src=url;
+    }
+  }
+  async function loadAvatars(epoch=state.epoch,request=state.request){
+    if(!current(epoch,request)||!state.authorized||state.loading)return;
+    // Bound both one RPC and the per-account cache, even after many Load more requests.
+    const actors=[...new Set(state.rows.map(row=>actorId(row.actor_id)).filter(Boolean))].slice(0,AVATAR_CACHE_SIZE);
+    const needed=actors.filter(id=>cachedAvatar(id)===undefined&&!state.avatarPending.has(id)).slice(0,AVATAR_BATCH_SIZE);
+    if(!needed.length)return;
+    const token={},generation=state.avatarGeneration,userId=state.userId;
+    for(const id of needed)state.avatarPending.set(id,token);
+    try{
+      const result=await supabaseClient.rpc('hq_activity_history_avatars',{p_actor_ids:needed});
+      if(!current(epoch,request)||state.avatarGeneration!==generation||state.userId!==userId||!state.authorized)return;
+      if(result.error)throw result.error;
+      if(!Array.isArray(result.data)||result.data.length>AVATAR_BATCH_SIZE)throw {code:'AVATAR_RESPONSE'};
+      const allowed=new Set(needed),urls=new Map();
+      for(const row of result.data){const id=actorId(row?.actor_id),url=avatarUrl(row?.avatar_url);if(id&&allowed.has(id)&&url)urls.set(id,url);}
+      for(const id of needed)cacheAvatar(id,urls.get(id)||null);
+      paintAvatars();
+    }catch(error){
+      if(!current(epoch,request)||state.avatarGeneration!==generation||state.userId!==userId)return;
+      // Photos are optional while the RPC rolls out; permission failures still clear all private content.
+      clearAvatars();
+      if(['AUTH','ACCESS','42501'].includes(error?.code)){clearPrivate();state.authorized=false;state.error=errorMessage(error);render();}
+    }finally{
+      for(const id of needed)if(state.avatarPending.get(id)===token)state.avatarPending.delete(id);
+      if(current(epoch)&&state.avatarGeneration===generation&&state.userId===userId&&!state.loading)void loadAvatars(state.epoch,state.request);
+    }
+  }
   function humanize(value){return String(value??'').replace(/[_-]+/g,' ').replace(/\b\w/g,char=>char.toUpperCase());}
   function sectionName(value){return SECTION_NAMES[value]||humanize(value)||'Paws HQ';}
   function searchFilter(value){
@@ -29,16 +91,17 @@
   function validDate(value){const date=new Date(value);return value&&Number.isFinite(date.getTime())?date:null;}
   function dateLabel(value){const date=validDate(value);return date?new Intl.DateTimeFormat('en-US',{timeZone:ZONE,month:'short',day:'numeric',year:'numeric'}).format(date):'';}
   function rowHtml(row){
-    const name=String(row.actor_name||'Paws HQ member'),initials=name.trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]||'').join('').toUpperCase();
+    const name=String(row.actor_name||'Paws HQ member'),id=actorId(row.actor_id);
     const knownAction=Object.hasOwn(ACTIONS,row.action),action=knownAction?ACTIONS[row.action]:'Activity';
     const label=String(row.record_label||row.page_path||sectionName(row.section));
     const fields=Array.isArray(row.changed_fields)?[...new Set(row.changed_fields.filter(field=>typeof field==='string'&&field.length&&field.length<=100))].slice(0,64):[];
     const details=fields.length?`<details class="ah-changes"><summary>Fields changed (${fields.length})</summary><div class="ah-fields">${fields.map(field=>`<span>${escape(FIELD_NAMES[field]||humanize(field))}</span>`).join('')}</div></details>`:'';
     const date=validDate(row.occurred_at),time=date?new Intl.DateTimeFormat('en-US',{timeZone:ZONE,hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(date):'';
-    return `<tr><td><div class="ah-who"><span class="ah-avatar" aria-hidden="true">${escape(initials)}</span><span>${escape(name)}</span></div></td><td><span class="ah-action${knownAction?' ah-action-'+row.action:''}">${escape(action)}</span></td><td><div class="ah-item">${escape(label)}</div><div class="ah-section">${escape(sectionName(row.section))}</div>${details}</td><td>${date?`<time class="ah-time" datetime="${escape(date.toISOString())}">${escape(dateLabel(row.occurred_at))}<span>${escape(time)}</span></time>`:'—'}</td></tr>`;
+    return `<tr><td><div class="ah-who"><span class="ah-avatar"${id?` data-avatar-actor="${id}"`:''} aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg></span><span>${escape(name)}</span></div></td><td><span class="ah-action${knownAction?' ah-action-'+row.action:''}">${escape(action)}</span></td><td><div class="ah-item">${escape(label)}</div><div class="ah-section">${escape(sectionName(row.section))}</div>${details}</td><td>${date?`<time class="ah-time" datetime="${escape(date.toISOString())}">${escape(dateLabel(row.occurred_at))}<span>${escape(time)}</span></time>`:'—'}</td></tr>`;
   }
   function render(){
     $('historyRows').innerHTML=state.rows.map(rowHtml).join('');
+    paintAvatars();
     $('historyTable').hidden=!state.rows.length;
     $('historyMessage').hidden=!state.error;$('historyMessage').textContent=state.error;
     $('historyCount').textContent=state.loading?(state.rows.length?`Loading more… · ${state.rows.length} shown`:'Loading history…'):`${state.rows.length} ${state.rows.length===1?'activity':'activities'} shown`;
@@ -52,7 +115,7 @@
     $('refreshHistory').disabled=state.loading;
     $('historyCoverage').textContent=state.startedAt?`History starts ${dateLabel(state.startedAt)}. Earlier activity isn’t included.`:'Earlier activity isn’t included.';
   }
-  function clearPrivate(){state.rows=[];state.cursor=null;state.hasMore=false;state.startedAt=null;state.coverageLoaded=false;}
+  function clearPrivate(){clearAvatars();state.rows=[];state.cursor=null;state.hasMore=false;state.startedAt=null;state.coverageLoaded=false;}
   function resetAuth(id=null){
     state.epoch++;state.request++;if(state.debounce)clearTimeout(state.debounce);state.debounce=null;
     clearPrivate();state.userId=id;state.authorized=false;state.loading=false;state.query='';state.action='all';state.period='7';state.error='';
@@ -84,7 +147,7 @@
     try{
       await requireAccess(epoch,request);if(!current(epoch,request))return;
       render();
-      let query=supabaseClient.from('hq_activity_history').select('id,occurred_at,actor_name,action,section,record_label,changed_fields,page_path').order('id',{ascending:false}).limit(PAGE_SIZE);
+      let query=supabaseClient.from('hq_activity_history').select('id,occurred_at,actor_id,actor_name,action,section,record_label,changed_fields,page_path').neq('action','page_view').order('id',{ascending:false}).limit(PAGE_SIZE);
       if(cursor)query=query.lt('id',cursor);
       if(state.action!=='all')query=query.eq('action',state.action);
       const start=periodStart(state.period);if(start)query=query.gte('occurred_at',start);
@@ -93,17 +156,17 @@
       const [result,coverage]=await Promise.all([query,info]);if(!current(epoch,request))return;
       if(result.error)throw result.error;
       if(!Array.isArray(result.data)||result.data.some(row=>!row||!recordId(row.id)))throw {code:'INVALID_RESPONSE'};
-      const incoming=result.data.map(row=>({...row,id:recordId(row.id)}));
+      const incoming=result.data.filter(row=>row.action!=='page_view').map(row=>({...row,id:recordId(row.id)}));
       const rows=new Map((append?state.rows:[]).map(row=>[row.id,row]));for(const row of incoming)rows.set(row.id,row);
       state.rows=[...rows.values()].sort((a,b)=>BigInt(a.id)>BigInt(b.id)?-1:BigInt(a.id)<BigInt(b.id)?1:0);
-      const next=incoming.at(-1)?.id||null;state.cursor=next||cursor;
-      state.hasMore=incoming.length===PAGE_SIZE&&Boolean(next)&&next!==cursor;
+      const next=recordId(result.data.at(-1)?.id);state.cursor=next||cursor;
+      state.hasMore=result.data.length===PAGE_SIZE&&Boolean(next)&&next!==cursor;
       if(coverage&&!coverage.error){const meta=Array.isArray(coverage.data)?coverage.data[0]:coverage.data;if(meta?.version===1&&validDate(meta.started_at)){state.startedAt=meta.started_at;state.coverageLoaded=true;}}
     }catch(error){
       if(!current(epoch,request))return;
       clearPrivate();state.error=errorMessage(error);
       if(['AUTH','ACCESS','42501'].includes(error?.code))state.authorized=false;
-    }finally{if(current(epoch,request)){state.loading=false;render();}}
+    }finally{if(current(epoch,request)){state.loading=false;render();if(state.authorized&&!state.error)void loadAvatars(epoch,request);}}
   }
   function searchChanged(){
     state.query=$('historySearch').value.slice(0,120);state.request++;

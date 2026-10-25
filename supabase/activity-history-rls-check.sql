@@ -25,6 +25,15 @@ select set_config('request.jwt.claim.sub',actor::text,true),
     'user_metadata',jsonb_build_object('full_name','HISTORY_FORGED_ACTOR_NAME'))::text,true)
 from pg_temp.history_check_context;
 
+-- Retain a pre-existing style page-view fixture, but never expose it through
+-- the current staff policy. This is synthetic and rolled back with the test.
+create temporary table history_check_legacy_view as
+with inserted as (
+  insert into public.hq_activity_history(actor_id,actor_name,action,section,record_label,page_path,source)
+    select actor,'History fixture','page_view','history','Legacy browsing fixture','/history','client'
+    from pg_temp.history_check_context returning id
+) select id from inserted;
+
 -- The fixed gift-card roster is never expanded by a browser. An administrator
 -- seeds this synthetic certificate in the same rollback-only transaction.
 insert into public.hq_gift_cards(id,certificate_number)
@@ -38,6 +47,9 @@ do $$
 declare c record; item record; before_count bigint; after_count bigint; event public.hq_activity_history%rowtype; fixture_id uuid;
 begin
   select * into c from pg_temp.history_check_context;
+  if exists(select 1 from public.hq_activity_history where action='page_view') then
+    raise exception 'Discontinued page views remain visible to staff.';
+  end if;
   if (public.hq_activity_history_info()->>'started_at')::timestamptz > clock_timestamp()
       or (public.hq_activity_history_info()->>'version')::int <> 1 then raise exception 'History installation metadata is invalid.'; end if;
 
@@ -134,28 +146,33 @@ begin
     raise exception 'Browser deleted history.'; exception when insufficient_privilege then null; end;
   if has_function_privilege('authenticated','public.hq_activity_history_capture()','EXECUTE') then raise exception 'Browser can execute the capture function.'; end if;
 
-  if not public.hq_activity_record_visit(c.kb_path,'page_view') then raise exception 'A new canonical knowledge visit was not recorded.'; end if;
-  if public.hq_activity_record_visit(c.kb_path,'page_view') then raise exception 'A matching visit was not deduplicated.'; end if;
-  if not public.hq_activity_record_visit(c.kb_path,'sign_in') then raise exception 'A fresh sign-in was not distinguished from a visit.'; end if;
+  if public.hq_activity_record_visit(c.kb_path,'page_view') then raise exception 'A discontinued page view was recorded.'; end if;
+  if public.hq_activity_record_visit('/obsolete.html?old-client','page_view') then raise exception 'An old cached page-view call was not a quiet no-op.'; end if;
+  if not public.hq_activity_record_visit(c.kb_path,'sign_in') then raise exception 'A fresh sign-in was not recorded.'; end if;
   if public.hq_activity_record_visit(c.kb_path,'sign_in') then raise exception 'A matching sign-in was not deduplicated.'; end if;
-  perform public.hq_activity_record_visit('/history','page_view');
-  perform public.hq_activity_record_visit('/settings','page_view');
-  perform public.hq_activity_record_visit('/login','page_view');
+  perform public.hq_activity_record_visit('/history');
+  perform public.hq_activity_record_visit('/settings','sign_in');
+  perform public.hq_activity_record_visit('/login','sign_in');
   for item in select * from (values ('https://example.invalid/'),('//example.invalid/'),('/settings?token=private'),('/settings#private'),
       ('/settings.html'),('/settings/'),('/kb/not-an-existing-page'),('/../settings'),('/settings%3Fsecret'),('/private-made-up-route')) p(path) loop
-    begin perform public.hq_activity_record_visit(item.path,'page_view');
+    begin perform public.hq_activity_record_visit(item.path,'sign_in');
       raise exception 'Invalid route was accepted: %',item.path; exception when invalid_parameter_value then null; end;
   end loop;
   begin perform public.hq_activity_record_visit('/history','update');
     raise exception 'Visit RPC accepted a forged database action.'; exception when invalid_parameter_value then null; end;
   if exists(select 1 from public.hq_activity_history h where h.actor_id=c.actor and h.occurred_at>=c.started_at and h.source='client'
-      and (h.source_table is not null or h.record_id is not null or h.changed_fields<>'{}'::text[] or h.action not in ('page_view','sign_in'))) then
+      and (h.source_table is not null or h.record_id is not null or h.changed_fields<>'{}'::text[] or h.action<>'sign_in')) then
     raise exception 'Client-reported activity masquerades as a record change.';
   end if;
 end;
 $$;
 
 reset role;
+do $$ begin
+  if not exists(select 1 from public.hq_activity_history where id=(select id from pg_temp.history_check_legacy_view)) then
+    raise exception 'Discontinuing page views permanently deleted a retained row.';
+  end if;
+end $$;
 -- Where a second active account already exists, verify this is shared history
 -- rather than an accidental read-own-events policy. No account is created.
 select set_config('request.jwt.claim.sub',coalesce(other_actor,actor)::text,true),
@@ -232,4 +249,4 @@ end $$;
 reset role;
 
 rollback;
-select 'PASS: all 16 operational tables, server actor/time, field names without values, no-op suppression, transactional rollback, create/update/delete/restore, append-only browser permissions, safe visit routes and deduplication, best-effort failure isolation, and anonymous/unapproved/revoked isolation.' as result;
+select 'PASS: all 16 operational tables, server actor/time, field names without values, no-op suppression, transactional rollback, create/update/delete/restore, append-only browser permissions, safe sign-in routes and deduplication, discontinued page-view no-ops and hidden retained rows, best-effort failure isolation, and anonymous/unapproved/revoked isolation.' as result;

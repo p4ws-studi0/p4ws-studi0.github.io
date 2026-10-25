@@ -6,7 +6,7 @@ const flush=async()=>{for(let i=0;i<40;i++)await Promise.resolve();};
 const deferred=()=>{let resolve;return {promise:new Promise(r=>resolve=r),resolve:value=>resolve(value)};};
 function harness(options={}) {
   const listeners={},auth=[],timers=new Map(),calls=[];let timer=0;
-  const state={session:{user:{id:'staff-a'}},allowed:true,failure:false,...options};
+  const state={session:{user:{id:'staff-a'}},allowed:true,failure:false,signIn:true,...options};
   const win={location:{pathname:state.path||'/tours'},addEventListener:(type,fn)=>{listeners[type]=fn;}};
   const doc={hidden:false,addEventListener:(type,fn)=>{listeners[type]=fn;}};
   const client={auth:{getSession:async()=>state.pending||{data:{session:state.session}},onAuthStateChange:fn=>auth.push(fn)},rpc:async(name,body)=>{calls.push({name,body});if(state.failure)throw Error('private details');return {data:true,error:null};}};
@@ -19,15 +19,16 @@ test('activity paths omit query strings, OAuth codes and anchors and reject fore
   assert.equal(cleanPath('/kb/other/Pet%20Care.html'),'/kb/other/Pet Care');
   for(const path of ['https://evil.example/','//evil.example/a','/bad\\path','/bad\u0000path','/%2fexample','/%2e%2e/settings','/%00secret','/bad%3fquery','/bad%zz'])assert.equal(cleanPath(path),'');
 });
-test('only the authenticated canonical page/action are sent and repeated visibility does not duplicate them',async()=>{
+test('only the authenticated canonical sign-in route is sent and repeated visibility does not duplicate it',async()=>{
   const h=harness({path:'/tours.html?customer=private#secret'});assert.equal(h.calls.length,0);await h.run();
-  assert.deepEqual(h.calls,[{name:'hq_activity_record_visit',body:{p_path:'/tours',p_action:'page_view'}}]);
-  await h.event('visibilitychange');await h.run();await h.logger.record('page_view');assert.equal(h.calls.length,1);
+  assert.deepEqual(h.calls,[{name:'hq_activity_record_visit',body:{p_path:'/tours',p_action:'sign_in'}}]);
+  await h.event('visibilitychange');await h.run();await h.logger.record('sign_in');assert.equal(h.calls.length,1);
   assert.ok(!JSON.stringify(h.calls).includes('private'));assert.ok(!JSON.stringify(h.calls).includes('staff-a'));
 });
-test('ordinary persisted sessions never produce sign-in events; OAuth returns may do so',async()=>{
-  const ordinary=harness();await ordinary.run();assert.equal(ordinary.calls.filter(c=>c.body.p_action==='sign_in').length,0);
-  const returned=harness({signIn:true});await returned.run();assert.deepEqual(returned.calls.map(c=>c.body.p_action).sort(),['page_view','sign_in']);
+test('ordinary persisted sessions produce no activity; OAuth returns only report sign-ins',async()=>{
+  const ordinary=harness({signIn:false});await ordinary.run();assert.equal(ordinary.calls.length,0);assert.equal(ordinary.timers.size,0);
+  const returned=harness({signIn:true});await returned.run();assert.deepEqual(returned.calls.map(c=>c.body.p_action),['sign_in']);
+  await ordinary.logger.record('page_view');await returned.logger.record('page_view');assert.equal(ordinary.calls.length,0);assert.equal(returned.calls.length,1);
 });
 test('anonymous, denied, hidden and utility pages do not write history',async()=>{
   for(const config of [{session:null},{allowed:false},{path:'/login'},{path:'/404.html'},{path:'/report-loading'}]){const h=harness(config);await h.run();assert.equal(h.calls.length,0);}
