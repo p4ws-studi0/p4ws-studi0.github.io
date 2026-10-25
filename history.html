@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="/assets/clean-urls.js?v=20261017f"></script>
+  <link rel="stylesheet" href="/assets/page-transition.css?v=20261017c" />
+  <script src="/assets/page-transition-bootstrap.js?v=20261017f"></script>
+  <meta name="color-scheme" content="light dark" />
+  <title>History · Paws HQ</title>
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/activity-history.css?v=20261025a" />
+</head>
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="activityHistoryPage" class="tr-page ah-page">
+      <a class="ah-back" href="/settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h12" /></svg>Settings</a>
+      <div class="tr-page-heading ah-heading">
+        <div><h1>History</h1><p>Recent changes and page visits across Paws HQ.</p></div>
+        <button id="refreshHistory" class="ah-button ah-refresh" type="button" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7a9 9 0 1 0 1 9M20 3v5h-5" /></svg>Refresh</button>
+      </div>
+      <section class="tr-sheet ah-sheet" aria-label="Activity history">
+        <div class="ah-filters">
+          <label class="ah-search"><span class="tr-sr-only">Search people, items or sections</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg><input id="historySearch" type="search" placeholder="Search people, items or sections…" maxlength="120" autocomplete="off" disabled /></label>
+          <label class="ah-filter"><span>Action</span><select id="historyAction" disabled><option value="all">All actions</option><option value="create">Added</option><option value="update">Updated</option><option value="delete">Deleted</option><option value="restore">Restored</option><option value="page_view">Viewed page</option><option value="sign_in">Signed in</option></select></label>
+          <label class="ah-filter"><span>Dates</span><select id="historyPeriod" disabled><option value="7" selected>Last 7 days</option><option value="today">Today</option><option value="30">Last 30 days</option><option value="all">All time</option></select></label>
+        </div>
+        <div id="historyMessage" class="ah-message" role="status" aria-live="polite" hidden></div>
+        <div class="ah-caption"><span id="historyCount" role="status" aria-live="polite">Loading history…</span><span>Newest first</span></div>
+        <div id="historyTable" class="ah-table-wrap" hidden>
+          <table class="ah-table"><caption class="tr-sr-only">Paws HQ activity, newest first. Expand a change to see which fields were updated.</caption><thead><tr><th scope="col">Who</th><th scope="col">Action</th><th scope="col">Item / Page</th><th scope="col">When</th></tr></thead><tbody id="historyRows"></tbody></table>
+        </div>
+        <div id="historyEmpty" class="ah-empty" hidden><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg><p id="historyEmptyTitle">No activity yet.</p><span id="historyEmptyHint">New activity will appear here as the team uses Paws HQ.</span></div>
+        <div class="ah-more"><button id="loadMoreHistory" class="ah-button" type="button" hidden disabled>Load more</button></div>
+      </section>
+      <div class="ah-coverage"><p id="historyCoverage">Earlier activity isn’t included.</p><p>History is a best-effort record. Page visits and sign-ins may be missing when a device is offline or a request is interrupted. Changed fields are listed without their previous or new values.</p></div>
+      <noscript><p class="ah-message">Please enable JavaScript to view history.</p></noscript>
+    </main>
+  </div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js?v=20261025a"></script>
+  <script>
+    for (const [id,file] of [['header','header'],['sideMenu','sidebar']]) {
+      fetch(`/partials/${file}.html`)
+        .then(response => {if (!response.ok) throw new Error(`Could not load ${file}`);return response.text()})
+        .then(html => {document.getElementById(id).innerHTML=html;if(id==='header')document.dispatchEvent(new Event('header:ready'))})
+        .catch(error => console.warn(error.message))
+    }
+  </script>
+  <script src="/assets/activity-history.js?v=20261025a" defer></script>
+</body>
+</html>

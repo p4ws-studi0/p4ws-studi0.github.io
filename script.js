@@ -6,6 +6,9 @@
 
 
 
+// Capture only whether this page is an OAuth return, never its code/token values.
+const HQ_ACTIVITY_SIGN_IN_RETURN = /^\/(?:index\.html)?$|^\/auth\/callback(?:\/index\.html|\/)?$/.test(window.location.pathname) && /(?:[?&]code=|[#&]access_token=)/.test(window.location.search + window.location.hash)
+
 /*************************************************
  * SUPABASE
  *************************************************/
@@ -223,6 +226,7 @@ function receiveHqAccess(state) {
   }
   hqPreviousAccess = state
   if (state.status === 'allowed' || state.allowed) {
+    prepareHqActivityLogging()
     accessConnectionPanel(false)
     hqAccessNotice?.render(state)
     document.body.style.opacity = '1'
@@ -808,7 +812,7 @@ document.addEventListener('click', e => {
 })
 
 // Shared security code reuses this exact Supabase client and loads before navigation.
-const HQ_ASSET_VERSION = '20261020c'
+const HQ_ASSET_VERSION = '20261025a'
 let hqSecurityAssets = null
 
 function loadHqSharedScript(path, globalName) {
@@ -866,6 +870,14 @@ async function ensureHqAccessController() {
 }
 
 let hqNavigationScript = null
+let hqActivityScript = null
+function prepareHqActivityLogging() {
+  if (hqActivityScript) return
+  hqActivityScript = loadHqSharedScript('/assets/activity-logger.js', 'PawsActivityLogger')
+    .then(api => api.start({client: supabaseClient, ensureAccess: ensureHqWorkspaceAccess, win: window, doc: document, signIn: HQ_ACTIVITY_SIGN_IN_RETURN}))
+    .catch(() => { hqActivityScript = null })
+}
+
 function prepareHqNavigation() {
   if (hqNavigationScript) return
   hqNavigationScript = document.createElement('script')
