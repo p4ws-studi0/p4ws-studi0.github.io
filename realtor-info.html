@@ -17,36 +17,40 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
   <link rel="stylesheet" href="/assets/training.css?v=3" />
-  <link rel="stylesheet" href="/assets/realtor-info.css?v=1" />
+  <link rel="stylesheet" href="/assets/realtor-info.css?v=20261025a" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
   <div class="pt-16 flex">
     <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
     <main id="realtorsPage" class="tr-page">
-      <div class="tr-page-heading">
-        <h1>Realtor info</h1>
-        <p>Find a realtor, open its history, and log a contact. History cells save when you leave them.</p>
+      <div class="tr-page-heading ri-page-heading">
+        <div><h1>Realtor info</h1><p>Find a realtor, keep their details handy, and record your conversations.</p></div>
+        <span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span>
       </div>
-      <section class="tr-sheet glass" aria-label="Realtor directory">
+      <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
+      <section id="directoryView" class="tr-sheet glass" aria-label="Realtor directory">
         <div class="tr-toolbar ri-toolbar">
           <div class="ri-filters">
-            <label class="tr-sr-only" for="searchRealtors">Search realtors and contact history</label><input id="searchRealtors" type="search" placeholder="Search realtors or history" autocomplete="off" />
+            <label class="ri-search" for="searchRealtors"><span class="tr-sr-only">Search realtors and contact history</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4" stroke-linecap="round"/></svg><input id="searchRealtors" type="search" placeholder="Find a realtor, phone, location, or note…" autocomplete="off" /></label>
           </div>
-          <button id="addRealtor" disabled type="button" class="tr-button tr-button-primary">Add realtor</button>
+          <button id="addRealtor" disabled type="button" class="tr-button ri-add-realtor">Add realtor</button>
         </div>
-        <div id="pageMessage" class="tr-page-message" role="status" aria-live="polite"></div>
-        <div class="tr-sheet-caption"><span id="rowCount">Loading realtors…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
+        <div class="tr-sheet-caption ri-directory-caption"><span id="rowCount">Loading realtors…</span><button id="clearSearch" type="button" hidden>Clear search</button></div>
         <div id="directoryScroll" class="tr-table-scroll" role="region" aria-label="Realtor directory" tabindex="0">
           <table class="tr-table ri-directory">
-            <caption class="tr-sr-only">Realtor directory, alphabetical by name. Open a realtor to edit its contact history.</caption>
+            <caption class="tr-sr-only">Realtor directory, alphabetical by name. Open a realtor to see their details and contact history.</caption>
             <colgroup><col class="ri-col-name" /><col class="ri-col-contact" /><col class="ri-col-location" /><col class="ri-col-last" /><col class="ri-col-actions" /></colgroup>
-            <thead><tr><th scope="col">Realtor</th><th scope="col">Phone / email</th><th scope="col">Location</th><th scope="col">Last recorded contact</th><th scope="col"><span class="tr-sr-only">Actions</span></th></tr></thead>
+            <thead><tr><th scope="col">Realtor</th><th scope="col">Phone / email</th><th scope="col">Location</th><th scope="col">Latest entry</th><th scope="col"><span class="tr-sr-only">Actions</span></th></tr></thead>
             <tbody id="realtorRows"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="tr-empty-state" hidden>No realtors found.</div>
+        <div id="emptyState" class="tr-empty-state" hidden><p>No matching realtors</p><span>Try a name, phone number, location, or note.</span></div>
         <div class="tr-sheet-footer"><span>Realtors A–Z</span><button id="refreshLogs" type="button" class="tr-refresh">Refresh</button></div>
+      </section>
+      <section id="realtorDetailView" hidden aria-label="Realtor contact history">
+        <button id="backRealtors" type="button" class="ri-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h13" stroke-linecap="round" stroke-linejoin="round"/></svg>All realtors</button>
+        <div id="realtorDetails" class="tr-sheet glass"></div>
       </section>
       <details id="deletedSection" class="tr-deleted-dogs">
         <summary>Deleted realtors <span id="deletedCount">0</span></summary>
@@ -59,14 +63,23 @@
   <div id="toast" class="tr-toast" role="status" aria-live="polite" hidden><span id="toastText"></span><button id="undoDelete" type="button" hidden>Undo</button></div>
   <dialog id="realtorDialog" class="ri-dialog" aria-labelledby="realtorDialogTitle">
     <form id="realtorForm" class="ri-form">
-      <div class="ri-form-heading"><h2 id="realtorDialogTitle">Add realtor</h2><button id="closeRealtorDialog" type="button" class="tr-button tr-button-subtle" aria-label="Close realtor form">Close</button></div>
+      <div class="ri-form-heading"><h2 id="realtorDialogTitle">Add realtor</h2></div>
       <p class="ri-form-hint">Enter any detail. You can fill in the rest later.</p>
-      <label for="realtorName">Realtor name</label><input id="realtorName" data-realtor-field="realtor_name" maxlength="500" />
-      <label for="realtorPhone">Phone</label><input id="realtorPhone" type="text" data-realtor-field="phone" maxlength="200" />
-      <label for="realtorEmail">Email</label><input id="realtorEmail" type="text" data-realtor-field="email" maxlength="500" />
-      <label for="realtorLocation">Location</label><input id="realtorLocation" type="text" data-realtor-field="location" maxlength="2000" />
+      <label for="realtorName">Realtor name</label><textarea id="realtorName" class="ri-single-field" data-realtor-field="realtor_name" maxlength="500" rows="1" autocomplete="off"></textarea>
+      <div class="ri-form-grid"><div><label for="realtorPhone">Phone</label><textarea id="realtorPhone" class="ri-single-field" data-realtor-field="phone" maxlength="200" rows="1" autocomplete="off"></textarea></div><div><label for="realtorEmail">Email</label><textarea id="realtorEmail" class="ri-single-field" data-realtor-field="email" maxlength="500" rows="1" autocomplete="off"></textarea></div></div>
+      <label for="realtorLocation">Location</label><textarea id="realtorLocation" class="ri-address-field" data-realtor-field="location" maxlength="2000" rows="2" autocomplete="off"></textarea>
       <p id="realtorFormError" class="tr-form-error" role="alert"></p>
-      <div class="ri-form-actions"><button id="reloadRealtor" type="button" class="tr-button tr-button-subtle" hidden>Reload realtor</button><button id="saveRealtor" type="submit" class="tr-button tr-button-primary">Save realtor</button></div>
+      <div class="ri-form-actions"><button id="reloadRealtor" type="button" class="tr-button tr-button-subtle" hidden>Reload realtor</button><button id="closeRealtorDialog" type="button" class="tr-button ri-cancel">Cancel</button><button id="saveRealtor" type="submit" class="tr-button tr-button-primary">Save realtor</button></div>
+    </form>
+  </dialog>
+  <dialog id="contactDialog" class="ri-dialog ri-contact-dialog" aria-labelledby="contactDialogTitle" aria-describedby="contactRealtorName">
+    <form id="contactForm" class="ri-form">
+      <div class="ri-form-heading"><div><h2 id="contactDialogTitle">Log contact</h2><p id="contactRealtorName" class="ri-form-context"></p></div></div>
+      <p class="ri-form-hint">Only fill in what you know.</p>
+      <label for="contactDate">Date contacted</label><textarea id="contactDate" class="ri-date-field" data-contact-field="contacted_date" maxlength="500" rows="2" placeholder="e.g. 10/25/2026" autocomplete="off"></textarea>
+      <label for="contactNotes">Notes</label><textarea id="contactNotes" data-contact-field="notes" maxlength="20000" rows="5" placeholder="Who you spoke to, what you discussed, or a useful follow-up"></textarea>
+      <p id="contactFormError" class="tr-form-error" role="alert"></p>
+      <div class="ri-form-actions"><button id="reloadContact" type="button" class="tr-button tr-button-subtle" hidden>Reload contact</button><button id="closeContactDialog" type="button" class="tr-button ri-cancel">Cancel</button><button id="saveContact" type="submit" class="tr-button tr-button-primary">Save contact</button></div>
     </form>
   </dialog>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -83,6 +96,6 @@
         .catch(error => console.warn(error.message))
     }
   </script>
-  <script src="/assets/realtor-info.js?v=20261020c" defer></script>
+  <script src="/assets/realtor-info.js?v=20261025a" defer></script>
 </body>
 </html>

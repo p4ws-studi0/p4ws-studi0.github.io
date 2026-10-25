@@ -1,6 +1,8 @@
 # Realtor information
 
-`/realtor-info.html` is a separate page linked from the sidebar. It reuses Paws HQ typography, themes, sign-in, and compact editable tables. The directory fields are realtor name, phone, email, and location. Each realtor has repeatable contact-history entries with date contacted and notes. Cells accept literal text and partial records. Any nonblank directory field is enough to save a realtor; a name can be added later. Directory forms use Save realtor; history changes save when leaving a cell. Untouched date-prefilled history drafts stay local until edited or saved intentionally. Entirely blank entries stay local until filled or removed.
+`/realtor-info` is a separate page reached through the Paws HQ menu. It reuses Paws HQ typography, themes, and sign-in. Search covers the realtor name, phone, email, location, and active contact history. Open a realtor for full details and readable history, or choose Log contact to open a simple date/notes form. Both realtor details and contact entries use explicit Save and Cancel controls; moving between fields never writes data. Untouched date-prefilled drafts stay local and do not show unsaved changes. Failed saves retain their draft and same-ID reconciliation path. Contact deletion remains reversible.
+
+The directory stacks into readable rows on small screens, without a horizontal scroller. Long notes expand on request. Valid single phone numbers and email addresses have conservative call/email links; incomplete or compound values remain readable text, with no validation requirement or stored-value normalization. Any nonblank directory field is enough to save a realtor; a name can be added later. All form fields support literal text, line breaks, and partial records.
 
 The source's first and second date/notes pairs remain separate history entries. Composite dates remain one literal field, including their original commas, periods, and spacing. Dates without a year remain unknown. The page never splits a date cell into additional contacts or assigns an inferred year. Phone numbers, email addresses, blanks, spelling, and trailing whitespace are preserved.
 
@@ -8,7 +10,7 @@ Deleting a history entry is reversible from Deleted contacts or the five-second 
 
 ## Storage and access
 
-Run `realtor-info-setup.sql` in the existing Supabase project after Tours membership setup. It safely creates `hq_realtors` and `hq_realtor_contacts`. Only active members of the existing administrator-managed `hq_tour_staff` allowlist can select, insert, or update records, including already approved guest accounts. No accounts are enrolled and permanent deletion is not granted.
+Run `realtor-info-setup.sql` in the existing Supabase project after Tours membership setup. It safely creates `hq_realtors` and `hq_realtor_contacts`. Access uses the existing active Paws HQ workspace membership, including guest accounts. This page adds no access tier or account enrollment, and permanent deletion is not granted.
 
 The server controls audit timestamps, actor IDs, revisions, and deletion timestamps. Updates filter by the last loaded revision. Record IDs, creation details, source order, source metadata, and each history entry's parent realtor are immutable. Browser-created records cannot claim imported metadata. Changing history locks its undeleted parent against concurrent deletion for that transaction.
 
