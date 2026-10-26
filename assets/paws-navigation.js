@@ -212,12 +212,6 @@
   root.querySelector('.desktop-taskbar').addEventListener('click',event=>{
     if(opened&&!event.target.closest('#desktopSearchOpen,#desktopHome'))setOpen(false,true);
   });
-  panel.addEventListener('click',event=>{
-    if(!opened||!event.target.matches('.desktop-launcher,.desktop-launcher-top,.desktop-heading-row,.desktop-launcher-content,.desktop-launcher-footer,.desktop-page-groups,.desktop-page-group,.desktop-page-grid,.desktop-kb-category-grid,.desktop-knowledge-list,.desktop-browse-header,.desktop-browse-title-row,.desktop-search-group,.desktop-app-list,.desktop-empty'))return;
-    const scrollbarWidth=content.offsetWidth-content.clientWidth;
-    if(event.target===content&&scrollbarWidth>0&&event.clientX>=content.getBoundingClientRect().right-scrollbarWidth)return;
-    setOpen(false,true);
-  });
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape'&&opened){event.preventDefault();setOpen(false,true);return;}
     if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openSearch();return;}
