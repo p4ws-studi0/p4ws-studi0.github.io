@@ -1716,6 +1716,24 @@
       "quickAccess": true
     },
     {
+      "id": "quick-access-printables-custom-playtime-log",
+      "href": "https://drive.google.com/file/d/1L85DT01e9LrNUibj9VXaZ8JF4mewCxaq/view?usp=sharing",
+      "title": "Custom Playtime Log",
+      "kind": "resource",
+      "iconKey": "print",
+      "aliases": [
+        "custom playtime",
+        "playtime log",
+        "play log",
+        "playtime sheet",
+        "printables",
+        "quick access"
+      ],
+      "category": "Quick Access",
+      "section": "Printables",
+      "quickAccess": true
+    },
+    {
       "id": "quick-access-price-sheets-dog-boarding",
       "href": "https://drive.google.com/file/d/1cG5NAn6Iv7dsg32zrleyg7U9h6-5RgaB/view?usp=sharing",
       "title": "Dog Boarding",
