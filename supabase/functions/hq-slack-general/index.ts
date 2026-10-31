@@ -4,7 +4,7 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   const project=env.SUPABASE_URL, apiKey=env.SUPABASE_ANON_KEY;
   const trimmed=value=>typeof value==='string'?value.trim():value;
   const token=trimmed(env.SLACK_BOT_TOKEN), team=trimmed(env.SLACK_TEAM_ID), channel=trimmed(env.SLACK_GENERAL_CHANNEL_ID);
-  const cache=new Map(),pending=new Map();let cooldown=0;
+  const cache=new Map(),pending=new Map(),mentionPending=new Map();let cooldown=0,mentionCooldown=0;
   const assetCache=new Map(),assetPending=new Map();let assetBytes=0;
   const MAX_IMAGE=8*1024*1024;
   const imageTypes=new Set(['image/jpeg','image/png','image/gif','image/webp','image/avif']);
@@ -42,7 +42,43 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
     }
     return data;
   }
-  async function userInfo(id) {return cached(`user:${id}`,30000,async()=>{const data=await slack('users.info',{user:id});return data.user;});}
+  function abortable(work,signal) {
+    return new Promise((resolve,reject)=>{
+      let finished=false;
+      const finish=(callback,value)=>{if(finished)return;finished=true;signal.removeEventListener('abort',abort);callback(value);};
+      const abort=()=>finish(reject,new DOMException('Optional lookup expired','AbortError'));
+      signal.addEventListener('abort',abort,{once:true});
+      Promise.resolve(work).then(value=>finish(resolve,value),error=>finish(reject,error));
+      if(signal.aborted)abort();
+    });
+  }
+  async function optionalMentionUser(id,signal) {
+    if(signal.aborted||cooldown>now()||mentionCooldown>now())fail(429,'RATE_LIMITED');
+    // A display-name failure must not clear authorization/feed caches or trip
+    // unrelated file hydration. Only this optional path uses its own backoff.
+    const res=await abortable(request('https://slack.com/api/users.info',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({user:id}),signal,redirect:'error'}),signal);
+    if(res.status===429){diagnose('SLACK_RATE_LIMITED','users.info');mentionCooldown=now()+Math.max(1,Math.min(300,Number(res.headers.get('Retry-After'))||60))*1000;fail(429,'RATE_LIMITED');}
+    if(!res.ok){diagnose('SLACK_HTTP_ERROR','users.info');fail(502,'SLACK_UNAVAILABLE');}
+    const data=await abortable(res.json(),signal);
+    if(!data.ok){diagnose('SLACK_API_ERROR','users.info',data.error);fail(502,'SLACK_UNAVAILABLE');}
+    if(!data.user||data.user.id!==id||data.user.team_id!==team)fail(502,'SLACK_UNAVAILABLE');
+    return data.user;
+  }
+  async function userInfo(id,optionalSignal) {
+    const key=`user:${id}`;
+    if(!optionalSignal)return cached(key,30000,async()=>(await slack('users.info',{user:id})).user);
+    const prior=cache.get(key);if(prior&&prior.until>now())return prior.value;
+    // Optional consumers may reuse an author/viewer read, never the reverse:
+    // their short deadline must not abort a required authorization/profile read.
+    if(pending.has(key))return pending.get(key);
+    if(mentionPending.has(key))return mentionPending.get(key);
+    const work=optionalMentionUser(id,optionalSignal).then(user=>{
+      // A slower optional response must not replace a newer required result.
+      if(!pending.has(key)&&cache.get(key)===prior){if(cache.size>300)cache.clear();cache.set(key,{value:user,until:now()+30000});}
+      return user;
+    }).finally(()=>{if(mentionPending.get(key)===work)mentionPending.delete(key);});
+    mentionPending.set(key,work);return work;
+  }
   async function concurrent(items,limit,read) {
     const values=new Array(items.length);let next=0,failed=false;
     const workers=Array.from({length:Math.min(limit,items.length)},async()=>{
@@ -117,15 +153,16 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   }
   function blockText(blocks) {
     const element=node=>{
-      if(node.type==='text')return string(node.text);
+      if(node.type==='text')return node.style?.code?`\`${string(node.text)}\``:string(node.text);
       if(node.type==='link')return node.text?`<${string(node.url)}|${string(node.text)}>`:`<${string(node.url)}>`;
-      if(node.type==='user')return `<@${string(node.user_id)}>`;
+      if(node.type==='user')return node.style?.code?`\`<@${string(node.user_id)}>\``:`<@${string(node.user_id)}>`;
       if(node.type==='channel')return `<#${string(node.channel_id)}>`;
       if(node.type==='emoji')return `:${string(node.name)}:`;
       if(node.type==='broadcast')return `<!${string(node.range)}>`;
       if(node.type==='section')return [typeof node.text==='string'?node.text:string(node.text?.text),...(Array.isArray(node.fields)?node.fields.map(element):[])].filter(Boolean).join('\n');
       if(typeof node.text==='string')return node.text;
       if(node.text?.text)return string(node.text.text);
+      if(node.type==='rich_text_preformatted'&&Array.isArray(node.elements))return '```'+node.elements.map(element).join('')+'```';
       if(Array.isArray(node.elements))return node.elements.map(element).join(node.type==='rich_text_section'?'':'\n');
       return '';
     };
@@ -133,6 +170,28 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   }
   function messageText(message) {
     return string(message.text)||blockText(message.blocks)||(Array.isArray(message.attachments)?message.attachments.map(a=>string(a.text||a.fallback)).filter(Boolean).join('\n'):'');
+  }
+  function mentionIds(text) {
+    // Skip literal code and complete URL tokens before discovering actual
+    // mention markup. An unfinished code span/fence also stays literal.
+    const visible=string(text).slice(0,40000).replace(/```[\s\S]*?(?:```|$)|`[^`\n]*(?:`|(?=\n|$))|<https?:\/\/[^\n]*?>|https?:\/\/[^\s]+/gi,'');
+    return [...new Set([...visible.matchAll(/<@([UW][A-Z0-9]{1,64})(?:\|[^<>\n]*)?>/g)].map(match=>match[1]))].slice(0,25);
+  }
+  async function messageMentions(text) {
+    const ids=mentionIds(text);if(!ids.length)return {};
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),2500);
+    try {
+      const entries=await concurrent(ids,3,async id=>{
+        if(controller.signal.aborted)return null;
+        try {
+          const user=await abortable(userInfo(id,controller.signal),controller.signal);
+          if(user?.id!==id||user.team_id!==team)return null;
+          const name=string(user.profile?.display_name).trim()||string(user.profile?.real_name).trim()||string(user.real_name).trim();
+          return name?[id,name]:null;
+        }catch{return null;}
+      });
+      return Object.fromEntries(entries.filter(Boolean));
+    }finally{clearTimeout(timer);controller.abort();}
   }
   function emojiNames(text) {
     // Match the client's code/link protection and bound both lookup work and image requests.
@@ -193,7 +252,7 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
   async function messageView(message,includeMedia=false) {
     if(!message)return {view:null,assets:[]};
     const text=messageText(message);
-    const [user,link,hydrated,emoji]=await Promise.all([
+    const [user,link,hydrated,emoji,mentions]=await Promise.all([
       message.user?userInfo(message.user):Promise.resolve(null),
       cached(`link:${message.ts}`,300000,async()=>safeLink((await slack('chat.getPermalink',{channel,message_ts:message.ts})).permalink)),
       concurrent(messageFiles(message),3,async file=>{
@@ -203,7 +262,8 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
         }
         return file;
       }),
-      customEmojis(text)
+      customEmojis(text),
+      messageMentions(text)
     ]);
     let author=string(message.bot_profile?.name||message.username)||'Team member';
     let avatar=profileAvatar(message.bot_profile?.icons);
@@ -224,7 +284,7 @@ export function createHandler({env, fetch:request=fetch, now=Date.now, log=(_ent
       const seen=new Set();
       for(const item of emoji.items)if(item.image&&seen.size<8){const url=emoji.images.get(item.name);if(!seen.has(url.href)){seen.add(url.href);assets.push({key:item.key,url,allowed:emojiUrl});}}
     }
-    return {view:{ts:message.ts,text,author:authorView,permalink:link,images,files,custom_emojis:emoji.items,custom_emoji_ready:emoji.ready},assets};
+    return {view:{ts:message.ts,text,author:authorView,permalink:link,images,files,mentions,custom_emojis:emoji.items,custom_emoji_ready:emoji.ready},assets};
   }
   function imageUrl(value,redirect=false) {
     try {

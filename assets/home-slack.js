@@ -25,7 +25,7 @@
     return href ? `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${renderLabel(label)}</a>` : escape(label);
   }
   // Parse a deliberately small subset of Slack markup; message content never becomes raw HTML.
-  function formatText(value, customEmojis=[]) {
+  function formatText(value, customEmojis=[], mentions={}) {
     const tokens = [];
     const token = html => {tokens.push(html); return `\u0000${tokens.length - 1}\u0000`;};
     const custom=new Map((Array.isArray(customEmojis)?customEmojis:[]).slice(0,64).filter(item=>/^[a-zA-Z0-9_+\-]{1,100}$/.test(item?.name||'')).map(item=>[item.name,item]));
@@ -47,7 +47,12 @@
       const [target,...labels] = item.split('|');
       const label = decode(labels.join('|') || target);
       if (/^https?:\/\//i.test(target)) return token(link(label,decode(target),inline));
-      if (target.startsWith('@')) return token(escape(labels.length ? `@${label}` : '@team member'));
+      if (target.startsWith('@')) {
+        const id=target.slice(1);
+        const resolved=/^[UW][A-Z0-9]+$/.test(id)&&mentions&&typeof mentions==='object'&&!Array.isArray(mentions)&&Object.prototype.hasOwnProperty.call(mentions,id)?mentions[id]:null;
+        const name=typeof resolved==='string'?resolved.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,200):'';
+        return token(escape(name?`@${name}`:labels.length?`@${label}`:'@team member'));
+      }
       if (target.startsWith('#')) return token(escape(labels.length ? `#${label}` : '#channel'));
       if (/^!(here|channel|everyone)$/.test(target)) return token(escape('@'+target.slice(1)));
       if (target.startsWith('!date^') && labels.length) return token(escape(label));
@@ -321,7 +326,7 @@
     $('homeSlackTime').textContent = validDate ? new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(date) : '';
     if (validDate) $('homeSlackTime').setAttribute('datetime',date.toISOString());
     $('homeSlackTime').setAttribute('title',validDate ? `${date.toLocaleString('en-US',{timeZone:'America/New_York'})} Eastern time` : '');
-    $('homeSlackBody').innerHTML = formatText(message.text,message.custom_emojis);
+    $('homeSlackBody').innerHTML = formatText(message.text,message.custom_emojis,message.mentions);
     $('homeSlackBody').hidden = !String(message.text || '').trim();
     const permalink = safeURL(message.permalink,true);
     $('homeSlackOpen').hidden = !permalink;

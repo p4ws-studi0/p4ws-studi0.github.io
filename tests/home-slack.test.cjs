@@ -109,6 +109,31 @@ test('escapes message markup and rejects unsafe/external Slack permalinks',async
   assert.equal(h.get('homeSlackOpen').hidden,true);assert.equal(h.get('homeSlackFiles').hidden,true);
   assert.equal(h.app.safeURL('https://user:password@paws.slack.com/x',true),'');
 });
+test('renders resolved Slack mention names, including after refresh, and clears them on logout',async()=>{
+  const h=harness({message:fixture({text:'Thank you <@U123> and <@W456|old name>! <@U123>',mentions:{U123:'Jen Bates',W456:'Carol'}})});await h.settle();
+  assert.equal(h.get('homeSlackBody').innerHTML,'Thank you @Jen Bates and @Carol! @Jen Bates');
+  h.api.message=fixture({text:'Thank you <@U123>',mentions:{U123:'Jennifer Bates'}});
+  await h.app.refresh();assert.equal(h.get('homeSlackBody').innerHTML,'Thank you @Jennifer Bates');
+  h.signOut();assert.equal(h.get('homeSlackBody').innerHTML,'');
+});
+test('mention names remain literal escaped text and code/URLs do not become mentions',async()=>{
+  const h=harness();await h.settle();
+  const html=h.app.formatText('<@U123|old> <@W456> `<@U123>` ```<@W456>``` <https://example.com/<@U123>>',[],{U123:'*Jen* & <img src=x onerror=1>',W456:'_Carol_ | team'});
+  assert.match(html,/@\*Jen\* &amp; &lt;img src=x onerror=1&gt;/);
+  assert.match(html,/@_Carol_ \| team/);
+  assert.match(html,/<code>&lt;@U123&gt;<\/code>/);
+  assert.match(html,/<pre><code>&lt;@W456&gt;<\/code><\/pre>/);
+  assert.ok(!html.includes('<img')&&!html.includes('<strong>')&&!html.includes('<em>'));
+  assert.equal(h.app.formatText('https://example.com/@U123',[],{U123:'Jen'}),'https://example.com/@U123');
+});
+test('missing, malformed or inherited mention metadata keeps safe readable fallbacks',async()=>{
+  const h=harness();await h.settle();
+  for(const mentions of [undefined,null,[],{U123:42},{U123:'  '},Object.create({U123:'Inherited name'})]) {
+    assert.equal(h.app.formatText('<@U123> <@U123|Jen &amp; Co>',[],mentions),'@team member @Jen &amp; Co');
+  }
+  assert.equal(h.app.formatText('<@invalid>',[],{invalid:'Wrong'}),'@team member');
+  assert.equal(h.app.formatText('<@U123|&lt;script&gt;>',[],{}),'@&lt;script&gt;');
+});
 test('missing Slack connection is distinct from a genuinely empty channel',async()=>{
   const empty=harness({message:{message:null}});await empty.settle();assert.match(empty.get('homeSlackEmpty').textContent,/No messages/);
   const setup=harness({handler:()=>({data:null,error:{context:{status:503,clone:()=>({json:async()=>({error:{code:'CONNECTION_REQUIRED'}})})}}})});await setup.settle();

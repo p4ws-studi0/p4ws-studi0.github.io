@@ -178,6 +178,93 @@ test('the supplied message fallback remains authoritative when blocks are also p
  const h=await environment({messages:[message({text:'Complete fallback',blocks:[{type:'section',text:{type:'plain_text',text:'Block detail'}}]})]});
  assert.equal((await (await h.request()).json()).message.text,'Complete fallback');
 });
+
+const mentionedUser=(id,profile={},extra={})=>({id,team_id:TEAM,deleted:false,is_bot:false,profile,...extra});
+test('mentions resolve trimmed display names, real-name fallbacks and shared author/viewer profiles without leaking directory fields',async()=>{
+ const h=await environment({messages:[message({text:`Thanks <@${AUTHOR}> <@${VIEWER}> <@UPROFILE|old label> <@UREAL> <@UPROFILE>`})],users:{
+  [AUTHOR]:mentionedUser(AUTHOR,{display_name:' Author name ',email:'private-email-sentinel',image_72:'https://avatars.slack-edge.com/private-image-sentinel.png'}),
+  UPROFILE:mentionedUser('UPROFILE',{display_name:'  ',real_name:' Profile real name '}),
+  UREAL:mentionedUser('UREAL',{display_name:'',real_name:' '},{real_name:' User real name '})
+ }});
+ const response=await h.request(),body=await response.json();assert.equal(response.status,200);
+ assert.deepEqual(body.message.mentions,{[AUTHOR]:'Author name',[VIEWER]:'Fixture viewer',UPROFILE:'Profile real name',UREAL:'User real name'});
+ for(const id of [AUTHOR,VIEWER,'UPROFILE','UREAL'])assert.equal(h.calls('users.info').filter(call=>call.params.user===id).length,1);
+ assert.doesNotMatch(JSON.stringify(body),/private-email-sentinel|private-image-sentinel|team_id|deleted|is_bot/);
+ await h.request();assert.equal(h.calls('users.info').length,4);h.advance(30001);await h.request();assert.equal(h.calls('users.info').length,8);
+});
+test('block-only and attachment mentions resolve while code blocks and authoritative fallbacks do not disclose hidden names',async()=>{
+ const h=await environment({messages:[message({text:'',blocks:[{type:'rich_text',elements:[
+  {type:'rich_text_section',elements:[{type:'text',text:'Hello '},{type:'user',user_id:'UBLOCK'},{type:'user',user_id:'USTYLE',style:{code:true}},{type:'text',text:'<@UTEXT>',style:{code:true}}]},
+  {type:'rich_text_preformatted',elements:[{type:'text',text:'<@UFENCE>'},{type:'user',user_id:'UPREFORMATTED'}]}
+ ]}]})]});
+ const body=await (await h.request()).json();assert.deepEqual(body.message.mentions,{UBLOCK:'Fixture author'});
+ assert.deepEqual(h.calls('users.info').map(call=>call.params.user).sort(),[AUTHOR,'UBLOCK',VIEWER].sort());
+ const attachment=await environment({messages:[message({text:'',attachments:[{text:'Hi <@UATTACH>'}]})]});assert.deepEqual((await (await attachment.request()).json()).message.mentions,{UATTACH:'Fixture author'});
+ const fallback=await environment({messages:[message({text:'Hi <@UVISIBLE>',blocks:[{type:'rich_text',elements:[{type:'user',user_id:'UHIDDEN'}]}]})]});
+ assert.deepEqual((await (await fallback.request()).json()).message.mentions,{UVISIBLE:'Fixture author'});assert.ok(!fallback.calls('users.info').some(call=>call.params.user==='UHIDDEN'));
+});
+test('mention discovery skips URLs, literal and unfinished code, malformed IDs and escaped markup',async()=>{
+ const text=['<@UGOOD> <@WVALID> <@UGOOD>', '`<@UCODE>`', '```<@UFENCE>```', '<https://example.test/path|<@ULINK>>', 'https://example.test/path/<@UBARE>', '<@UBAD_> &lt;@UENCODED&gt; <@CNOTUSER> <@uLOWER>', '`unfinished <@UUNFINISHED>'].join('\n');
+ const h=await environment({messages:[message({text})]}),body=await (await h.request()).json();assert.deepEqual(body.message.mentions,{UGOOD:'Fixture author',WVALID:'Fixture author'});
+ assert.deepEqual(h.calls('users.info').map(call=>call.params.user).sort(),[AUTHOR,VIEWER,'UGOOD','WVALID'].sort());
+ const fenced=await environment({messages:[message({text:'```unfinished\n<@UNOTMENTIONED>'})]});assert.deepEqual((await (await fenced.request()).json()).message.mentions,{});
+});
+test('failed optional mention lookups preserve the post and authorization/feed caches',async()=>{
+ for(const failure of ['missing_scope','invalid_auth','user_not_found','http','network']){
+  const h=await environment({messages:[message({text:'Hello <@UFAIL>'})],intercept:call=>{
+   if(call.api==='users.info'&&call.params.user==='UFAIL'){
+    if(failure==='network')throw new Error('private-transport-sentinel');
+    return failure==='http'?new Response('private-body-sentinel',{status:500}):json({ok:false,error:failure,needed:'private-scope-sentinel'});
+   }
+  }});
+  const first=await h.request(),body=await first.json();assert.equal(first.status,200);assert.equal(body.message.text,'Hello <@UFAIL>');assert.deepEqual(body.message.mentions,{});
+  assert.equal((await h.request()).status,200);assert.equal(h.calls('auth.test').length,1);assert.equal(h.calls('conversations.history').length,1);assert.equal(h.calls('users.info').filter(call=>call.params.user===VIEWER).length,1);
+  assert.doesNotMatch(JSON.stringify([body,h.state.diagnostics]),/private-transport-sentinel|private-body-sentinel|private-scope-sentinel/);
+ }
+});
+test('optional mention rate limits do not block required lookups or file hydration and back off only optional reads',async()=>{
+ const h=await environment({messages:[message({text:'Hi <@ULIMIT>',files:[{id:FILE}]})],intercept:call=>call.api==='users.info'&&call.params.user==='ULIMIT'?new Response(null,{status:429,headers:{'Retry-After':'30'}}):undefined});
+ const first=await h.request();assert.equal(first.status,200);assert.deepEqual((await first.json()).message.mentions,{});assert.equal(h.calls('files.info').length,1);
+ assert.equal((await h.request()).status,200);assert.equal(h.calls('users.info').filter(call=>call.params.user==='ULIMIT').length,1);
+ h.advance(30001);assert.equal((await h.request()).status,200);assert.equal(h.calls('users.info').filter(call=>call.params.user===VIEWER).length,2);assert.equal(h.calls('users.info').filter(call=>call.params.user==='ULIMIT').length,2);
+});
+test('mention profiles must match the requested ID and workspace and contain a usable name',async()=>{
+ for(const user of [mentionedUser('UOTHER',{display_name:'Foreign ID'}),mentionedUser('UMENTION',{display_name:'Foreign workspace'},{team_id:'TOTHER'}),mentionedUser('UMENTION',{display_name:' ',real_name:' '},{real_name:' '})]){
+  const h=await environment({messages:[message({text:'Hi <@UMENTION>'})],users:{UMENTION:user}}),response=await h.request();assert.equal(response.status,200);assert.deepEqual((await response.json()).message.mentions,{});
+ }
+});
+test('mention work is capped at 25 unique IDs with at most three concurrent optional lookups',async()=>{
+ const ids=Array.from({length:30},(_,i)=>`UMENTION${i}`);let active=0,maximum=0;
+ const h=await environment({messages:[message({text:ids.concat(ids).map(id=>`<@${id}>`).join(' ')})],intercept:async call=>{
+  if(call.api==='users.info'&&ids.includes(call.params.user)){active++;maximum=Math.max(maximum,active);try{await new Promise(resolve=>setTimeout(resolve,2));}finally{active--;}}
+ }});
+ const body=await (await h.request()).json();assert.deepEqual(Object.keys(body.message.mentions),ids.slice(0,25));assert.equal(maximum,3);assert.equal(h.calls('users.info').filter(call=>ids.includes(call.params.user)).length,25);
+});
+test('optional mentions have one bounded deadline even when an upstream ignores abort',async()=>{
+ const ids=Array.from({length:10},(_,i)=>`USLOW${i}`),h=await environment({messages:[message({text:ids.map(id=>`<@${id}>`).join(' ')})],intercept:call=>call.api==='users.info'&&ids.includes(call.params.user)?new Promise(()=>{}):undefined});
+ const start=Date.now(),response=await h.request(),body=await response.json();assert.equal(response.status,200);assert.deepEqual(body.message.mentions,{});assert.ok(Date.now()-start<4000);
+ const calls=h.calls('users.info').filter(call=>ids.includes(call.params.user));assert.equal(calls.length,3);assert.ok(calls.every(call=>call.signal.aborted));
+});
+test('request-supplied mention IDs cannot request a directory lookup and access denial precedes optional work',async()=>{
+ const h=await environment({messages:[message({text:'Hi <@UACTUAL>'})]});const body=await (await h.request({action:'message',user_id:'UUNRELATED',mentions:{UUNRELATED:'Spoof'},user_ids:['UUNRELATED']})).json();
+ assert.deepEqual(body.message.mentions,{UACTUAL:'Fixture author'});assert.ok(!h.calls('users.info').some(call=>call.params.user==='UUNRELATED'));
+ const denied=await environment({approved:false,messages:[message({text:'<@UNOTAUTHORIZED>'})]});await errorIs(await denied.request(),403,'ACCESS_DENIED');assert.equal(denied.calls('users.info').length,0);
+});
+test('required viewer reads do not inherit optional pending deadlines or stale profile results',async()=>{
+ let release;const gate=new Promise(resolve=>{release=resolve;});let mentionReads=0;
+ const h=await environment({messages:[message({text:'Hi <@UMENTION>'})],intercept:async call=>{
+  if(call.api==='users.info'&&call.params.user==='UMENTION'){
+   if(++mentionReads===1){await gate;return json({ok:true,user:mentionedUser('UMENTION',{display_name:'Older optional'})});}
+   return json({ok:true,user:mentionedUser('UMENTION',{display_name:'Fresh required'})});
+  }
+ }});
+ const first=h.request();try{
+  await until(()=>mentionReads===1);
+  h.state.user=account({id:'00000000-0000-4000-8000-000000000002',identities:[{provider:'slack_oidc',identity_data:{sub:'UMENTION',provider_id:'UMENTION',custom_claims:{'https://slack.com/team_id':TEAM}}}]});
+  const second=await h.request();assert.equal(second.status,200);assert.deepEqual((await second.json()).message.mentions,{UMENTION:'Fresh required'});assert.equal(mentionReads,2);
+ }finally{release();}
+ assert.equal((await first).status,200);assert.deepEqual((await (await h.request()).json()).message.mentions,{UMENTION:'Fresh required'});assert.equal(mentionReads,2);
+});
 test('check_file_info and ID-only files are hydrated before classifying images',async()=>{
  for(const brief of [{id:FILE,file_access:'check_file_info'},{id:FILE}]){
   const h=await environment({messages:[message({text:'',files:[brief]})],files:{[FILE]:file({title:'Hydrated image',alt_txt:'Descriptive image text'})}});
