@@ -1716,9 +1716,9 @@
       "quickAccess": true
     },
     {
-      "id": "quick-access-printables-custom-playtime-log",
+      "id": "quick-access-printables-custom-playtime-focus-log",
       "href": "https://drive.google.com/file/d/1L85DT01e9LrNUibj9VXaZ8JF4mewCxaq/view?usp=sharing",
-      "title": "Custom Playtime Log",
+      "title": "Custom Playtime (Focus) Log",
       "kind": "resource",
       "iconKey": "print",
       "aliases": [
@@ -1726,6 +1726,8 @@
         "playtime log",
         "play log",
         "playtime sheet",
+        "focus log",
+        "focus playtime",
         "printables",
         "quick access"
       ],

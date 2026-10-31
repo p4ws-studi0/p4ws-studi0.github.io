@@ -54,7 +54,7 @@ QUICK_ACCESS_ALIASES = {
     'Employment Application Form': ['job application', 'employment form', 'hiring', 'apply for job'],
     'Room Screws Tracking Sheet': ['room screws', 'kennel screws', 'maintenance tracking'],
     'Employee Handbook': ['employee handbook', 'staff handbook', 'team handbook'],
-    'Custom Playtime Log': ['custom playtime', 'playtime log', 'play log', 'playtime sheet'],
+    'Custom Playtime (Focus) Log': ['custom playtime', 'playtime log', 'play log', 'playtime sheet', 'focus log', 'focus playtime'],
     'Dog Boarding': ['dog boarding prices', 'boarding price sheet', 'kennel rates'],
     'Doggie Daycare': ['daycare prices', 'doggie daycare cost', 'day care rates'],
     'Dog Activities': ['activities prices', 'playtime cost', 'dog activities menu'],
