@@ -9,8 +9,8 @@
   ];
   const KEYS = FIELDS.map(([key]) => key);
   const ALL_DOGS = 'all';
-  const state = {dogs:[],logs:[],editors:new Map(),selectedDog:null,ready:false,loading:false,
-    filters:{from:'',through:'',trainer:''},
+  const state = {dogs:[],logs:[],trainers:[],editors:new Map(),selectedDog:null,ready:false,loading:false,
+    filters:{from:'',through:'',trainer:''},trainerEditor:null,trainerRosterSaving:false,exportLoading:false,exportRequest:0,exportSnapshot:null,exportUrls:new Set(),
     userId:null,epoch:0,request:0,dogSaving:false,dogDraftId:null,editingDog:null,undo:null,undoSaving:false,toastTimer:null,newOrder:0};
   const text = value => String(value ?? '');
   const escape = value => text(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -36,16 +36,9 @@
     const date=parseDateLabel(value);
     return date?.year?`${String(date.year).padStart(4,'0')}-${String(date.month).padStart(2,'0')}-${String(date.day).padStart(2,'0')}`:null;
   }
-  function matchesFilters(values) {
-    if(invalidRange())return false;
-    const {from,through,trainer}=state.filters;
-    if(!matchesTrainer(values.trainer,trainer))return false;
-    if(from||through){const date=fullDateKey(values.date_label);if(!date||from&&date<from||through&&date>through)return false;}
-    return true;
-  }
-  const keepDraft = editor => !editor.base||dirty(editor)||Boolean(editor.saving||editor.deleting||editor.error);
   function renderTrainerOptions() {
     const names=new Map();
+    for(const trainer of state.trainers)names.set(`name:${normalizeTrainer(trainer.name)}`,trainer.name);
     for(const row of state.logs){
       if(row.deleted_at||!state.dogs.some(dog=>dog.id===row.dog_id))continue;
       const value=state.editors.get(row.id)?.values.trainer??row.trainer,people=trainerNames(value);
@@ -59,7 +52,67 @@
   }
   function applyFilters() {
     state.filters={from:$('filterFrom').value,through:$('filterThrough').value,trainer:$('filterTrainer').value};
-    renderRows();
+    state.exportSnapshot=null;$('exportMessage').dataset.error='';renderExport();
+  }
+  function exportModel({dogs=state.dogs,logs=state.logs,filters=state.filters}={}) {
+    const selectedDogs=new Map(dogs.map(dog=>[dog.id,dog])),candidates=sortLogs(logs.filter(row=>!row.deleted_at&&selectedDogs.has(row.dog_id)));
+    const error=filters.from&&filters.through&&filters.from>filters.through?'From date must be on or before Through date.':'';
+    const matchingTrainer=candidates.filter(row=>matchesTrainer(row.trainer,filters.trainer));
+    const withoutDate=filters.from||filters.through?matchingTrainer.filter(row=>!fullDateKey(row.date_label)).length:0;
+    const rows=error?[]:matchingTrainer.filter(row=>{
+      if(!filters.from&&!filters.through)return true;
+      const date=fullDateKey(row.date_label);return date&&(!filters.from||date>=filters.from)&&(!filters.through||date<=filters.through);
+    }).map(row=>({dogName:selectedDogs.get(row.dog_id).name,archived:Boolean(selectedDogs.get(row.dog_id).deleted_at),...valuesOf(row)}));
+    return {rows,withoutDate,error};
+  }
+  function exportCsv(model) {
+    const cell=value=>{let raw=text(value);if(/^[\s\u0000-\u001f]*[=+@-]/.test(raw))raw="'"+raw;return `"${raw.replace(/"/g,'""')}"`;};
+    return '\ufeff'+[['Dog',...FIELDS.map(([,label])=>label)],...model.rows.map(row=>[row.dogName,...KEYS.map(key=>row[key])])].map(row=>row.map(cell).join(',')).join('\r\n')+'\r\n';
+  }
+  function renderExport() {
+    const model=exportModel(state.exportSnapshot||{}),blocked=!state.ready||state.loading||state.dogSaving||state.exportLoading;
+    $('exportCount').textContent=`${model.rows.length} ${model.rows.length===1?'row':'rows'} · All pets · Newest first`;
+    $('exportRows').innerHTML=model.rows.map(row=>`<tr><td><strong>${escape(row.dogName)}</strong>${row.archived?'<small>Deleted dog</small>':''}</td>${KEYS.map(key=>`<td>${escape(row[key])}</td>`).join('')}</tr>`).join('');
+    $('exportEmpty').hidden=Boolean(model.rows.length);$('exportEmpty').textContent=model.error?'Choose a valid date range.':'No saved rows match these dates and trainer.';
+    $('filterHint').textContent=model.withoutDate?`${model.withoutDate} ${model.withoutDate===1?'row has':'rows have'} no full, valid date and cannot be matched to this date range. Clear the dates to include ${model.withoutDate===1?'it':'them'}.`:'';
+    $('filterHint').hidden=!model.withoutDate;
+    $('filterError').textContent=model.error;$('filterError').hidden=!model.error;
+    for(const id of ['filterFrom','filterThrough'])$(id).setAttribute('aria-invalid',String(Boolean(model.error)));
+    for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).disabled=blocked;
+    $('clearFilters').disabled=blocked||!hasFilters();
+    $('downloadTrainingCsv').disabled=blocked||unfinished()||Boolean(model.error)||!model.rows.length;
+    $('downloadTrainingCsv').textContent=state.exportLoading?'Preparing…':'Download CSV';
+    if(unfinished())$('exportMessage').textContent='Finish saving or retry any unsaved rows before downloading. The preview shows saved data.';
+    else if(state.exportLoading)$('exportMessage').textContent='Loading the latest saved rows…';
+    else if(!$('exportMessage').dataset.error)$('exportMessage').textContent='';
+    $('exportMessage').classList.toggle('is-error',$('exportMessage').dataset.error==='true');
+  }
+  function openExport() {
+    if(!state.ready||state.dogSaving)return;
+    $('exportMessage').textContent='';$('exportMessage').dataset.error='';state.exportSnapshot=null;
+    renderTrainerOptions();renderExport();$('trainingExport').showModal();
+  }
+  function closeExport() {
+    ++state.exportRequest;state.exportLoading=false;state.exportSnapshot=null;$('trainingExport').close();controls();
+  }
+  async function downloadCsv() {
+    if(!state.ready||state.exportLoading||unfinished()||invalidRange())return;
+    const epoch=state.epoch,request=++state.exportRequest,filters={...state.filters};
+    const valid=()=>current(epoch)&&request===state.exportRequest&&$('trainingExport').open;
+    state.exportLoading=true;$('exportMessage').dataset.error='';renderExport();
+    try {
+      await requireStaff(epoch);if(!valid())return;
+      const [dogs,logs]=await Promise.all([fetchAll('hq_training_dogs',valid),fetchAll('hq_training_logs',valid)]);
+      if(!valid())return;if(unfinished())throw {code:'UNSAVED'};
+      if(!same(filters,state.filters))throw {code:'FILTER_CHANGED'};
+      state.exportSnapshot={dogs,logs,filters};const model=exportModel(state.exportSnapshot);
+      if(model.error||!model.rows.length)throw {code:'NO_EXPORT_ROWS'};
+      const blob=new Blob([exportCsv(model)],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),link=document.createElement('a');state.exportUrls.add(url);
+      link.href=url;link.download=`paws-training_${filters.from||'all'}_to_${filters.through||'all'}.csv`;document.body.appendChild(link);link.click();link.remove();
+      setTimeout(()=>{URL.revokeObjectURL(url);state.exportUrls.delete(url);},1000);
+      $('exportMessage').textContent=`Downloaded ${model.rows.length} ${model.rows.length===1?'row':'rows'} from all pets.`;$('exportMessage').dataset.error='done';
+    }catch(error){if(valid()){$('exportMessage').textContent=error?.code==='UNSAVED'?'Finish saving your changes, then download again.':error?.code==='NO_EXPORT_ROWS'?'No saved rows match these dates and trainer.':error?.code==='FILTER_CHANGED'?'The filters changed. Choose Download CSV again.':error?.code==='AUTH'?'Sign in to Paws HQ to export training data.':error?.code==='ACCESS'||error?.code==='42501'?'Workspace access could not be confirmed. Refresh and try again.':'Could not load the export. Check your connection and try again.';$('exportMessage').dataset.error='true';}}
+    finally{if(valid()){state.exportLoading=false;renderExport();}}
   }
   function todayLabel() {
     const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
@@ -103,6 +156,7 @@
     if(error?.code==='ACCESS'||error?.code==='42501') return 'This account does not have training access.';
     if(error?.code==='CONFLICT') return 'This row changed on another device. Your changes are still here. Copy them before reloading this row.';
     if(error?.code==='55000') return 'This dog is in Deleted dogs. Restore the dog before changing its training rows.';
+    if(error?.code==='TRAINER'||error?.code==='23514'&&/trainer/i.test(error?.message||''))return 'Choose trainers from the shared list. Add a new trainer under Manage trainer names.';
     if(['42P01','PGRST205'].includes(error?.code)) return 'Training records are unavailable. Please try again later.';
     return 'Could not save. Your changes are still here. Check your connection, then retry.';
   }
@@ -119,6 +173,79 @@
     return editor;
   }
   function rowElement(id) {return document.querySelector(`[data-row-id="${id}"]`);}
+  function trainerCellContent(value) {
+    return `<span${nonblank(value)?'':' class="tr-trainer-placeholder"'}>${escape(nonblank(value)?value:'Choose trainer')}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+  }
+  function canonicalTrainer(value) {
+    if(!nonblank(value))return '';
+    const parts=trainerNames(value),people=parts.map(name=>state.trainers.find(person=>person.active&&normalizeTrainer(person.name)===normalizeTrainer(name)));
+    if(!parts.length||people.some(person=>!person)||new Set(people.map(person=>person.id)).size!==people.length)return null;
+    const joined=people.sort((a,b)=>a.name.localeCompare(b.name)).map(person=>person.name).join(' and ');
+    return joined.length<=120?joined:null;
+  }
+  function renderTrainerPicker() {
+    const selected=state.trainerEditor?.selected||new Set();
+    $('trainerChoices').innerHTML=state.trainers.filter(person=>person.active).sort((a,b)=>a.name.localeCompare(b.name)).map(person=>`<label class="tr-trainer-choice"><input type="checkbox" data-trainer-choice="${escape(person.id)}" value="${escape(person.id)}" ${selected.has(person.id)?'checked':''} ${state.trainerRosterSaving?'disabled':''}/><span>${escape(person.name)}</span></label>`).join('')||'<p>No trainers yet. Add one under Manage trainer names.</p>';
+    $('trainerRoster').innerHTML=[...state.trainers].sort((a,b)=>a.name.localeCompare(b.name)).map(person=>`<div class="tr-roster-row"><span>${escape(person.name)}${person.active?'':' <small>Inactive</small>'}</span><button type="button" data-trainer-active="${escape(person.id)}" data-active="${person.active?'false':'true'}" ${state.trainerRosterSaving?'disabled':''}>${person.active?'Remove':'Restore'}</button></div>`).join('');
+    controls();
+  }
+  function openTrainer(id) {
+    const editor=state.editors.get(id);if(!editor||!editableDog(editor.dog_id)||!state.ready||editor.deleting||state.dogSaving)return;
+    const names=trainerNames(editor.values.trainer).map(normalizeTrainer);
+    state.trainerEditor={id,epoch:state.epoch,changed:false,selected:new Set(state.trainers.filter(person=>person.active&&names.includes(normalizeTrainer(person.name))).map(person=>person.id))};
+    $('trainerError').textContent='';$('trainerRosterError').textContent='';$('newTrainerName').value='';
+    renderTrainerPicker();$('trainerDialog').showModal();
+  }
+  function closeTrainer() {if(state.trainerRosterSaving)return;state.trainerEditor=null;$('trainerDialog').close();controls();}
+  async function applyTrainerSelection() {
+    const picker=state.trainerEditor;if(!picker||picker.epoch!==state.epoch||state.trainerRosterSaving)return;
+    if(!picker.changed){closeTrainer();return;}
+    const ids=[...$('trainerChoices').querySelectorAll('[data-trainer-choice]')].filter(input=>input.checked).map(input=>input.dataset.trainerChoice);
+    const people=ids.map(id=>state.trainers.find(person=>person.id===id&&person.active));
+    if(people.some(person=>!person)){$('trainerError').textContent='The trainer list changed. Close this window and choose again.';return;}
+    const value=people.sort((a,b)=>a.name.localeCompare(b.name)).map(person=>person.name).join(' and ');
+    if(value.length>120){$('trainerError').textContent='Choose fewer trainers for this session.';return;}
+    const editor=state.editors.get(picker.id);if(!editor||!editableDog(editor.dog_id))return;
+    editor.values.trainer=value;if(!editor.conflict)editor.error='';
+    const button=rowElement(editor.id)?.querySelector('[data-trainer-open]');if(button)button.innerHTML=trainerCellContent(value);
+    closeTrainer();await saveEditor(editor);
+  }
+  function rememberTrainer(trainer) {
+    const index=state.trainers.findIndex(person=>person.id===trainer.id);
+    if(index<0)state.trainers.push(trainer);else state.trainers[index]=trainer;
+  }
+  async function saveTrainerName(event) {
+    event.preventDefault();if(!state.ready||state.trainerRosterSaving)return;
+    const name=$('newTrainerName').value.trim().replace(/\s+/g,' ');
+    if(!name||name.length>120||/[\u0000-\u001f&+/;]|\band\b/i.test(name)){$('trainerRosterError').textContent='Enter one trainer’s name. Shared sessions use multiple selections.';return;}
+    const existing=state.trainers.find(person=>normalizeTrainer(person.name)===normalizeTrainer(name));
+    if(existing){$('trainerRosterError').textContent=existing.active?'This trainer is already in the list.':'This trainer is already listed. Choose Restore.';return;}
+    const epoch=state.epoch;state.trainerRosterSaving=true;$('trainerRosterError').textContent='';renderTrainerPicker();
+    try {
+      await requireStaff(epoch);if(!current(epoch))return;
+      const result=await supabaseClient.from('hq_training_trainers').insert({name}).select('*').single();if(!current(epoch))return;
+      if(result.error){
+        const people=await fetchAll('hq_training_trainers',()=>current(epoch));if(!current(epoch))return;
+        const recovered=people.find(person=>normalizeTrainer(person.name)===normalizeTrainer(name));
+        if(!recovered)throw result.error;state.trainers=people;
+      }else rememberTrainer(result.data);
+      $('newTrainerName').value='';renderTrainerOptions();toast('Trainer added to the shared list.');
+    }catch(error){if(current(epoch))$('trainerRosterError').textContent=error?.code==='23505'?'This trainer is already in the list.':errorText(error);}
+    finally{if(current(epoch)){state.trainerRosterSaving=false;renderTrainerPicker();}}
+  }
+  async function setTrainerActive(trainer,active) {
+    if(!trainer||!state.ready||state.trainerRosterSaving)return;
+    const epoch=state.epoch;state.trainerRosterSaving=true;$('trainerRosterError').textContent='';renderTrainerPicker();
+    try {
+      await requireStaff(epoch);if(!current(epoch))return;
+      const result=await supabaseClient.from('hq_training_trainers').update({active}).eq('id',trainer.id).eq('revision',trainer.revision).select('*').maybeSingle();if(!current(epoch))return;
+      if(result.error)throw result.error;if(!result.data)throw {code:'CONFLICT'};
+      rememberTrainer(result.data);
+      if(!active)state.trainerEditor?.selected.delete(trainer.id);
+      renderTrainerOptions();toast(active?'Trainer restored.':'Trainer removed from new selections. Saved sessions are kept.');
+    }catch(error){if(current(epoch))$('trainerRosterError').textContent=error?.code==='CONFLICT'?'The trainer list changed elsewhere. Close this window and refresh.':errorText(error);}
+    finally{if(current(epoch)){state.trainerRosterSaving=false;renderTrainerPicker();}}
+  }
   function controls() {
     const blocked=!state.ready||state.loading;
     const selected=state.dogs.find(dog=>dog.id===state.selectedDog&&!dog.deleted_at);
@@ -129,8 +256,12 @@
     $('deleteDog').title=unfinished()?'Finish saving or remove unfinished rows first.':'Move this dog to Deleted dogs. Training rows are kept.';
     $('dogSelect').disabled=blocked||state.dogSaving||!state.dogs.length||!$('dogForm').hidden;
     $('addRow').title=state.selectedDog===ALL_DOGS?'Choose a dog before adding a row.':'';
-    for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).disabled=blocked||state.dogSaving;
-    $('clearFilters').disabled=blocked||!hasFilters();
+    $('exportData').disabled=blocked||state.dogSaving;
+    $('saveTrainer').disabled=blocked||state.trainerRosterSaving||!state.trainerEditor?.changed;
+    $('cancelTrainer').disabled=state.trainerRosterSaving;$('clearTrainer').disabled=state.trainerRosterSaving;
+    $('addTrainer').disabled=blocked||state.trainerRosterSaving;
+    $('addTrainer').textContent=state.trainerRosterSaving?'Saving…':'Add trainer';
+    $('newTrainerName').disabled=state.trainerRosterSaving;
     $('refreshLogs').disabled=state.loading||state.dogSaving;
     $('saveDog').disabled=blocked||state.dogSaving;
     $('cancelDog').disabled=state.dogSaving;
@@ -140,12 +271,14 @@
     const editors=[...state.editors.values()];
     $('saveStatus').textContent=state.loading?'Loading…':editors.some(e=>e.saving||e.deleting)||state.dogSaving||state.undoSaving?'Saving…':editors.some(e=>e.error)?'Some changes are not saved':editors.some(e=>dirty(e))?'Unsaved changes':state.ready?'All changes saved':'';
     for(const editor of editors) updateRowStatus(editor);
+    if($('trainingExport').open)renderExport();
   }
   function updateRowStatus(editor) {
     const row=rowElement(editor.id);if(!row)return;
     row.classList.toggle('is-saving',Boolean(editor.saving||editor.deleting));
     row.classList.toggle('is-error',Boolean(editor.error));
     row.querySelectorAll('textarea').forEach(input=>{input.disabled=!state.ready||state.loading||state.dogSaving||editor.deleting||Boolean(editor.deleteAttempt);input.readOnly=!editableDog(editor.dog_id);});
+    const trainer=row.querySelector('[data-trainer-open]');if(trainer)trainer.disabled=!state.ready||state.loading||state.dogSaving||editor.deleting||Boolean(editor.deleteAttempt)||!editableDog(editor.dog_id);
     const button=row.querySelector('[data-action="delete"]');if(button)button.disabled=!state.ready||state.dogSaving||state.undoSaving||!editableDog(editor.dog_id)||Boolean(editor.saving||editor.deleting);
     const errorRow=document.querySelector(`[data-error-id="${editor.id}"]`);
     if(errorRow) {
@@ -159,7 +292,7 @@
   function renderRow(editor) {
     const dog=state.dogs.find(item=>item.id===editor.dog_id),archived=Boolean(dog?.deleted_at),all=state.selectedDog===ALL_DOGS;
     const dogCell=all?`<td class="tr-dog-cell"><strong>${escape(dog?.name)}</strong>${archived?'<span>Deleted dog · read only</span>':''}</td>`:'';
-    const cells=FIELDS.map(([key,label,limit])=>`<td class="tr-cell"><textarea class="tr-cell-input tr-cell-textarea${['work_detail','notes'].includes(key)?' tr-cell-long':''}" data-field="${key}" rows="2" maxlength="${limit}" aria-label="${label}" spellcheck="${['work_detail','notes'].includes(key)}" ${archived?'readonly':''}>${escape(editor.values[key])}</textarea></td>`).join('');
+    const cells=FIELDS.map(([key,label,limit])=>key==='trainer'?`<td class="tr-cell"><button type="button" class="tr-trainer-cell" data-trainer-open="${escape(editor.id)}" aria-label="Choose trainers" ${archived?'disabled':''}>${trainerCellContent(editor.values.trainer)}</button></td>`:`<td class="tr-cell"><textarea class="tr-cell-input tr-cell-textarea${['work_detail','notes'].includes(key)?' tr-cell-long':''}" data-field="${key}" rows="2" maxlength="${limit}" aria-label="${label}" spellcheck="${['work_detail','notes'].includes(key)}" ${archived?'readonly':''}>${escape(editor.values[key])}</textarea></td>`).join('');
     return `<tr class="tr-row" data-row-id="${editor.id}">${dogCell}${cells}<td class="tr-action-cell"><button type="button" class="tr-delete" data-action="delete" aria-label="Delete row" ${archived?'disabled title="Restore this dog before editing its training rows."':''}>Delete</button></td></tr><tr class="tr-row-error" data-error-id="${editor.id}" hidden><td colspan="${all?9:8}"><span data-row-error role="alert"></span> <button type="button" data-action="retry" data-id="${editor.id}">Retry</button></td></tr>`;
   }
   function renderDogs() {
@@ -177,21 +310,13 @@
     const inScope=id=>state.selectedDog===ALL_DOGS?state.dogs.some(dog=>dog.id===id):id===state.selectedDog;
     const rows=sortLogs(state.logs.filter(row=>inScope(row.dog_id)&&!row.deleted_at)).map(editorFor);
     const fresh=[...state.editors.values()].filter(e=>!e.base&&inScope(e.dog_id)).sort((a,b)=>b.order-a.order);
-    const candidates=[...fresh,...rows],editors=candidates.filter(editor=>matchesFilters(editor.values)||keepDraft(editor));
+    const editors=[...fresh,...rows];
     const all=state.selectedDog===ALL_DOGS;
     $('dogColumn').hidden=!all;$('dogHeading').hidden=!all;$('trainingTable').classList.toggle('tr-all-dogs',all);
     $('trainingRows').innerHTML=editors.map(renderRow).join('');
-    $('rowCount').textContent=state.selectedDog?`${editors.length}${hasFilters()?` of ${candidates.length}`:''} ${editors.length===1&&!hasFilters()?'row':'rows'} · Newest first`:'';
-    const withoutDate=(state.filters.from||state.filters.through)?candidates.filter(editor=>matchesTrainer(editor.values.trainer,state.filters.trainer)&&!fullDateKey(editor.values.date_label)&&!keepDraft(editor)).length:0;
-    const retained=editors.filter(editor=>!matchesFilters(editor.values)).length;
-    const hints=[];
-    if(withoutDate)hints.push(`${withoutDate} ${withoutDate===1?'row has':'rows have'} no full, valid date and ${withoutDate===1?'is':'are'} outside this date range. Clear dates to see ${withoutDate===1?'it':'them'}.`);
-    if(retained)hints.push(`${retained} unfinished ${retained===1?'row is':'rows are'} kept visible until saved.`);
-    $('filterHint').textContent=hints.join(' ');$('filterHint').hidden=!hints.length;
-    $('filterError').textContent=invalidRange()?'From date must be on or before Through date.':'';$('filterError').hidden=!invalidRange();
-    $('filterFrom').setAttribute('aria-invalid',String(invalidRange()));$('filterThrough').setAttribute('aria-invalid',String(invalidRange()));
+    $('rowCount').textContent=state.selectedDog?`${editors.length} ${editors.length===1?'row':'rows'} · Newest first`:'';
     $('emptyState').hidden=Boolean(editors.length)||!state.ready;
-    $('emptyState').textContent=hasFilters()?'No rows match these filters.':state.selectedDog===ALL_DOGS?'No training rows yet.':activeDogs().length?'No entries yet. Add a row to get started.':state.dogs.length?'No active dogs. Add a dog or restore one from Deleted dogs.':'Add a dog to start a training log.';
+    $('emptyState').textContent=state.selectedDog===ALL_DOGS?'No training rows yet.':activeDogs().length?'No entries yet. Add a row to get started.':state.dogs.length?'No active dogs. Add a dog or restore one from Deleted dogs.':'Add a dog to start a training log.';
     renderTrainerOptions();
     controls();
   }
@@ -219,26 +344,26 @@
     }
   }
   async function refresh({silent=false}={}) {
-    if(state.loading||state.dogSaving||!$('dogForm').hidden)return;
+    if(state.loading||state.dogSaving||state.trainerRosterSaving||state.trainerEditor||!$('dogForm').hidden)return;
     if(unfinished()||tableFocused()) {if(!silent)message('Your current edits are kept. Finish editing or retry any unsaved rows before refreshing.');return;}
     const epoch=state.epoch,request=++state.request,valid=()=>current(epoch)&&request===state.request;
     state.loading=true;controls();if(!silent)message('Loading training rows…');
     try {
       await requireStaff(epoch);if(!valid())return;
-      const [dogs,logs]=await Promise.all([fetchAll('hq_training_dogs',valid),fetchAll('hq_training_logs',valid)]);if(!valid())return;
-      state.dogs=dogs.sort((a,b)=>a.name.localeCompare(b.name));state.logs=logs;state.editors.clear();state.ready=true;
+      const [dogs,logs,trainers]=await Promise.all([fetchAll('hq_training_dogs',valid),fetchAll('hq_training_logs',valid),fetchAll('hq_training_trainers',valid)]);if(!valid())return;
+      state.dogs=dogs.sort((a,b)=>a.name.localeCompare(b.name));state.logs=logs;state.trainers=trainers;state.editors.clear();state.ready=true;
       if(state.selectedDog!==ALL_DOGS&&!activeDogs().some(dog=>dog.id===state.selectedDog))state.selectedDog=activeDogs()[0]?.id||null;
       message('');
     } catch(error) {
       if(!valid())return;
       state.ready=false;
-      if(['AUTH','ACCESS','42501'].includes(error?.code)){state.dogs=[];state.logs=[];state.editors.clear();state.selectedDog=null;}
+      if(['AUTH','ACCESS','42501'].includes(error?.code)){state.dogs=[];state.logs=[];state.trainers=[];state.editors.clear();state.selectedDog=null;}
       message(errorText(error),true);
     } finally {if(valid()){state.loading=false;render();}}
   }
   function takeInput(input) {
     const row=input.closest('[data-row-id]'),key=input.dataset.field;
-    const editor=state.editors.get(row?.dataset.rowId);if(!editor||!KEYS.includes(key)||editor.deleting||!editableDog(editor.dog_id))return;
+    const editor=state.editors.get(row?.dataset.rowId);if(!editor||!KEYS.includes(key)||key==='trainer'||editor.deleting||!editableDog(editor.dog_id))return;
     const original=editor.base ? text(editor.base[key]) : '';
     editor.values[key]=input.value===normalized(original)?original:input.value;
     if(!editor.conflict)editor.error='';
@@ -275,11 +400,13 @@
   function syncUntouchedCells(editor) {
     const row=rowElement(editor.id);if(!row)return;
     row.querySelectorAll('[data-field]').forEach(input=>{if(document.activeElement!==input)input.value=editor.values[input.dataset.field];});
+    const trainer=row.querySelector('[data-trainer-open]');if(trainer)trainer.innerHTML=trainerCellContent(editor.values.trainer);
   }
   function saveEditor(editor) {
     if(!editor||editor.deleting||editor.deleteAttempt||editor.conflict||!state.ready||!editableDog(editor.dog_id))return Promise.resolve();
     if(editor.saving)return editor.saving;
     if(!dirty(editor))return Promise.resolve();
+    if(Object.hasOwn(changedPatch(editor),'trainer')&&canonicalTrainer(editor.values.trainer)===null){editor.error='Choose trainers from the shared list. Add a new trainer under Manage trainer names.';controls();return Promise.resolve();}
     if(!KEYS.some(key=>nonblank(editor.values[key]))) {
       if(editor.base){editor.error='This row is empty. Enter any detail, or delete the row.';controls();}
       return Promise.resolve();
@@ -291,6 +418,7 @@
         if(editor.attempt)await reconcile(editor,epoch);if(!current(epoch))return;
         while(dirty(editor)&&KEYS.some(key=>nonblank(editor.values[key]))) {
           const patch=changedPatch(editor),base=editor.base?{...editor.base}:null;
+          if(Object.hasOwn(patch,'trainer')&&canonicalTrainer(patch.trainer)===null)throw {code:'TRAINER'};
           editor.attempt={base,patch};
           let result;
           if(base)result=await supabaseClient.from('hq_training_logs').update(patch).eq('id',editor.id).eq('revision',base.revision).select('*').maybeSingle();
@@ -424,11 +552,14 @@
   }
   function resetAuth(userId) {
     state.epoch++;state.request++;state.userId=userId;state.ready=false;state.loading=false;state.dogSaving=false;
-    state.dogs=[];state.logs=[];state.editors.clear();state.selectedDog=null;state.undo=null;state.undoSaving=false;
+    state.dogs=[];state.logs=[];state.trainers=[];state.editors.clear();state.selectedDog=null;state.undo=null;state.undoSaving=false;
+    state.trainerEditor=null;state.trainerRosterSaving=false;state.exportLoading=false;state.exportSnapshot=null;++state.exportRequest;
+    $('trainerDialog').close();$('trainingExport').close();$('trainerChoices').innerHTML='';$('trainerRoster').innerHTML='';$('trainerError').textContent='';$('trainerRosterError').textContent='';$('newTrainerName').value='';
+    for(const url of state.exportUrls)URL.revokeObjectURL(url);state.exportUrls.clear();
     state.filters={from:'',through:'',trainer:''};for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).value='';
     clearTimeout(state.toastTimer);$('toast').hidden=true;$('toastText').textContent='';$('undoDelete').disabled=false;
     $('dogForm').hidden=true;$('dogName').value='';$('dogError').textContent='';state.dogDraftId=null;state.editingDog=null;
-    render();message(userId?'Loading training rows…':'Sign in to Paws HQ to view training rows.');
+    render();renderExport();message(userId?'Loading training rows…':'Sign in to Paws HQ to view training rows.');
   }
   function init() {
     if(!$('trainingPage'))return;
@@ -436,6 +567,14 @@
     $('dogSelect').addEventListener('change',event=>selectDog(event.target.value));
     for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).addEventListener('change',applyFilters);
     $('clearFilters').addEventListener('click',()=>{for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).value='';applyFilters();});
+    $('exportData').addEventListener('click',openExport);$('closeTrainingExport').addEventListener('click',closeExport);$('downloadTrainingCsv').addEventListener('click',downloadCsv);
+    $('trainingExport').addEventListener('cancel',event=>{event.preventDefault();closeExport();});
+    $('saveTrainer').addEventListener('click',applyTrainerSelection);$('cancelTrainer').addEventListener('click',closeTrainer);
+    $('trainerDialog').addEventListener('cancel',event=>{event.preventDefault();closeTrainer();});
+    $('trainerChoices').addEventListener('change',()=>{if(!state.trainerEditor)return;state.trainerEditor.selected=new Set([...$('trainerChoices').querySelectorAll('[data-trainer-choice]')].filter(input=>input.checked).map(input=>input.dataset.trainerChoice));state.trainerEditor.changed=true;controls();});
+    $('clearTrainer').addEventListener('click',()=>{if(!state.trainerEditor)return;state.trainerEditor.selected.clear();state.trainerEditor.changed=true;renderTrainerPicker();});
+    $('trainerForm').addEventListener('submit',saveTrainerName);
+    $('trainerRoster').addEventListener('click',event=>{const button=event.target.closest('[data-trainer-active]');if(button)setTrainerActive(state.trainers.find(person=>person.id===button.dataset.trainerActive),button.dataset.active==='true');});
     $('addDog').addEventListener('click',()=>openDog());
     $('renameDog').addEventListener('click',()=>openDog(state.dogs.find(dog=>dog.id===state.selectedDog)));
     $('deleteDog').addEventListener('click',()=>setDogDeleted(state.dogs.find(dog=>dog.id===state.selectedDog),true));
@@ -461,6 +600,7 @@
       else if(event.key==='Escape'&&event.target.matches('[data-field]'))event.target.blur();
     });
     $('trainingRows').addEventListener('click',event=>{
+      const trainer=event.target.closest('[data-trainer-open]');if(trainer){openTrainer(trainer.dataset.trainerOpen);return;}
       const button=event.target.closest('[data-action]');if(!button)return;
       const id=button.dataset.id||button.closest('[data-row-id]')?.dataset.rowId,editor=state.editors.get(id);
       if(button.dataset.action==='delete')deleteRow(editor);
