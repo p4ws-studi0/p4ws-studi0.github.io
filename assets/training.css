@@ -215,6 +215,7 @@
 .tr-export-table th:last-child,.tr-export-table td:last-child {border-right:0;}
 .tr-export-table tbody tr:nth-child(even) {background:var(--tr-soft);}
 .tr-export-table td strong {font-weight:600;}.tr-export-table td small {display:block;margin-top:3px;color:var(--tr-muted);font-size:10px;}
+.tr-export-long {max-height:96px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;white-space:pre-wrap;overflow-wrap:anywhere;}
 .tr-export-empty {margin:0;padding:25px 23px;color:var(--tr-muted);text-align:center;font-size:12px;line-height:1.65;}
 .tr-export-message {margin:0;color:var(--tr-muted);font-size:12px;line-height:1.6;}
 .tr-export-message.is-error {color:#b72d37;}.dark .tr-export-message.is-error {color:#ffadb3;}

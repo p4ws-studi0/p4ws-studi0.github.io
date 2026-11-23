@@ -72,7 +72,7 @@
   function renderExport() {
     const model=exportModel(state.exportSnapshot||{}),blocked=!state.ready||state.loading||state.dogSaving||state.exportLoading;
     $('exportCount').textContent=`${model.rows.length} ${model.rows.length===1?'row':'rows'} · All pets · Newest first`;
-    $('exportRows').innerHTML=model.rows.map(row=>`<tr><td><strong>${escape(row.dogName)}</strong>${row.archived?'<small>Deleted dog</small>':''}</td>${KEYS.map(key=>`<td>${escape(row[key])}</td>`).join('')}</tr>`).join('');
+    $('exportRows').innerHTML=model.rows.map(row=>`<tr><td><strong>${escape(row.dogName)}</strong>${row.archived?'<small>Deleted dog</small>':''}</td>${KEYS.map(key=>`<td>${['work_detail','notes'].includes(key)?`<div class="tr-export-long" tabindex="0">${escape(row[key])}</div>`:escape(row[key])}</td>`).join('')}</tr>`).join('');
     $('exportEmpty').hidden=Boolean(model.rows.length);$('exportEmpty').textContent=model.error?'Choose a valid date range.':'No saved rows match these dates and trainer.';
     $('filterHint').textContent=model.withoutDate?`${model.withoutDate} ${model.withoutDate===1?'row has':'rows have'} no full, valid date and cannot be matched to this date range. Clear the dates to include ${model.withoutDate===1?'it':'them'}.`:'';
     $('filterHint').hidden=!model.withoutDate;
