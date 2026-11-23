@@ -15,9 +15,9 @@ function environment({dogs=[dog()],logs=[log()],active=true,intercept=null}={}) 
  const nodes=new Map(),rows=new Map(),errors=new Map(),timers=new Map();let timer=0,nextID=10000;
  const document={readyState:'loading',hidden:false,activeElement:null,getElementById:id=>nodes.get(id),addEventListener(){},querySelectorAll(){return [];},querySelector(selector){const m=selector.match(/\[data-(row|error)-id="([^"]+)"\]/);return m?(m[1]==='row'?rows:errors).get(m[2])||null:null;}};
  function node(id=''){
-  const n={id,dataset:{},style:{},events:{},disabled:false,hidden:false,textContent:'',value:'',scrollHeight:64,scrollTop:0,classes:new Set(),children:[],
+  const n={id,dataset:{},style:{},events:{},disabled:false,readOnly:false,hidden:false,textContent:'',value:'',scrollHeight:64,scrollTop:0,classes:new Set(),children:[],attributes:new Map(),
    addEventListener(type,fn){(this.events[type]||=[]).push(fn);},async emit(type,event={}){for(const fn of this.events[type]||[])await fn(event);},
-   setAttribute(){},matches(selector){return selector==='[data-field]'&&Boolean(this.dataset.field);},
+   setAttribute(key,value){this.attributes.set(key,String(value));},getAttribute(key){return this.attributes.get(key)||null;},matches(selector){return selector==='[data-field]'&&Boolean(this.dataset.field);},
    closest(selector){if(selector==='#trainingRows')return this.row?nodes.get('trainingRows'):null;if(selector==='[data-row-id]')return this.row||null;if(selector==='[data-action]')return this.dataset.action?this:null;return null;},
    focus(){document.activeElement=this;},blur(){document.activeElement=null;},
    querySelector(selector){if(selector==='button'||selector==='[data-action="delete"]')return this.button||null;if(selector==='[data-row-error]')return this.errorText||null;const key=selector.match(/data-field="([^"]+)"/)?.[1];return this.children.find(n=>n.dataset.field===key)||null;},
@@ -25,10 +25,11 @@ function environment({dogs=[dog()],logs=[log()],active=true,intercept=null}={}) 
   n.classList={toggle(c,on){if(on)n.classes.add(c);else n.classes.delete(c);},add(c){n.classes.add(c);},remove(c){n.classes.delete(c);}};
   let markup='';Object.defineProperty(n,'innerHTML',{get(){return markup;},set(value){markup=value;if(id==='trainingRows')parseRows(value);}});return n;
  }
- function parseRows(markup){rows.clear();errors.clear();for(const match of markup.matchAll(/<tr class="tr-row" data-row-id="([^"]+)">([\s\S]*?)<\/tr>/g)){
-  const row=node();row.dataset.rowId=match[1];row.row=row;row.button=node();row.button.dataset.action='delete';row.button.row=row;
-  for(const m of match[2].matchAll(/<textarea[^>]*data-field="([^"]+)"[^>]*>([\s\S]*?)<\/textarea>/g)){const input=node();input.dataset.field=m[1];input.value=decode(m[2]).replace(/\r\n?/g,'\n');input.row=row;row.children.push(input);}
-  rows.set(match[1],row);const err=node();err.button=node();err.button.dataset.id=match[1];err.button.dataset.action='retry';err.errorText=node();errors.set(match[1],err);
+ function parseRows(markup){rows.clear();errors.clear();for(const match of markup.matchAll(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g)){
+  const id=match[1].match(/\bdata-row-id="([^"]+)"/)?.[1];if(!id)continue;
+  const row=node();row.dataset.rowId=id;row.row=row;row.button=node();row.button.dataset.action='delete';row.button.row=row;row.markup=match[2];row.button.disabled=/<button\b[^>]*data-action="delete"[^>]*\bdisabled\b/.test(match[2]);
+  for(const m of match[2].matchAll(/<textarea[^>]*data-field="([^"]+)"[^>]*>([\s\S]*?)<\/textarea>/g)){const input=node(),attrs=m[0].slice(0,m[0].indexOf('>'));input.dataset.field=m[1];input.value=decode(m[2]).replace(/\r\n?/g,'\n');input.readOnly=/\breadonly\b/.test(attrs);input.disabled=/\bdisabled\b/.test(attrs);input.row=row;row.children.push(input);}
+  rows.set(id,row);const err=node();err.button=node();err.button.dataset.id=id;err.button.dataset.action='retry';err.errorText=node();errors.set(id,err);
  }}
  for(const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)){assert.ok(!nodes.has(match[1]),'unique HTML IDs');const n=node(match[1]);n.hidden=/\bhidden\b/.test(match[0]);nodes.set(match[1],n);}
  async function complete(call){
@@ -52,12 +53,13 @@ function environment({dogs=[dog()],logs=[log()],active=true,intercept=null}={}) 
  const context=vm.createContext({document,window,supabaseClient:client,Date:TestDate,Intl,console,crypto:{randomUUID:()=>uuid(nextID++)},setInterval(){},setTimeout(fn,delay){timers.set(++timer,{fn,delay});return timer;},clearTimeout(id){timers.delete(id);}});
  const marker="  if (document.readyState==='loading')";
  assert.equal(source.split(marker).length,2);
- vm.runInContext(source.replace(marker,`  window.hooks={state,init,refresh,parseDateLabel,sortLogs,renderRows,selectDog,addRow,takeInput,saveEditor,deleteRow,undoDelete,reloadRow,resetAuth,editorFor,dirty,saveDog,openDog,setDogDeleted};\n${marker}`),context);
+ vm.runInContext(source.replace(marker,`  window.hooks={state,init,refresh,parseDateLabel,sortLogs,renderRows,selectDog,addRow,takeInput,saveEditor,deleteRow,undoDelete,reloadRow,resetAuth,editorFor,dirty,saveDog,openDog,setDogDeleted,...(typeof applyFilters==='function'?{applyFilters,normalizeTrainer}:{})};\n${marker}`),context);
  const app=window.hooks;
  return {app,api,nodes,rows,errors,document,timers,get:id=>nodes.get(id),
   async start(){app.init();await until(()=>!app.state.loading);},
   input(id,key,value){const input=rows.get(id).children.find(n=>n.dataset.field===key);input.focus();input.value=value;app.takeInput(input);return input;},
   async save(id){return app.saveEditor(app.state.editors.get(id));},
+  async filter(id,value){const input=nodes.get(id);assert.ok(input,`filter ${id} exists`);input.value=value;input.focus();await input.emit('change',{target:input});},
   signOut(){api.session=null;for(const fn of api.callbacks)fn('SIGNED_OUT',null);},
   runTimers(delay){for(const [id,t]of [...timers])if(t.delay===delay){timers.delete(id);t.fn();}}
  };
@@ -170,4 +172,71 @@ test('sign-out discards late dog rename and deletion responses',async()=>{
   await until(()=>held);h.signOut();gate.resolve({data:dog({name:'Late name',deleted_at:mode==='delete'?'2026-10-01':null,revision:2}),error:null});await mutation;
   assert.equal(h.app.state.dogs.length,0);assert.equal(h.rows.size,0);assert.equal(h.app.state.editingDog,null);assert.equal(h.get('dogName').value,'');assert.equal(h.get('deletedDogCount').textContent,0);
  }
+});
+
+test('payroll filters start unrestricted while preserving the existing default dog view',async()=>{
+ const h=environment({dogs:[dog({name:'Alpha'}),dog({id:uuid(2),name:'Beta'})],logs:[log(),log({id:uuid(12),dog_id:uuid(2)})]});await h.start();
+ assert.equal(h.app.state.selectedDog,uuid(1));assert.deepEqual(clone(h.app.state.filters),{from:'',through:'',trainer:''});assert.equal(h.get('filterFrom').value,'');assert.equal(h.get('filterThrough').value,'');assert.equal(h.get('filterTrainer').value,'');assert.match(h.get('filterTrainer').innerHTML,/All trainers/);assert.match(h.get('dogSelect').innerHTML,/<option value="all">All dogs<\/option>/);assert.equal(h.get('clearFilters').disabled,true);assert.deepEqual([...h.rows.keys()],[uuid(11)]);assert.equal(h.rows.get(uuid(11)).children.length,7);assert.equal(h.get('dogHeading').hidden,true);
+ assert.match(html,/<input[^>]*id="filterFrom"[^>]*type="date"/);assert.match(html,/<input[^>]*id="filterThrough"[^>]*type="date"/);
+});
+
+test('payroll date ranges include both endpoints and support either date on its own',async()=>{
+ const dates=['09/29/2026','9/30/26','2026-10-01','Oct 2, 2026','10/03/2026'],logs=dates.map((date_label,index)=>log({id:uuid(11+index),position:String(index+1),date_label}));const h=environment({logs});await h.start();const ids=()=>[...h.rows.keys()].sort();
+ await h.filter('filterFrom','2026-09-30');await h.filter('filterThrough','2026-10-02');assert.deepEqual(ids(),[uuid(12),uuid(13),uuid(14)]);
+ await h.filter('filterThrough','');await h.filter('filterFrom','2026-10-02');assert.deepEqual(ids(),[uuid(14),uuid(15)]);
+ await h.filter('filterFrom','');await h.filter('filterThrough','2026-09-30');assert.deepEqual(ids(),[uuid(11),uuid(12)]);
+ assert.deepEqual(h.api.logs.map(row=>row.date_label),dates);assert.equal(h.api.calls.filter(call=>call.op==='update'||call.op==='insert').length,0);
+});
+
+test('active date filters never guess years and explain excluded blank or invalid dates',async()=>{
+ const labels=['9/30','Oct 1','','2/30/2026','tomorrow','2026-09-30'],logs=labels.map((date_label,index)=>log({id:uuid(30+index),position:String(index+1),date_label,created_at:index===1?'2025-01-01T12:00:00Z':'2026-09-30T12:00:00Z'}));const h=environment({logs});await h.start();assert.equal(h.rows.size,6);
+ await h.filter('filterTrainer','name:coach');assert.equal(h.rows.size,6,'trainer filtering alone must preserve yearless and invalid literal dates');
+ await h.filter('filterFrom','2026-09-01');await h.filter('filterThrough','2026-10-31');assert.deepEqual([...h.rows.keys()],[uuid(35)]);assert.equal(h.get('filterHint').hidden,false);assert.match(h.get('filterHint').textContent,/5 rows.*no full, valid date/i);assert.match(h.get('filterHint').textContent,/Clear dates/i);
+ await h.get('clearFilters').emit('click');assert.equal(h.rows.size,6);assert.equal(h.get('filterHint').hidden,true);assert.deepEqual(h.api.logs.map(row=>row.date_label),labels);assert.equal(h.api.calls.filter(call=>call.op==='update'||call.op==='insert').length,0);
+});
+
+test('trainer filtering normalizes display matching without rewriting names and supports unassigned rows',async()=>{
+ const names=['  Alex   Smith  ','alex smith','',' \t ','Coach <Admin>','Other'],logs=names.map((trainer,index)=>log({id:uuid(40+index),position:String(index+1),date_label:'10/01/2026',trainer}));const h=environment({logs});await h.start();
+ assert.equal(h.app.normalizeTrainer('  ALEX \t Smith  '),'alex smith');const options=h.get('filterTrainer').innerHTML;assert.equal([...options.matchAll(/value="name:alex smith"/g)].length,1);assert.equal([...options.matchAll(/value="unassigned"/g)].length,1);assert.match(options,/Coach &lt;Admin&gt;/);assert.doesNotMatch(options,/<Admin>/);
+ await h.filter('filterTrainer','name:alex smith');assert.deepEqual([...h.rows.keys()].sort(),[uuid(40),uuid(41)]);await h.filter('filterTrainer','unassigned');assert.deepEqual([...h.rows.keys()].sort(),[uuid(42),uuid(43)]);assert.deepEqual(h.api.logs.map(row=>row.trainer),names);assert.equal(h.api.calls.filter(call=>call.op==='update'||call.op==='insert').length,0);
+});
+
+test('All dogs combines trainer and date filters across active and deleted dogs while excluding orphan and deleted rows',async()=>{
+ const dogs=[dog({name:'Alpha <Paws>'}),dog({id:uuid(2),name:'Beta'}),dog({id:uuid(3),name:'Archived & Dog',deleted_at:'2026-10-01T12:00:00Z'})];
+ const logs=[log({date_label:'10/01/2026',trainer:' Coach '}),log({id:uuid(12),dog_id:uuid(2),date_label:'10/02/2026',trainer:'COACH'}),log({id:uuid(13),dog_id:uuid(3),date_label:'10/02/2026',trainer:'Coach'}),log({id:uuid(14),dog_id:uuid(999),date_label:'10/01/2026',trainer:'Coach'}),log({id:uuid(15),dog_id:uuid(2),date_label:'10/01/2026',trainer:'Coach',deleted_at:'2026-10-01T12:00:00Z'}),log({id:uuid(16),dog_id:uuid(2),date_label:'10/03/2026',trainer:'Other'})];
+ const h=environment({dogs,logs});await h.start();h.app.selectDog('all');await h.filter('filterFrom','2026-10-01');await h.filter('filterThrough','2026-10-02');await h.filter('filterTrainer','name:coach');assert.deepEqual([...h.rows.keys()].sort(),[uuid(11),uuid(12),uuid(13)]);assert.equal(h.get('dogHeading').hidden,false);assert.equal(h.get('dogColumn').hidden,false);assert.match(h.rows.get(uuid(11)).markup,/Alpha &lt;Paws&gt;/);assert.match(h.rows.get(uuid(13)).markup,/Archived &amp; Dog/);assert.match(h.rows.get(uuid(13)).markup,/Deleted dog.*read only/i);
+ assert.equal(h.get('addRow').disabled,true);assert.equal(h.get('renameDog').disabled,true);assert.equal(h.get('deleteDog').disabled,true);const before=h.app.state.editors.size;h.app.addRow();assert.equal(h.app.state.editors.size,before);
+ h.input(uuid(12),'notes','Payroll reviewed');await h.save(uuid(12));assert.equal(h.api.logs.find(row=>row.id===uuid(12)).dog_id,uuid(2));const update=h.api.calls.find(call=>call.op==='update');assert.deepEqual(update.payload,{notes:'Payroll reviewed'});
+ await h.get('clearFilters').emit('click');assert.equal(h.app.state.selectedDog,'all');assert.deepEqual(clone(h.app.state.filters),{from:'',through:'',trainer:''});assert.deepEqual([...h.rows.keys()].sort(),[uuid(11),uuid(12),uuid(13),uuid(16)]);
+});
+
+test('archived training rows remain available for payroll but cannot be changed or deleted from All dogs',async()=>{
+ for(const active of [true,false]){
+  const archived=dog({id:uuid(3),name:'Archived',deleted_at:'2026-10-01T12:00:00Z'}),entry=log({dog_id:uuid(3),date_label:'2026-10-01'});const h=environment({dogs:active?[dog(),archived]:[archived],logs:[entry]});await h.start();h.app.selectDog('all');assert.equal(h.app.state.selectedDog,'all');assert.equal(h.get('dogSelect').disabled,false);assert.equal(h.rows.size,1);assert.ok(h.rows.get(entry.id).children.every(input=>input.readOnly));assert.equal(h.rows.get(entry.id).button.disabled,true);
+  const before=clone(h.api.logs);h.input(entry.id,'notes','Forbidden archived edit');assert.equal(h.app.state.editors.get(entry.id).values.notes,'');await h.save(entry.id);await h.app.deleteRow(h.app.state.editors.get(entry.id));assert.deepEqual(h.api.logs,before);assert.equal(h.api.calls.filter(call=>call.op==='update'||call.op==='insert').length,0);
+ }
+});
+
+test('filters retain dirty, failed and new rows within the chosen dog without hiding their drafts',async()=>{
+ const logs=[log({date_label:'2026-09-30'}),log({id:uuid(12),date_label:'2026-09-30',trainer:'Coach'})];const h=environment({logs});await h.start();h.input(uuid(11),'date_label','2026-10-02');const failed=h.app.state.editors.get(uuid(12));failed.error='Synthetic network failure';
+ await h.filter('filterFrom','2026-09-01');await h.filter('filterThrough','2026-09-30');await h.filter('filterTrainer','name:other');assert.deepEqual([...h.rows.keys()].sort(),[uuid(11),uuid(12)]);assert.equal(h.rows.get(uuid(11)).children.find(input=>input.dataset.field==='date_label').value,'2026-10-02');assert.match(h.get('filterHint').textContent,/unfinished.*kept visible/i);
+ await h.save(uuid(11));h.app.renderRows();assert.deepEqual([...h.rows.keys()],[uuid(12)]);assert.equal(h.api.logs.find(row=>row.id===uuid(11)).date_label,'2026-10-02');assert.equal(h.app.state.editors.get(uuid(12)).error,'Synthetic network failure');
+ h.app.addRow();const fresh=[...h.app.state.editors.values()].find(editor=>!editor.base);assert.ok(fresh);assert.ok(h.rows.has(fresh.id),'a new row must remain visible even when its default date/trainer does not match the payroll filters');assert.equal(fresh.dog_id,uuid(1));
+});
+
+test('a filter change before the queued blur save preserves the edited row through save completion',async()=>{
+ const gate=deferred();let pending;const h=environment({logs:[log({date_label:'2026-10-01'})],intercept(call){if(call.table==='hq_training_logs'&&call.op==='update'){pending=call;return gate.promise;}}});await h.start();const input=h.input(uuid(11),'trainer','Changed coach');h.get('filterTrainer').focus();await h.get('trainingRows').emit('focusout',{target:input,relatedTarget:h.get('filterTrainer')});
+ const filtering=h.filter('filterTrainer','name:unrelated');h.runTimers(0);await until(()=>pending);assert.ok(h.rows.has(uuid(11)));assert.equal(h.app.state.editors.get(uuid(11)).values.trainer,'Changed coach');assert.ok(h.app.state.editors.get(uuid(11)).saving);
+ h.api.logs[0]={...h.api.logs[0],...pending.payload,revision:2};gate.resolve({data:clone(h.api.logs[0]),error:null});await filtering;await until(()=>!h.app.state.editors.get(uuid(11)).saving);h.app.renderRows();assert.equal(h.api.logs[0].trainer,'Changed coach');assert.equal(h.rows.size,0);assert.deepEqual(pending.payload,{trainer:'Changed coach'});
+});
+
+test('an inverted date range reports an error without discarding unfinished rows and Clear filters keeps dog scope',async()=>{
+ const h=environment({dogs:[dog({name:'Alpha'}),dog({id:uuid(2),name:'Beta'})],logs:[log({dog_id:uuid(2),date_label:'2026-10-01'}),log({id:uuid(12),dog_id:uuid(2),date_label:'2026-10-02'})]});await h.start();h.app.selectDog(uuid(2));h.input(uuid(11),'notes','Keep this unfinished note');
+ await h.filter('filterFrom','2026-10-03');await h.filter('filterThrough','2026-10-01');assert.equal(h.get('filterError').hidden,false);assert.match(h.get('filterError').textContent,/From.*on or before.*Through/i);assert.equal(h.get('filterFrom').getAttribute('aria-invalid'),'true');assert.equal(h.get('filterThrough').getAttribute('aria-invalid'),'true');assert.deepEqual([...h.rows.keys()],[uuid(11)]);assert.equal(h.app.state.editors.get(uuid(11)).values.notes,'Keep this unfinished note');
+ await h.get('clearFilters').emit('click');assert.equal(h.app.state.selectedDog,uuid(2));assert.equal(h.get('filterError').hidden,true);assert.equal(h.get('filterFrom').getAttribute('aria-invalid'),'false');assert.deepEqual([...h.rows.keys()].sort(),[uuid(11),uuid(12)]);assert.equal(h.api.calls.filter(call=>call.op==='update'||call.op==='insert').length,0);
+});
+
+test('sign-out clears payroll filters and trainer options along with the training records',async()=>{
+ const h=environment({logs:[log({date_label:'2026-10-01',trainer:'Private coach'})]});await h.start();h.app.selectDog('all');await h.filter('filterFrom','2026-10-01');await h.filter('filterThrough','2026-10-02');await h.filter('filterTrainer','name:private coach');h.signOut();
+ assert.deepEqual(clone(h.app.state.filters),{from:'',through:'',trainer:''});assert.equal(h.get('filterFrom').value,'');assert.equal(h.get('filterThrough').value,'');assert.equal(h.get('filterTrainer').value,'');assert.doesNotMatch(h.get('filterTrainer').innerHTML,/Private coach|private coach/);assert.equal(h.get('filterHint').hidden,true);assert.equal(h.get('filterError').hidden,true);assert.equal(h.rows.size,0);assert.equal(h.app.state.logs.length,0);assert.equal(h.app.state.selectedDog,null);
 });

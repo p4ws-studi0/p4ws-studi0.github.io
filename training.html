@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode:'class'}</script>
-  <link rel="stylesheet" href="/assets/training.css?v=3" />
+  <link rel="stylesheet" href="/assets/training.css?v=20261123a" />
 </head>
 <body class="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-[#0b0f14] dark:to-[#1e2126] text-slate-900 dark:text-white min-h-screen">
   <div id="header"></div>
@@ -40,6 +40,15 @@
           <button id="addRow" disabled type="button" class="tr-button tr-button-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add row</button>
         </div>
 
+        <div class="tr-filters" role="group" aria-label="Filter training rows">
+          <label class="tr-filter tr-filter-trainer" for="filterTrainer"><span>Trainer</span><select id="filterTrainer" disabled><option value="">All trainers</option></select></label>
+          <label class="tr-filter" for="filterFrom"><span>From</span><input id="filterFrom" type="date" disabled /></label>
+          <label class="tr-filter" for="filterThrough"><span>Through</span><input id="filterThrough" type="date" disabled /></label>
+          <button id="clearFilters" type="button" class="tr-button tr-button-subtle" disabled>Clear filters</button>
+        </div>
+        <p id="filterError" class="tr-filter-error" role="alert" hidden></p>
+        <p id="filterHint" class="tr-filter-hint" role="status" aria-live="polite" hidden></p>
+
         <form id="dogForm" class="tr-dog-form" hidden>
           <label id="dogNameLabel" for="dogName">New dog</label>
           <input id="dogName" name="dogName" type="text" maxlength="120" placeholder="Dog’s name and family name" autocomplete="off" required />
@@ -51,10 +60,10 @@
         <div class="tr-sheet-caption"><span id="rowCount">Loading rows…</span><span id="saveStatus" class="tr-save-status" role="status" aria-live="polite">Connecting…</span></div>
 
         <div id="tableScroll" class="tr-table-scroll" role="region" aria-label="Editable training log; scroll horizontally to see all columns" tabindex="0">
-          <table class="tr-table">
+          <table id="trainingTable" class="tr-table">
             <caption class="tr-sr-only">Training log. Most recent entries first. Edit any cell to update it.</caption>
-            <colgroup><col class="tr-col-day" /><col class="tr-col-date" /><col class="tr-col-session" /><col class="tr-col-time" /><col class="tr-col-trainer" /><col class="tr-col-detail" /><col class="tr-col-notes" /><col class="tr-col-action" /></colgroup>
-            <thead><tr><th scope="col">Day</th><th scope="col">Date</th><th scope="col">Session</th><th scope="col">Time</th><th scope="col">Trainer</th><th scope="col">Work detail</th><th scope="col">Notes</th><th scope="col" class="tr-action-heading"><span class="tr-sr-only">Delete</span></th></tr></thead>
+            <colgroup><col id="dogColumn" class="tr-col-dog" hidden /><col class="tr-col-day" /><col class="tr-col-date" /><col class="tr-col-session" /><col class="tr-col-time" /><col class="tr-col-trainer" /><col class="tr-col-detail" /><col class="tr-col-notes" /><col class="tr-col-action" /></colgroup>
+            <thead><tr><th id="dogHeading" scope="col" hidden>Dog</th><th scope="col">Day</th><th scope="col">Date</th><th scope="col">Session</th><th scope="col">Time</th><th scope="col">Trainer</th><th scope="col">Work detail</th><th scope="col">Notes</th><th scope="col" class="tr-action-heading"><span class="tr-sr-only">Delete</span></th></tr></thead>
             <tbody id="trainingRows"></tbody>
           </table>
         </div>
@@ -84,6 +93,6 @@
         .catch(error => console.warn(error.message))
     }
   </script>
-  <script src="/assets/training.js?v=20261020c" defer></script>
+  <script src="/assets/training.js?v=20261123a" defer></script>
 </body>
 </html>

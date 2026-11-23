@@ -8,7 +8,9 @@
     ['work_detail','Work detail',6000], ['notes','Notes',10000]
   ];
   const KEYS = FIELDS.map(([key]) => key);
+  const ALL_DOGS = 'all';
   const state = {dogs:[],logs:[],editors:new Map(),selectedDog:null,ready:false,loading:false,
+    filters:{from:'',through:'',trainer:''},
     userId:null,epoch:0,request:0,dogSaving:false,dogDraftId:null,editingDog:null,undo:null,undoSaving:false,toastTimer:null,newOrder:0};
   const text = value => String(value ?? '');
   const escape = value => text(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -20,6 +22,39 @@
   const position = row => BigInt(row.position ?? 0);
   const sourceOrder = (a,b) => position(a)<position(b) ? -1 : position(a)>position(b) ? 1 : text(a.id).localeCompare(text(b.id));
   const activeDogs = () => state.dogs.filter(dog=>!dog.deleted_at);
+  const editableDog = id => activeDogs().some(dog=>dog.id===id);
+  const normalizeTrainer = value => text(value).trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+  const trainerKey = value => normalizeTrainer(value)?`name:${normalizeTrainer(value)}`:'unassigned';
+  const hasFilters = () => Object.values(state.filters).some(Boolean);
+  const invalidRange = () => Boolean(state.filters.from&&state.filters.through&&state.filters.from>state.filters.through);
+  function fullDateKey(value) {
+    const date=parseDateLabel(value);
+    return date?.year?`${String(date.year).padStart(4,'0')}-${String(date.month).padStart(2,'0')}-${String(date.day).padStart(2,'0')}`:null;
+  }
+  function matchesFilters(values) {
+    if(invalidRange())return false;
+    const {from,through,trainer}=state.filters;
+    if(trainer&&trainerKey(values.trainer)!==trainer)return false;
+    if(from||through){const date=fullDateKey(values.date_label);if(!date||from&&date<from||through&&date>through)return false;}
+    return true;
+  }
+  const keepDraft = editor => !editor.base||dirty(editor)||Boolean(editor.saving||editor.deleting||editor.error);
+  function renderTrainerOptions() {
+    const names=new Map();
+    for(const row of state.logs){
+      if(row.deleted_at||!state.dogs.some(dog=>dog.id===row.dog_id))continue;
+      const value=state.editors.get(row.id)?.values.trainer??row.trainer,key=trainerKey(value);
+      if(!names.has(key))names.set(key,key==='unassigned'?'No trainer entered':text(value).trim().replace(/\s+/g,' '));
+    }
+    const selected=state.filters.trainer;
+    if(selected&&!names.has(selected))names.set(selected,selected==='unassigned'?'No trainer entered':selected.slice(5));
+    $('filterTrainer').innerHTML='<option value="">All trainers</option>'+[...names].sort((a,b)=>a[1].localeCompare(b[1])).map(([key,name])=>`<option value="${escape(key)}">${escape(name)}</option>`).join('');
+    $('filterTrainer').value=selected;
+  }
+  function applyFilters() {
+    state.filters={from:$('filterFrom').value,through:$('filterThrough').value,trainer:$('filterTrainer').value};
+    renderRows();
+  }
   function todayLabel() {
     const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
     return `${parts.month}/${parts.day}/${parts.year}`;
@@ -86,7 +121,10 @@
     $('renameDog').disabled=blocked||state.dogSaving||!selected;
     $('deleteDog').disabled=blocked||state.dogSaving||!selected||unfinished();
     $('deleteDog').title=unfinished()?'Finish saving or remove unfinished rows first.':'Move this dog to Deleted dogs. Training rows are kept.';
-    $('dogSelect').disabled=blocked||state.dogSaving||!activeDogs().length||!$('dogForm').hidden;
+    $('dogSelect').disabled=blocked||state.dogSaving||!state.dogs.length||!$('dogForm').hidden;
+    $('addRow').title=state.selectedDog===ALL_DOGS?'Choose a dog before adding a row.':'';
+    for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).disabled=blocked||state.dogSaving;
+    $('clearFilters').disabled=blocked||!hasFilters();
     $('refreshLogs').disabled=state.loading||state.dogSaving;
     $('saveDog').disabled=blocked||state.dogSaving;
     $('cancelDog').disabled=state.dogSaving;
@@ -101,8 +139,8 @@
     const row=rowElement(editor.id);if(!row)return;
     row.classList.toggle('is-saving',Boolean(editor.saving||editor.deleting));
     row.classList.toggle('is-error',Boolean(editor.error));
-    row.querySelectorAll('textarea').forEach(input=>{input.disabled=!state.ready||state.loading||state.dogSaving||editor.deleting||Boolean(editor.deleteAttempt);});
-    const button=row.querySelector('[data-action="delete"]');if(button)button.disabled=!state.ready||state.dogSaving||state.undoSaving||Boolean(editor.saving||editor.deleting);
+    row.querySelectorAll('textarea').forEach(input=>{input.disabled=!state.ready||state.loading||state.dogSaving||editor.deleting||Boolean(editor.deleteAttempt);input.readOnly=!editableDog(editor.dog_id);});
+    const button=row.querySelector('[data-action="delete"]');if(button)button.disabled=!state.ready||state.dogSaving||state.undoSaving||!editableDog(editor.dog_id)||Boolean(editor.saving||editor.deleting);
     const errorRow=document.querySelector(`[data-error-id="${editor.id}"]`);
     if(errorRow) {
       errorRow.hidden=!editor.error;
@@ -113,12 +151,14 @@
     }
   }
   function renderRow(editor) {
-    const cells=FIELDS.map(([key,label,limit])=>`<td class="tr-cell"><textarea class="tr-cell-input tr-cell-textarea${['work_detail','notes'].includes(key)?' tr-cell-long':''}" data-field="${key}" rows="2" maxlength="${limit}" aria-label="${label}" spellcheck="${['work_detail','notes'].includes(key)}">${escape(editor.values[key])}</textarea></td>`).join('');
-    return `<tr class="tr-row" data-row-id="${editor.id}">${cells}<td class="tr-action-cell"><button type="button" class="tr-delete" data-action="delete" aria-label="Delete row">Delete</button></td></tr><tr class="tr-row-error" data-error-id="${editor.id}" hidden><td colspan="8"><span data-row-error role="alert"></span> <button type="button" data-action="retry" data-id="${editor.id}">Retry</button></td></tr>`;
+    const dog=state.dogs.find(item=>item.id===editor.dog_id),archived=Boolean(dog?.deleted_at),all=state.selectedDog===ALL_DOGS;
+    const dogCell=all?`<td class="tr-dog-cell"><strong>${escape(dog?.name)}</strong>${archived?'<span>Deleted dog · read only</span>':''}</td>`:'';
+    const cells=FIELDS.map(([key,label,limit])=>`<td class="tr-cell"><textarea class="tr-cell-input tr-cell-textarea${['work_detail','notes'].includes(key)?' tr-cell-long':''}" data-field="${key}" rows="2" maxlength="${limit}" aria-label="${label}" spellcheck="${['work_detail','notes'].includes(key)}" ${archived?'readonly':''}>${escape(editor.values[key])}</textarea></td>`).join('');
+    return `<tr class="tr-row" data-row-id="${editor.id}">${dogCell}${cells}<td class="tr-action-cell"><button type="button" class="tr-delete" data-action="delete" aria-label="Delete row" ${archived?'disabled title="Restore this dog before editing its training rows."':''}>Delete</button></td></tr><tr class="tr-row-error" data-error-id="${editor.id}" hidden><td colspan="${all?9:8}"><span data-row-error role="alert"></span> <button type="button" data-action="retry" data-id="${editor.id}">Retry</button></td></tr>`;
   }
   function renderDogs() {
     const active=activeDogs();
-    $('dogSelect').innerHTML=active.length?active.map(dog=>`<option value="${escape(dog.id)}">${escape(dog.name)}</option>`).join(''):'<option value="">No active dogs</option>';
+    $('dogSelect').innerHTML=(active.length?'':'<option value="">No active dogs</option>')+(state.dogs.length?'<option value="all">All dogs</option>':'')+active.map(dog=>`<option value="${escape(dog.id)}">${escape(dog.name)}</option>`).join('');
     $('dogSelect').value=state.selectedDog||'';
     const deleted=state.dogs.filter(dog=>dog.deleted_at);
     $('deletedDogCount').textContent=deleted.length;
@@ -128,13 +168,25 @@
     }).join(''):'<p>No deleted dogs.</p>';
   }
   function renderRows() {
-    const rows=sortLogs(state.logs.filter(row=>row.dog_id===state.selectedDog&&!row.deleted_at)).map(editorFor);
-    const fresh=[...state.editors.values()].filter(e=>!e.base&&e.dog_id===state.selectedDog).sort((a,b)=>b.order-a.order);
-    const editors=[...fresh,...rows];
+    const inScope=id=>state.selectedDog===ALL_DOGS?state.dogs.some(dog=>dog.id===id):id===state.selectedDog;
+    const rows=sortLogs(state.logs.filter(row=>inScope(row.dog_id)&&!row.deleted_at)).map(editorFor);
+    const fresh=[...state.editors.values()].filter(e=>!e.base&&inScope(e.dog_id)).sort((a,b)=>b.order-a.order);
+    const candidates=[...fresh,...rows],editors=candidates.filter(editor=>matchesFilters(editor.values)||keepDraft(editor));
+    const all=state.selectedDog===ALL_DOGS;
+    $('dogColumn').hidden=!all;$('dogHeading').hidden=!all;$('trainingTable').classList.toggle('tr-all-dogs',all);
     $('trainingRows').innerHTML=editors.map(renderRow).join('');
-    $('rowCount').textContent=state.selectedDog?`${editors.length} ${editors.length===1?'row':'rows'} · Newest first`:'';
+    $('rowCount').textContent=state.selectedDog?`${editors.length}${hasFilters()?` of ${candidates.length}`:''} ${editors.length===1&&!hasFilters()?'row':'rows'} · Newest first`:'';
+    const withoutDate=(state.filters.from||state.filters.through)?candidates.filter(editor=>(!state.filters.trainer||trainerKey(editor.values.trainer)===state.filters.trainer)&&!fullDateKey(editor.values.date_label)&&!keepDraft(editor)).length:0;
+    const retained=editors.filter(editor=>!matchesFilters(editor.values)).length;
+    const hints=[];
+    if(withoutDate)hints.push(`${withoutDate} ${withoutDate===1?'row has':'rows have'} no full, valid date and ${withoutDate===1?'is':'are'} outside this date range. Clear dates to see ${withoutDate===1?'it':'them'}.`);
+    if(retained)hints.push(`${retained} unfinished ${retained===1?'row is':'rows are'} kept visible until saved.`);
+    $('filterHint').textContent=hints.join(' ');$('filterHint').hidden=!hints.length;
+    $('filterError').textContent=invalidRange()?'From date must be on or before Through date.':'';$('filterError').hidden=!invalidRange();
+    $('filterFrom').setAttribute('aria-invalid',String(invalidRange()));$('filterThrough').setAttribute('aria-invalid',String(invalidRange()));
     $('emptyState').hidden=Boolean(editors.length)||!state.ready;
-    $('emptyState').textContent=activeDogs().length?'No entries yet. Add a row to get started.':state.dogs.length?'No active dogs. Add a dog or restore one from Deleted dogs.':'Add a dog to start a training log.';
+    $('emptyState').textContent=hasFilters()?'No rows match these filters.':state.selectedDog===ALL_DOGS?'No training rows yet.':activeDogs().length?'No entries yet. Add a row to get started.':state.dogs.length?'No active dogs. Add a dog or restore one from Deleted dogs.':'Add a dog to start a training log.';
+    renderTrainerOptions();
     controls();
   }
   function render() {renderDogs();renderRows();}
@@ -169,7 +221,7 @@
       await requireStaff(epoch);if(!valid())return;
       const [dogs,logs]=await Promise.all([fetchAll('hq_training_dogs',valid),fetchAll('hq_training_logs',valid)]);if(!valid())return;
       state.dogs=dogs.sort((a,b)=>a.name.localeCompare(b.name));state.logs=logs;state.editors.clear();state.ready=true;
-      if(!activeDogs().some(dog=>dog.id===state.selectedDog))state.selectedDog=activeDogs()[0]?.id||null;
+      if(state.selectedDog!==ALL_DOGS&&!activeDogs().some(dog=>dog.id===state.selectedDog))state.selectedDog=activeDogs()[0]?.id||null;
       message('');
     } catch(error) {
       if(!valid())return;
@@ -180,7 +232,7 @@
   }
   function takeInput(input) {
     const row=input.closest('[data-row-id]'),key=input.dataset.field;
-    const editor=state.editors.get(row?.dataset.rowId);if(!editor||!KEYS.includes(key)||editor.deleting)return;
+    const editor=state.editors.get(row?.dataset.rowId);if(!editor||!KEYS.includes(key)||editor.deleting||!editableDog(editor.dog_id))return;
     const original=editor.base ? text(editor.base[key]) : '';
     editor.values[key]=input.value===normalized(original)?original:input.value;
     if(!editor.conflict)editor.error='';
@@ -219,7 +271,7 @@
     row.querySelectorAll('[data-field]').forEach(input=>{if(document.activeElement!==input)input.value=editor.values[input.dataset.field];});
   }
   function saveEditor(editor) {
-    if(!editor||editor.deleting||editor.deleteAttempt||editor.conflict||!state.ready)return Promise.resolve();
+    if(!editor||editor.deleting||editor.deleteAttempt||editor.conflict||!state.ready||!editableDog(editor.dog_id))return Promise.resolve();
     if(editor.saving)return editor.saving;
     if(!dirty(editor))return Promise.resolve();
     if(!KEYS.some(key=>nonblank(editor.values[key]))) {
@@ -258,7 +310,7 @@
     $('tableScroll').scrollTop=0;
   }
   async function deleteRow(editor) {
-    if(!editor||!state.ready||state.undoSaving||editor.saving||editor.deleting)return;
+    if(!editor||!state.ready||state.undoSaving||editor.saving||editor.deleting||!editableDog(editor.dog_id))return;
     if(!editor.base&&!editor.attempt){state.editors.delete(editor.id);renderRows();toast('Row removed.');return;}
     const epoch=state.epoch;editor.deleting=true;controls();
     try {
@@ -297,7 +349,7 @@
       state.editors.delete(editor.id);renderRows();message('');
     }catch(error){if(current(epoch)){editor.error=errorText(error);controls();}}
   }
-  function selectDog(id) {if(!activeDogs().some(dog=>dog.id===id))return;state.selectedDog=id;renderRows();}
+  function selectDog(id) {if(id===ALL_DOGS?!state.dogs.length:!editableDog(id))return;state.selectedDog=id;$('dogSelect').value=id;renderRows();}
   function rememberDog(dog) {
     const index=state.dogs.findIndex(item=>item.id===dog.id);
     if(index<0)state.dogs.push(dog);else state.dogs[index]=dog;
@@ -367,6 +419,7 @@
   function resetAuth(userId) {
     state.epoch++;state.request++;state.userId=userId;state.ready=false;state.loading=false;state.dogSaving=false;
     state.dogs=[];state.logs=[];state.editors.clear();state.selectedDog=null;state.undo=null;state.undoSaving=false;
+    state.filters={from:'',through:'',trainer:''};for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).value='';
     clearTimeout(state.toastTimer);$('toast').hidden=true;$('toastText').textContent='';$('undoDelete').disabled=false;
     $('dogForm').hidden=true;$('dogName').value='';$('dogError').textContent='';state.dogDraftId=null;state.editingDog=null;
     render();message(userId?'Loading training rows…':'Sign in to Paws HQ to view training rows.');
@@ -375,6 +428,8 @@
     if(!$('trainingPage'))return;
     $('addRow').addEventListener('click',addRow);
     $('dogSelect').addEventListener('change',event=>selectDog(event.target.value));
+    for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).addEventListener('change',applyFilters);
+    $('clearFilters').addEventListener('click',()=>{for(const id of ['filterFrom','filterThrough','filterTrainer'])$(id).value='';applyFilters();});
     $('addDog').addEventListener('click',()=>openDog());
     $('renameDog').addEventListener('click',()=>openDog(state.dogs.find(dog=>dog.id===state.selectedDog)));
     $('deleteDog').addEventListener('click',()=>setDogDeleted(state.dogs.find(dog=>dog.id===state.selectedDog),true));

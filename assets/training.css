@@ -34,6 +34,18 @@
 .tr-page-heading p {margin:10px 0 0;color:var(--tr-muted);font-size:12px;line-height:1.65;}
 .tr-sheet {width:100%;min-width:0;border:1px solid var(--tr-line);border-radius:16px;background:var(--tr-surface);box-shadow:0 10px 35px rgba(0,0,0,.025);overflow:hidden;}
 .tr-toolbar {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 19px 12px;}
+.tr-filters {display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;padding:0 19px 14px;}
+.tr-filter {display:flex;flex-direction:column;gap:6px;min-width:0;}
+.tr-filter > span {color:var(--tr-muted);font-size:11px;font-weight:600;}
+.tr-filter input, .tr-filter select {min-height:42px;max-width:100%;padding:9px 11px;border:1px solid var(--tr-line);border-radius:9px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:13px;}
+.tr-filter input {width:160px;color-scheme:light;}
+.dark .tr-filter input {color-scheme:dark;}
+.tr-filter select {width:220px;cursor:pointer;}
+.tr-filter option {color:var(--tr-text);background:var(--tr-menu);}
+.tr-filters > button {min-height:42px;}
+.tr-filter-hint, .tr-filter-error {margin:0 20px 13px;color:var(--tr-muted);font-size:12px;line-height:1.6;}
+.tr-filter-error {color:#b72d37;}
+.dark .tr-filter-error {color:#ffadb3;}
 .tr-dog-tools {display:flex;align-items:center;gap:10px;min-width:0;}
 .tr-dog-label {color:var(--tr-muted);font-size:11px;font-weight:600;}
 .tr-dog-select {width:245px;max-width:100%;min-height:44px;padding:10px 34px 10px 12px;border:1px solid var(--tr-line);border-radius:9px;background:var(--tr-input);color:var(--tr-text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
@@ -64,6 +76,12 @@
 .tr-table-scroll:focus-visible {outline-offset:-3px;}
 .tr-table {width:100%;min-width:1000px;table-layout:fixed;border-collapse:separate;border-spacing:0;text-align:left;}
 .tr-col-day {width:64px;}
+.tr-col-dog {width:170px;}
+.tr-all-dogs {min-width:1170px;}
+.tr-dog-cell {padding:13px 11px!important;color:var(--tr-text);font-size:12px;line-height:1.6;overflow-wrap:anywhere;}
+.tr-dog-cell strong {font-weight:600;}
+.tr-dog-cell span {display:block;margin-top:4px;color:var(--tr-muted);font-size:10px;}
+.tr-cell textarea[readonly] {color:var(--tr-muted);}
 .tr-col-date {width:105px;}
 .tr-col-session {width:80px;}
 .tr-col-time {width:125px;}
@@ -138,9 +156,9 @@
 .tr-delete {font-size:10px!important;width:auto;padding:7px;}
 .tr-cell textarea:not(:focus) {scrollbar-width:none;}
 .tr-cell textarea:not(:focus)::-webkit-scrollbar {display:none;}
-.tr-table-scroll {max-height:calc(100dvh - 285px);min-height:190px;}
+.tr-table-scroll {max-height:calc(100dvh - 365px);min-height:190px;}
 .tr-table thead th {position:sticky;top:0;z-index:2;background:var(--tr-menu);}
-@media (max-width:700px) {.tr-table-scroll {max-height:calc(100dvh - 325px);}}
+@media (max-width:700px) {.tr-table-scroll {max-height:calc(100dvh - 485px);}}
 @media print {.tr-table-scroll {max-height:none;min-height:0;}.tr-table thead th {position:static;}}
 /* Dog management stays outside the compact entry rows. */
 .tr-dog-tools {flex-wrap:wrap;}
@@ -156,3 +174,11 @@
 .tr-deleted-dog button {flex-shrink:0;}
 @media (max-width:700px) {.tr-dog-select {flex-basis:100%;}.tr-dog-tools {gap:4px;}.tr-dog-tools .tr-button {min-height:36px;}}
 @media print {.tr-deleted-dogs {display:none!important;}}
+@media (max-width:700px) {
+  .tr-filters {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:0 13px 14px;}
+  .tr-filter-trainer {grid-column:1 / -1;}
+  .tr-filter input, .tr-filter select {width:100%;min-width:0;font-size:16px;}
+  .tr-filters > button {justify-self:start;min-height:36px;padding-block:6px;}
+  .tr-filter-hint, .tr-filter-error {margin-inline:14px;}
+}
+@media print {.tr-filters,.tr-filter-error {display:none!important;}}
