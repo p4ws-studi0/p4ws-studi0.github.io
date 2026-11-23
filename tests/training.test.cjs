@@ -210,6 +210,15 @@ test('All dogs combines trainer and date filters across active and deleted dogs 
  await h.get('clearFilters').emit('click');assert.equal(h.app.state.selectedDog,'all');assert.deepEqual(clone(h.app.state.filters),{from:'',through:'',trainer:''});assert.deepEqual([...h.rows.keys()].sort(),[uuid(11),uuid(12),uuid(13),uuid(16)]);
 });
 
+test('individual trainer filters include shared sessions without changing the original trainer cells',async()=>{
+ const names=['jess and emily',' Emily & Jess ','Jess / Emily','Emily+Jess','Jess','Emily','Mari'];
+ const h=environment({logs:names.map((trainer,index)=>log({id:uuid(70+index),trainer,date_label:'11/23/2026'}))});await h.start();
+ const options=h.get('filterTrainer').innerHTML;assert.equal([...options.matchAll(/value="name:emily"/g)].length,1);assert.equal([...options.matchAll(/value="name:jess"/g)].length,1);assert.doesNotMatch(options,/value="name:jess and emily"/);
+ await h.filter('filterTrainer','name:emily');assert.deepEqual([...h.rows.keys()].sort(),[70,71,72,73,75].map(uuid));
+ await h.filter('filterTrainer','name:jess');assert.deepEqual([...h.rows.keys()].sort(),[70,71,72,73,74].map(uuid));
+ assert.deepEqual(h.api.logs.map(row=>row.trainer),names);assert.equal(h.api.calls.filter(call=>call.op==='update'||call.op==='insert').length,0);
+});
+
 test('archived training rows remain available for payroll but cannot be changed or deleted from All dogs',async()=>{
  for(const active of [true,false]){
   const archived=dog({id:uuid(3),name:'Archived',deleted_at:'2026-10-01T12:00:00Z'}),entry=log({dog_id:uuid(3),date_label:'2026-10-01'});const h=environment({dogs:active?[dog(),archived]:[archived],logs:[entry]});await h.start();h.app.selectDog('all');assert.equal(h.app.state.selectedDog,'all');assert.equal(h.get('dogSelect').disabled,false);assert.equal(h.rows.size,1);assert.ok(h.rows.get(entry.id).children.every(input=>input.readOnly));assert.equal(h.rows.get(entry.id).button.disabled,true);

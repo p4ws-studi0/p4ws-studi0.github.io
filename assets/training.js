@@ -24,7 +24,12 @@
   const activeDogs = () => state.dogs.filter(dog=>!dog.deleted_at);
   const editableDog = id => activeDogs().some(dog=>dog.id===id);
   const normalizeTrainer = value => text(value).trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
-  const trainerKey = value => normalizeTrainer(value)?`name:${normalizeTrainer(value)}`:'unassigned';
+  const trainerNames = value => text(value).split(/\s+and\s+|\s*[&+/;]\s*/i).map(name=>name.trim().replace(/\s+/g,' ')).filter(Boolean);
+  function matchesTrainer(value,selected) {
+    if(!selected)return true;
+    if(selected==='unassigned')return !nonblank(value);
+    return trainerNames(value).some(name=>`name:${normalizeTrainer(name)}`===selected);
+  }
   const hasFilters = () => Object.values(state.filters).some(Boolean);
   const invalidRange = () => Boolean(state.filters.from&&state.filters.through&&state.filters.from>state.filters.through);
   function fullDateKey(value) {
@@ -34,7 +39,7 @@
   function matchesFilters(values) {
     if(invalidRange())return false;
     const {from,through,trainer}=state.filters;
-    if(trainer&&trainerKey(values.trainer)!==trainer)return false;
+    if(!matchesTrainer(values.trainer,trainer))return false;
     if(from||through){const date=fullDateKey(values.date_label);if(!date||from&&date<from||through&&date>through)return false;}
     return true;
   }
@@ -43,8 +48,9 @@
     const names=new Map();
     for(const row of state.logs){
       if(row.deleted_at||!state.dogs.some(dog=>dog.id===row.dog_id))continue;
-      const value=state.editors.get(row.id)?.values.trainer??row.trainer,key=trainerKey(value);
-      if(!names.has(key))names.set(key,key==='unassigned'?'No trainer entered':text(value).trim().replace(/\s+/g,' '));
+      const value=state.editors.get(row.id)?.values.trainer??row.trainer,people=trainerNames(value);
+      if(!people.length)names.set('unassigned','No trainer entered');
+      for(const name of people){const key=`name:${normalizeTrainer(name)}`;if(!names.has(key))names.set(key,name);}
     }
     const selected=state.filters.trainer;
     if(selected&&!names.has(selected))names.set(selected,selected==='unassigned'?'No trainer entered':selected.slice(5));
@@ -176,7 +182,7 @@
     $('dogColumn').hidden=!all;$('dogHeading').hidden=!all;$('trainingTable').classList.toggle('tr-all-dogs',all);
     $('trainingRows').innerHTML=editors.map(renderRow).join('');
     $('rowCount').textContent=state.selectedDog?`${editors.length}${hasFilters()?` of ${candidates.length}`:''} ${editors.length===1&&!hasFilters()?'row':'rows'} · Newest first`:'';
-    const withoutDate=(state.filters.from||state.filters.through)?candidates.filter(editor=>(!state.filters.trainer||trainerKey(editor.values.trainer)===state.filters.trainer)&&!fullDateKey(editor.values.date_label)&&!keepDraft(editor)).length:0;
+    const withoutDate=(state.filters.from||state.filters.through)?candidates.filter(editor=>matchesTrainer(editor.values.trainer,state.filters.trainer)&&!fullDateKey(editor.values.date_label)&&!keepDraft(editor)).length:0;
     const retained=editors.filter(editor=>!matchesFilters(editor.values)).length;
     const hints=[];
     if(withoutDate)hints.push(`${withoutDate} ${withoutDate===1?'row has':'rows have'} no full, valid date and ${withoutDate===1?'is':'are'} outside this date range. Clear dates to see ${withoutDate===1?'it':'them'}.`);
