@@ -138,13 +138,13 @@
 
   const mini = area('mini', 'Mini Mansions',
     bounds(1491, 1831, 2361, 2286), bounds(1491, 1940, 2361, 2145));
-  bank(mini, bounds(1677, 1831, 2135, 1930), rooms('MM', 9, 12), 'x');
-  bank(mini, bounds(2135, 1831, 2250, 1930), ['MM17', 'MM14']);
-  bank(mini, bounds(2250, 1831, 2361, 1930), ['MM16', 'MM15']);
-  bank(mini, bounds(1637, 2162, 1781, 2286), ['MM3', 'MM8']);
-  bank(mini, bounds(1781, 2162, 1925, 2286), ['MM2', 'MM7']);
-  bank(mini, bounds(1925, 2162, 2215, 2286), ['MM6', 'MM5'], 'x');
-  bank(mini, bounds(2215, 2162, 2361, 2286), ['MM1', 'MM4']);
+  bank(mini, bounds(1491, 1831, 2071, 1930), rooms('MM', 9, 12), 'x');
+  bank(mini, bounds(2071, 1831, 2216, 1930), ['MM17', 'MM14']);
+  bank(mini, bounds(2216, 1831, 2361, 1930), ['MM16', 'MM15']);
+  bank(mini, bounds(1491, 2162, 1665, 2286), ['MM3', 'MM8']);
+  bank(mini, bounds(1665, 2162, 1839, 2286), ['MM2', 'MM7']);
+  bank(mini, bounds(1839, 2162, 2187, 2286), ['MM6', 'MM5'], 'x');
+  bank(mini, bounds(2187, 2162, 2361, 2286), ['MM1', 'MM4']);
 
   const cats = area('cats', 'Cat Room',
     bounds(2421, 1837, 3059, 2286), bounds(2577, 1940, 2850, 2230));
