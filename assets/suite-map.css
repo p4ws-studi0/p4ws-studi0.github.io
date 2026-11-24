@@ -208,6 +208,8 @@ body.suite-map-page.paws-desktop-navigation .suite-map-main { padding-top: var(-
   color: var(--map-occupied);
 }
 
+.map-room.has-reservation { cursor: pointer; }
+
 .map-room.is-selected, .map-room:focus-visible {
   z-index: 2;
   outline: 1px solid var(--map-focus);
@@ -223,6 +225,8 @@ body.suite-map-page.paws-desktop-navigation .suite-map-main { padding-top: var(-
   gap: 4px;
   width: max-content;
   max-width: min(260px, calc(100% - 20px));
+  max-height: min(360px, calc(100% - 20px));
+  overflow: auto;
   padding: 9px 13px 10px;
   border: 1px solid var(--map-hairline);
   border-top-color: var(--map-focus);
@@ -242,6 +246,26 @@ body.suite-map-page.paws-desktop-navigation .suite-map-main { padding-top: var(-
 .map-tooltip-name { font-size: .9rem; font-weight: 650; line-height: 1.25; }
 .map-tooltip[data-state="occupied"] .map-tooltip-label { color: var(--map-occupied); }
 .map-tooltip-meta { color: var(--map-muted); font-size: .75rem; }
+.map-tooltip-pet { display: grid; gap: 3px; }
+.map-tooltip-pet + .map-tooltip-pet {
+  padding-top: 6px;
+  border-top: 1px solid var(--map-hairline);
+}
+.map-tooltip-action, .map-tooltip-edit {
+  color: var(--map-focus);
+  font-size: .72rem;
+  font-weight: 600;
+}
+.map-tooltip-edit {
+  width: fit-content;
+  padding-block: 6px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.map-tooltip-edit:focus-visible {
+  outline: 2px solid var(--map-focus);
+  outline-offset: 2px;
+}
 
 @container (width < 1040px) {
   .map-jump { display: block; }
