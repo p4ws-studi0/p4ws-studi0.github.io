@@ -6,7 +6,7 @@
   <script src="/assets/clean-urls.js?v=20261017f"></script>
   <link rel="stylesheet" href="/assets/page-transition.css?v=20261017c">
   <script src="/assets/page-transition-bootstrap.js?v=20261017f"></script>
-  <title>Lodgings map · Paws HQ</title>
+  <title>Lodgings · Paws HQ</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = {darkMode: 'class'};</script>
-  <link rel="stylesheet" href="/assets/suite-map.css?v=20261124a">
+  <link rel="stylesheet" href="/assets/suite-map.css?v=20261124b">
 </head>
 <body class="suite-map-page">
   <div id="header"></div>
@@ -22,26 +22,9 @@
     <aside id="sideMenu" class="fixed z-30 w-64 h-screen glass -translate-x-full pt-6 px-5" aria-label="Navigation"></aside>
     <main class="suite-map-main">
       <header class="map-heading">
-        <div>
-          <h1>Lodgings map</h1>
-          <p>Select a room for details.</p>
-        </div>
+        <h1>Lodgings</h1>
         <div class="map-heading-tools">
-          <div class="map-legend" aria-label="Room status legend">
-            <span><i aria-hidden="true"></i><span id="map-room-legend">Room</span></span>
-            <span><i class="map-legend-occupied" aria-hidden="true"></i>Occupied</span>
-          </div>
-          <div class="map-status" id="map-status" role="status" data-state="loading">Loading room status…</div>
-        </div>
-      </header>
-
-      <section class="map-board" aria-label="Lodgings floor plan">
-        <div class="map-toolbar">
-          <dl id="gingr-summary" class="map-summary" hidden>
-            <div><dt>Check-ins</dt><dd id="checkins">—</dd></div>
-            <div><dt>Check-outs</dt><dd id="checkouts">—</dd></div>
-            <div><dt>Active</dt><dd id="total">—</dd></div>
-          </dl>
+          <div class="map-status" id="map-status" role="status" data-state="loading">Checking occupancy</div>
           <label class="map-jump">
             <span class="sr-only">Jump to an area</span>
             <select id="map-jump">
@@ -58,8 +41,9 @@
               <option value="cats">Cat Room</option>
             </select>
           </label>
-          <p class="map-pan-hint">Swipe across the map</p>
         </div>
+      </header>
+      <section class="map-board" aria-label="Lodgings floor plan">
         <div class="map-scroll" id="map-scroll" tabindex="0" role="region" aria-label="Scrollable lodging map">
           <div class="map-plan" id="map-plan"></div>
         </div>
@@ -69,19 +53,6 @@
   </div>
 
   <div id="map-tooltip" class="map-tooltip" role="tooltip" hidden></div>
-
-  <dialog id="map-room-dialog" class="map-room-dialog" aria-labelledby="map-room-title" aria-describedby="map-room-state">
-    <header>
-      <div>
-        <h2 id="map-room-title">Room details</h2>
-        <p id="map-room-state"></p>
-      </div>
-      <button type="button" id="map-room-close" class="map-close" aria-label="Close room details">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-      </button>
-    </header>
-    <dl id="map-room-fields"></dl>
-  </dialog>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="/script.js?v=20261025b"></script>
@@ -96,7 +67,7 @@
         .catch(() => {});
     }
   </script>
-  <script src="/assets/suite-plan.js?v=20261124a" defer></script>
-  <script src="/assets/suite-map.js?v=20261124a" defer></script>
+  <script src="/assets/suite-plan.js?v=20261124b" defer></script>
+  <script src="/assets/suite-map.js?v=20261124b" defer></script>
 </body>
 </html>

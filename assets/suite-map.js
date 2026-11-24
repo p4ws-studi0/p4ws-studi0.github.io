@@ -3,24 +3,20 @@
 
   const rooms = [...document.querySelectorAll('.map-room[data-room]')];
   const status = document.getElementById('map-status');
-  const roomLegend = document.getElementById('map-room-legend');
   const tooltip = document.getElementById('map-tooltip');
-  const dialog = document.getElementById('map-room-dialog');
-  const dialogTitle = document.getElementById('map-room-title');
-  const dialogState = document.getElementById('map-room-state');
-  const dialogFields = document.getElementById('map-room-fields');
-  const summary = document.getElementById('gingr-summary');
   const mapScroll = document.getElementById('map-scroll');
 
   let recordsByRoom = new Map();
   let sourceState = 'loading';
-  let tooltipRoom = null;
-  let selectedRoom = null;
+  let activeRoom = null;
+  let activation = null;
+  let hideDelay;
   let requestVersion = 0;
 
   const normalizeRoomName = name => name.replace(/\s+/g, '').toUpperCase();
   const roomName = room => room.dataset.room.replace(/([A-Z])(?=\d)/, '$1 ');
   const roomRecord = room => recordsByRoom.get(normalizeRoomName(room.dataset.room));
+  const cleanText = value => typeof value === 'string' ? value.trim() : '';
 
   function roomStatus(record) {
     if (record) return 'Occupied';
@@ -28,63 +24,71 @@
     return sourceState === 'loading' ? 'Checking room status…' : 'Status unavailable';
   }
 
-  function formatDate(unixDate) {
-    if (!unixDate) return '—';
-    const date = new Date(unixDate * 1000);
-    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString();
-  }
-
   function hideTooltip() {
-    tooltipRoom = null;
+    clearTimeout(hideDelay);
+    activeRoom?.classList.remove('is-selected');
+    activeRoom?.removeAttribute('aria-describedby');
+    activeRoom = null;
+    activation = null;
     tooltip.hidden = true;
   }
 
-  function showTooltip(room) {
-    if (dialog.open) return;
-    const record = roomRecord(room);
-    const name = document.createElement('strong');
-    name.textContent = roomName(room);
-    const details = document.createElement('span');
-    details.textContent = record?.a_first || roomStatus(record);
-    tooltip.replaceChildren(name, details);
-    tooltipRoom = room;
-    tooltip.hidden = false;
-
-    const roomRect = room.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const gap = 8;
-    const inset = 12;
-    const left = roomRect.left + (roomRect.width - tooltipRect.width) / 2;
-    const above = roomRect.top - tooltipRect.height - gap;
-    const top = above >= inset ? above : roomRect.bottom + gap;
-    tooltip.style.left = `${Math.max(inset, Math.min(left, window.innerWidth - tooltipRect.width - inset))}px`;
-    tooltip.style.top = `${Math.max(inset, Math.min(top, window.innerHeight - tooltipRect.height - inset))}px`;
+  function queueHide() {
+    clearTimeout(hideDelay);
+    hideDelay = setTimeout(hideTooltip, 140);
   }
 
-  function renderDetails(room) {
-    const record = roomRecord(room);
-    dialogTitle.textContent = roomName(room);
-    dialogState.textContent = roomStatus(record);
-    dialogState.dataset.state = record ? 'occupied' : sourceState;
-    dialogFields.replaceChildren();
-    dialogFields.hidden = !record;
-    if (!record) return;
+  function placeTooltip(room) {
+    const roomBounds = room.getBoundingClientRect();
+    const tooltipBounds = tooltip.getBoundingClientRect();
+    const gap = 6;
+    const inset = 10;
+    const center = roomBounds.left + (roomBounds.width - tooltipBounds.width) / 2;
+    const above = roomBounds.top - tooltipBounds.height - gap;
+    const top = above >= inset ? above : roomBounds.bottom + gap;
+    const maxLeft = document.documentElement.clientWidth - tooltipBounds.width - inset;
+    const maxTop = document.documentElement.clientHeight - tooltipBounds.height - inset;
+    tooltip.style.left = `${Math.max(inset, Math.min(center, maxLeft))}px`;
+    tooltip.style.top = `${Math.max(inset, Math.min(top, maxTop))}px`;
+  }
 
-    const fields = [
-      ['Pet', record.a_first],
-      ['Breed', record.breed_name],
-      ['Owner', record.o_last],
-      ['Type', typeof record.type === 'string' ? record.type.trim() : ''],
-      ['Check-in', formatDate(record.start_date)],
-      ['Check-out', formatDate(record.end_date)]
-    ];
-    for (const [label, value] of fields) {
-      const term = document.createElement('dt');
-      const description = document.createElement('dd');
-      term.textContent = label;
-      description.textContent = value || '—';
-      dialogFields.append(term, description);
+  function renderTooltip(room) {
+    const record = roomRecord(room);
+
+    const label = document.createElement('span');
+    label.className = 'map-tooltip-label';
+    label.textContent = roomName(room);
+
+    const name = document.createElement('strong');
+    name.className = 'map-tooltip-name';
+    name.textContent = cleanText(record?.a_first) || roomStatus(record);
+    tooltip.replaceChildren(label, name);
+
+    if (record) {
+      const breed = cleanText(record.breed_name);
+      const owner = cleanText(record.o_last);
+      const details = [breed, owner && `Owner ${owner}`].filter(Boolean);
+      if (details.length) {
+        const metadata = document.createElement('span');
+        metadata.className = 'map-tooltip-meta';
+        metadata.textContent = details.join(' · ');
+        tooltip.append(metadata);
+      }
     }
+
+    tooltip.dataset.state = record ? 'occupied' : sourceState === 'ready' ? 'available' : sourceState;
+  }
+
+  function showTooltip(room, mode) {
+    if (room !== activeRoom) hideTooltip();
+    clearTimeout(hideDelay);
+    activeRoom = room;
+    activation = mode;
+    renderTooltip(room);
+    tooltip.hidden = false;
+    room.classList.add('is-selected');
+    room.setAttribute('aria-describedby', tooltip.id);
+    placeTooltip(room);
   }
 
   function renderMap() {
@@ -95,14 +99,16 @@
     };
     status.dataset.state = sourceState;
     status.textContent = labels[sourceState];
-    roomLegend.textContent = sourceState === 'ready' ? 'Available' : 'Room';
     for (const room of rooms) {
       const record = roomRecord(room);
+      const pet = cleanText(record?.a_first);
       room.classList.toggle('is-occupied', Boolean(record));
-      room.setAttribute('aria-label', `${roomName(room)}, ${roomStatus(record)}${record?.a_first ? `, ${record.a_first}` : ''}`);
+      room.setAttribute('aria-label', [roomName(room), roomStatus(record), pet].filter(Boolean).join(', '));
     }
-    if (tooltipRoom) showTooltip(tooltipRoom);
-    if (selectedRoom && dialog.open) renderDetails(selectedRoom);
+    if (activeRoom) {
+      renderTooltip(activeRoom);
+      placeTooltip(activeRoom);
+    }
   }
 
   async function fetchRoomData() {
@@ -129,46 +135,34 @@
     renderMap();
   }
 
-  async function fetchSummary() {
-    try {
-      const response = await fetch('http://localhost:8000/reservations?date=2026-01-31');
-      if (!response.ok) return;
-      const { gingr_response: { totals } } = await response.json();
-      document.getElementById('checkins').textContent = totals.check_in_total;
-      document.getElementById('checkouts').textContent = totals.check_out_total;
-      document.getElementById('total').textContent = totals.active_total;
-      summary.hidden = false;
-    } catch {
-      summary.hidden = true;
-    }
-  }
-
   for (const room of rooms) {
     room.addEventListener('pointerenter', event => {
-      if (event.pointerType !== 'touch') showTooltip(room);
+      if (event.pointerType !== 'touch') showTooltip(room, 'hover');
     });
     room.addEventListener('pointerleave', () => {
-      if (tooltipRoom === room) hideTooltip();
+      if (activeRoom === room && activation === 'hover') queueHide();
     });
     room.addEventListener('focus', () => {
-      if (room.matches(':focus-visible')) showTooltip(room);
+      if (room.matches(':focus-visible')) showTooltip(room, 'focus');
     });
     room.addEventListener('blur', () => {
-      if (tooltipRoom === room) hideTooltip();
+      if (activeRoom === room && activation !== 'hover') hideTooltip();
     });
-    room.addEventListener('click', () => {
-      hideTooltip();
-      selectedRoom = room;
-      room.classList.add('is-selected');
-      renderDetails(room);
-      dialog.showModal();
+    room.addEventListener('click', event => {
+      if (activeRoom !== room) {
+        showTooltip(room, 'activated');
+      } else if (event.pointerType !== 'mouse') {
+        hideTooltip();
+      }
     });
   }
 
-  document.getElementById('map-room-close').addEventListener('click', () => dialog.close());
-  dialog.addEventListener('close', () => {
-    selectedRoom?.classList.remove('is-selected');
-    selectedRoom = null;
+  tooltip.addEventListener('pointerenter', () => clearTimeout(hideDelay));
+  tooltip.addEventListener('pointerleave', () => {
+    if (activation === 'hover') queueHide();
+  });
+  document.addEventListener('pointerdown', event => {
+    if (!activeRoom?.contains(event.target) && !tooltip.contains(event.target)) hideTooltip();
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') hideTooltip();
@@ -179,6 +173,5 @@
 
   renderMap();
   void fetchRoomData();
-  void fetchSummary();
   setInterval(fetchRoomData, 30000);
 })();
