@@ -44,7 +44,18 @@
     button.type = 'button';
     button.dataset.room = id;
     const label = id.replace(/([A-Z])(?=\d)/, '$1 ');
-    button.textContent = box.width < 100 ? label.replace(' ', '\u2009') : label;
+    if (box.width < 100) {
+      const compactLabel = document.createElement('span');
+      compactLabel.className = 'map-compact-label';
+      for (const part of label.split(' ')) {
+        const text = document.createElement('span');
+        text.textContent = part;
+        compactLabel.append(text);
+      }
+      button.append(compactLabel);
+    } else {
+      button.textContent = label;
+    }
     button.setAttribute('aria-label', `${label}, checking room status`);
     place(button, box, zone.box);
     zone.element.append(button);
