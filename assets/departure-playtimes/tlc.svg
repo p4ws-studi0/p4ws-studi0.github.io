@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TLC care">
+  <g fill="#7b4b00" stroke="none">
+    <path d="M8 23 15 10a3 3 0 0 1 2.6-1.5H30V23Zm26-14.5h12.4A3 3 0 0 1 49 10l7 13H34Z"/>
+    <path d="M8 27h48v27a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4Z"/>
+  </g>
+  <path fill="#fff" stroke="none" d="M32 51 23.3 43a6.5 6.5 0 0 1 8.7-9.6 6.5 6.5 0 0 1 8.7 9.6Z"/>
+</svg>

@@ -812,7 +812,7 @@ document.addEventListener('click', e => {
 })
 
 // Shared security code reuses this exact Supabase client and loads before navigation.
-const HQ_ASSET_VERSION = '20261026a'
+const HQ_ASSET_VERSION = '20261124a'
 let hqSecurityAssets = null
 
 function loadHqSharedScript(path, globalName) {

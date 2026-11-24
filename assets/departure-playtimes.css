@@ -1,0 +1,281 @@
+/* Departure playtimes: the approved roster finish, scoped to this page. */
+body.paws-departure-page {margin:0;min-height:100vh;background:#f5f7fa;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased;}
+.dark body.paws-departure-page {background:#14171c;}
+#departurePlaytimesPage {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: light;
+  --canvas: #f5f7fa;
+  --surface: #ffffff;
+  --soft: #f5f7fa;
+  --text: #1b283b;
+  --muted: #606e81;
+  --line: #e5eaf0;
+  --control-line: #d7dfe9;
+  --hover: #f8faff;
+  --accent: #456fbe;
+  --accent-soft: #eef3fd;
+  --accent-text: #365d9e;
+  --amber: #8b5a13;
+  --amber-soft: #fff8eb;
+  --amber-line: #e8c68d;
+  --skip-text: #994954;
+  --skip-soft: #fff4f5;
+  --skip-line: #ebc4c9;
+  --skip-rail: #d59ba4;
+  --skip-badge: #f9e6e9;
+  --shadow: 0 2px 5px #23304a03, 0 16px 48px #23304a05;
+}
+.dark #departurePlaytimesPage {
+  color-scheme: dark;
+  --canvas: #14171c;
+  --surface: #1e232b;
+  --soft: #262c35;
+  --text: #f0f3f8;
+  --muted: #b4becc;
+  --line: #323a46;
+  --control-line: #465160;
+  --hover: #242b36;
+  --accent: #a7bff0;
+  --accent-soft: #2c3b56;
+  --accent-text: #c0d2f5;
+  --amber: #f2cf8e;
+  --amber-soft: #332b1e;
+  --amber-line: #745c32;
+  --skip-text: #eeb5be;
+  --skip-soft: #302329;
+  --skip-line: #71505a;
+  --skip-rail: #ad7480;
+  --skip-badge: #4a3039;
+  --shadow: 0 2px 5px #0000000c, 0 18px 48px #00000016;
+}
+#departurePlaytimesPage * { box-sizing: border-box; }
+#departurePlaytimesPage button, #departurePlaytimesPage input, #departurePlaytimesPage select, #departurePlaytimesPage textarea { font: inherit; }
+#departurePlaytimesPage button, #departurePlaytimesPage summary { cursor: pointer; }
+#departurePlaytimesPage button { color: inherit; }
+#departurePlaytimesPage a { color: inherit; }
+#departurePlaytimesPage svg { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#departurePlaytimesPage [hidden] { display: none !important; }
+#departurePlaytimesPage button, #departurePlaytimesPage a, #departurePlaytimesPage summary, #departurePlaytimesPage input, #departurePlaytimesPage textarea, #departurePlaytimesPage select { -webkit-tap-highlight-color: transparent; }
+#departurePlaytimesPage button:focus-visible, #departurePlaytimesPage a:focus-visible, #departurePlaytimesPage summary:focus-visible { outline: 3px solid #8aa8e8; outline-offset: 3px; }
+#departurePlaytimesPage input:focus-visible, #departurePlaytimesPage textarea:focus-visible, #departurePlaytimesPage select:focus-visible { outline: 2px solid #8aa8e8; outline-offset: 2px; }
+#departurePlaytimesPage button:disabled { cursor: wait; opacity: .5; }
+#departurePlaytimesPage button { transition: background .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease; }
+#departurePlaytimesPage { max-width: 1120px; margin: 29px auto 0; padding-bottom: 100px; }
+#departurePlaytimesPage .heading { display: flex; align-items: center; justify-content: space-between; gap: 28px; margin: 0 2px 28px; }
+#departurePlaytimesPage h1 { margin: 0; font-size: 34px; font-weight: 750; line-height: 1.14; letter-spacing: -.048em; }
+#departurePlaytimesPage .intro { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+#departurePlaytimesPage .day { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; text-align: right; flex-shrink: 0; }
+#departurePlaytimesPage .day strong { font-size: 13px; font-weight: 600; line-height: 1.5; }
+#departurePlaytimesPage .day > span { font-size: 11px; color: var(--muted); }
+#departurePlaytimesPage .board { background: var(--surface); border: 1px solid var(--line); border-radius: 17px; box-shadow: var(--shadow); overflow: visible; }
+#departurePlaytimesPage .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 22px; border-bottom: 1px solid var(--line); border-radius: 17px 17px 0 0; }
+#departurePlaytimesPage .list-heading h2 { display: flex; align-items: center; gap: 9px; margin: 0; font-size: 14px; font-weight: 650; letter-spacing: -.018em; line-height: 1.4; white-space: nowrap; }
+#departurePlaytimesPage .list-heading h2 > span { display: inline-grid; place-items: center; min-width: 25px; min-height: 24px; padding: 3px 7px; border-radius: 7px; background: var(--soft); color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: 0; }
+#departurePlaytimesPage .tools { display: flex; align-items: center; gap: 8px; }
+#departurePlaytimesPage .search { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; background: var(--soft); border: 1px solid transparent; border-radius: 10px; color: var(--muted); }
+#departurePlaytimesPage .search:focus-within { border-color: #a6bce8; box-shadow: 0 0 0 3px #789de412; background: var(--surface); }
+#departurePlaytimesPage .search svg { width: 16px; height: 16px; }
+#departurePlaytimesPage .search input { width: 155px; min-width: 0; padding: 10px 0; border: 0; outline: none; background: transparent; color: var(--text); font-size: 12px; }
+#departurePlaytimesPage .search input:focus-visible { outline: none; }
+#departurePlaytimesPage .search input::placeholder { color: var(--muted); opacity: 1; }
+#departurePlaytimesPage .icon-button { width: 44px; height: 44px; display: inline-grid; place-items: center; padding: 0; border: 1px solid var(--control-line); border-radius: 10px; background: var(--surface); color: var(--muted); }
+#departurePlaytimesPage .icon-button:hover { background: var(--hover); color: var(--text); }
+#departurePlaytimesPage .type-filter { position: relative; flex-shrink: 0; }
+#departurePlaytimesPage .type-filter-toggle { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--control-line); border-radius: 10px; background: var(--surface); color: var(--text); font-size: 12px; font-weight: 600; white-space: nowrap; }
+#departurePlaytimesPage .type-filter-toggle > svg { width: 14px; height: 14px; color: var(--muted); }
+#departurePlaytimesPage .type-filter-toggle:hover { background: var(--hover); }
+#departurePlaytimesPage .type-filter-toggle.is-filtered { background: var(--accent-soft); border-color: #a7bce4; color: var(--accent-text); }
+#departurePlaytimesPage .type-filter-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: 208px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 13px; box-shadow: 0 5px 14px #17243d09, 0 20px 45px #17243d20; animation: dp-menu-in .12s ease-out; }
+#departurePlaytimesPage .type-filter-menu > button { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px; padding: 8px 11px; border: 0; border-radius: 8px; background: transparent; text-align: left; font-size: 13px; font-weight: 550; }
+#departurePlaytimesPage .type-filter-menu > button:hover { background: var(--hover); }
+#departurePlaytimesPage .type-filter-menu > button[aria-checked="true"] { background: var(--accent-soft); color: var(--accent-text); }
+#departurePlaytimesPage .type-filter-menu img { width: 28px; height: 28px; padding: 3px; background: #fff; border-radius: 7px; }
+#departurePlaytimesPage .type-filter-menu svg { width: 28px; height: 28px; padding: 4px; }
+#departurePlaytimesPage .filter-check { margin-left: auto; opacity: 0; color: var(--accent); font-size: 13px; font-weight: 700; }
+#departurePlaytimesPage [aria-checked="true"] > .filter-check { opacity: 1; }
+#departurePlaytimesPage #departures { border-radius: 0; }
+#departurePlaytimesPage .departure { display: grid; grid-template-columns: minmax(225px, .82fr) minmax(0, 1.5fr); gap: 30px; padding: 18px 22px; border-bottom: 1px solid var(--line); transition: background .14s ease; }
+#departurePlaytimesPage .departure:hover { background: var(--hover); }
+#departurePlaytimesPage .pet { display: flex; align-items: flex-start; align-self: start; gap: 13px; padding-top: 7px; min-width: 0; }
+#departurePlaytimesPage .pet-details { min-width: 0; }
+#departurePlaytimesPage .pet-name { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.45; letter-spacing: -.025em; overflow-wrap: anywhere; }
+#departurePlaytimesPage .pet-owner { font-size: 13px; font-weight: 450; color: var(--muted); letter-spacing: -.01em; }
+#departurePlaytimesPage .care-badges { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; }
+#departurePlaytimesPage .care-badge { display: grid; place-items: center; width: 48px; height: 48px; background: #fff; border: 1px solid #e4e7ed; border-radius: 13px; box-shadow: 0 2px 3px #24334e04; }
+#departurePlaytimesPage .care-badge img { display: block; width: 35px; height: 35px; }
+.dark #departurePlaytimesPage .care-badge { background: #f6f6f7; border-color: #e4e5e8; }
+#departurePlaytimesPage .departure-time { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 5px; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.6; }
+#departurePlaytimesPage .departure-time svg { width: 13px; height: 13px; }
+#departurePlaytimesPage .departed { display: inline-block; margin-left: 2px; padding: 1px 5px; background: var(--soft); border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-size: 9px; font-weight: 500; line-height: 1.55; white-space: nowrap; }
+#departurePlaytimesPage .services { min-width: 0; }
+#departurePlaytimesPage .service { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; min-height: 70px; }
+#departurePlaytimesPage .service + .service { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--line); }
+#departurePlaytimesPage .service-main { min-width: 0; padding-block: 3px; }
+#departurePlaytimesPage .service-name { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.5; letter-spacing: -.015em; overflow-wrap: anywhere; }
+#departurePlaytimesPage .service-status { margin-top: 6px; }
+#departurePlaytimesPage .status { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 500; line-height: 1.5; }
+#departurePlaytimesPage .status::before { content: ''; width: 5px; height: 5px; flex-shrink: 0; background: #7c9ddd; border-radius: 50%; }
+#departurePlaytimesPage .service-action { min-width: 130px; text-align: right; }
+#departurePlaytimesPage .skip-button { min-width: 130px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--control-line); border-radius: 9px; background: var(--surface); color: #657184; font-size: 12px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+#departurePlaytimesPage .skip-button:hover { color: var(--skip-text); background: var(--skip-soft); border-color: var(--skip-line); }
+.dark #departurePlaytimesPage .skip-button { color: var(--muted); }
+.dark #departurePlaytimesPage .skip-button:hover { color: var(--skip-text); background: var(--skip-soft); border-color: var(--skip-line); }
+#departurePlaytimesPage .note-editor { grid-column: 1 / -1; min-width: 0; margin-top: -2px; }
+#departurePlaytimesPage .note-input { display: block; width: 100%; min-height: 44px; max-height: 160px; resize: vertical; overflow-y: auto; padding: 10px 12px; border: 1px solid var(--control-line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 14px; line-height: 1.5; transition: background .14s ease, border-color .14s ease, box-shadow .14s ease; }
+#departurePlaytimesPage .note-input::placeholder { color: var(--muted); }
+#departurePlaytimesPage .note-input:placeholder-shown:not(:focus) { background: #f0f2f5; border-color: #d9dee6; }
+.dark #departurePlaytimesPage .note-input:placeholder-shown:not(:focus) { background: #292e36; border-color: #414955; }
+#departurePlaytimesPage .note-input:hover { border-color: #a7b7ce; }
+#departurePlaytimesPage .note-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); outline: none; }
+#departurePlaytimesPage .note-input[readonly] { background: var(--soft); }
+#departurePlaytimesPage .note-feedback { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 18px; padding: 3px 2px 0; }
+#departurePlaytimesPage .note-meta { font-size: 10px; line-height: 1.5; color: var(--muted); }
+#departurePlaytimesPage .note-recovery { display: flex; gap: 12px; }
+#departurePlaytimesPage .note-recovery > button { padding: 2px 0; border: 0; background: transparent; color: var(--accent-text); font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+#departurePlaytimesPage .note-error { margin: 5px 2px 0; font-size: 12px; line-height: 1.5; color: #a74444; }
+#departurePlaytimesPage .has-error .note-input { border-color: var(--skip-line); }
+.dark #departurePlaytimesPage .note-error { color: #f1a9a9; }
+#departurePlaytimesPage .notice { margin: 16px 22px 0px; padding: 12px 14px; border: 1px solid var(--amber-line); border-radius: 9px; color: var(--amber); background: var(--amber-soft); font-size: 12px; line-height: 1.6; }
+#departurePlaytimesPage .skipped-notice { display: flex; align-items: center; gap: 9px; margin: 16px 22px 0px; padding: 12px 14px; border: 1px solid var(--skip-line); border-radius: 9px; color: var(--skip-text); background: var(--skip-soft); font-size: 12px; line-height: 1.5; }
+#departurePlaytimesPage .skipped-notice > svg { width: 17px; height: 17px; }
+#departurePlaytimesPage .skipped-notice strong { font-weight: 600; }
+#departurePlaytimesPage .notice:not([hidden]) + .skipped-notice, #departurePlaytimesPage .skipped-notice:not([hidden]) + #departures { margin-top: 12px; }
+#departurePlaytimesPage .departure.has-skipped { background: var(--skip-soft); box-shadow: inset 3px 0 var(--skip-rail); }
+#departurePlaytimesPage .departure.has-skipped:hover { background: var(--skip-soft); }
+#departurePlaytimesPage .is-skipped .status { padding: 3px 7px; border-radius: 5px; background: var(--skip-badge); color: var(--skip-text); font-weight: 600; }
+#departurePlaytimesPage .is-skipped .status::before { background: var(--skip-rail); }
+#departurePlaytimesPage .is-skipped .skip-button { color: rgb(255, 255, 255); background: rgb(69, 111, 190); border-color: rgb(69, 111, 190); }
+#departurePlaytimesPage .is-skipped .skip-button:hover { background: rgb(54, 93, 158); border-color: rgb(54, 93, 158); }
+.dark #departurePlaytimesPage .is-skipped .status { color: var(--skip-text); background: var(--skip-badge); }
+.dark #departurePlaytimesPage .is-skipped .skip-button { color: rgb(23, 36, 62); background: rgb(167, 191, 240); border-color: rgb(167, 191, 240); }
+.dark #departurePlaytimesPage .is-skipped .skip-button:hover { background: rgb(187, 206, 244); }
+#departurePlaytimesPage .no-services { display: flex; align-items: center; min-height: 34px; color: var(--muted); font-size: 12px; }
+#departurePlaytimesPage .board-foot { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 22px; border-radius: 0px 0px 17px 17px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+#departurePlaytimesPage .auto-note { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+#departurePlaytimesPage .auto-note > span { width: 5px; height: 5px; border-radius: 50%; background: rgb(117, 165, 139); }
+#departurePlaytimesPage .below-board { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin: 17px 2px 22px; }
+#departurePlaytimesPage .below-board > p { max-width: 620px; margin: 0px; color: var(--muted); font-size: 11px; line-height: 1.7; text-align: right; }
+#departurePlaytimesPage .quiet-button { display: inline-flex; align-items: center; gap: 7px; min-height: 28px; padding: 2px 0px; border: 0px; background: none; color: var(--muted); font-size: 11px; font-weight: 550; white-space: nowrap; }
+#departurePlaytimesPage .quiet-button > svg { width: 14px; height: 14px; }
+#departurePlaytimesPage .quiet-button:hover { color: var(--accent); }
+#departurePlaytimesPage .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 54px 24px; text-align: center; color: var(--muted); font-size: 13px; }
+#departurePlaytimesPage .empty h2 { margin: 0px 0px 3px; color: var(--text); font-size: 17px; font-weight: 650; }
+#departurePlaytimesPage .empty p { margin: 3px 0px; line-height: 1.7; }
+#departurePlaytimesPage .loading-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: 1s ease-in-out 0s infinite normal none running dp-pulse; }
+#departurePlaytimesPage .toast { position: fixed; z-index: 60; bottom: 73px; left: 50%; max-width: calc(-32px + 100vw); width: max-content; transform: translateX(-50%); padding: 11px 16px; border-radius: 10px; background: var(--text); color: var(--canvas); box-shadow: rgba(0, 0, 0, 0.125) 0px 7px 30px; font-size: 12px; line-height: 1.5; }
+#departurePlaytimesPage dialog { width: min(590px, -28px + 100vw); max-height: min(650px, 85vh); padding: 25px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--text); box-shadow: rgba(0, 0, 0, 0.19) 0px 20px 90px; }
+#departurePlaytimesPage dialog::backdrop { background: rgba(18, 32, 56, 0.333); backdrop-filter: blur(4px); }
+#departurePlaytimesPage .dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+#departurePlaytimesPage .dialog-heading h2 { margin: 0px; font-size: 24px; font-weight: 700; letter-spacing: -0.04em; }
+#departurePlaytimesPage .dialog-note { margin: 17px 0px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+#departurePlaytimesPage #historyList { margin: 0px; padding: 0px; list-style: none; }
+#departurePlaytimesPage #historyList li { display: grid; grid-template-columns: 28px minmax(0px, 1fr); gap: 10px; padding: 15px 0px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.6; }
+#departurePlaytimesPage #historyList li > span:first-child { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--line); border-radius: 7px; background: var(--soft); }
+#departurePlaytimesPage #historyList small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+#departurePlaytimesPage #historyList strong { font-weight: 650; }
+#departurePlaytimesPage .audit-note { margin: 7px 0px 2px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+@keyframes dp-pulse { 
+  50% { opacity: 0.35; }
+}
+@keyframes dp-menu-in { 
+  0% { opacity: 0; transform: translateY(-4px); }
+  100% { opacity: 1; transform: translateY(0px); }
+}
+@media (max-width: 1190px) {
+#departurePlaytimesPage { margin-left: 32px; margin-right: 32px; }
+}
+@media (max-width: 850px) {
+#departurePlaytimesPage .heading { margin-bottom: 23px; }
+#departurePlaytimesPage h1 { font-size: 31px; }
+#departurePlaytimesPage .intro { font-size: 13px; }
+#departurePlaytimesPage .toolbar { gap: 12px; padding: 16px 18px; }
+#departurePlaytimesPage .search input { width: 120px; }
+#departurePlaytimesPage .departure { grid-template-columns: minmax(210px, 0.85fr) minmax(0px, 1.5fr); gap: 22px; padding: 17px 18px; }
+#departurePlaytimesPage .pet { gap: 11px; }
+#departurePlaytimesPage .care-badge { width: 44px; height: 44px; border-radius: 12px; }
+#departurePlaytimesPage .care-badge > img { width: 32px; height: 32px; }
+#departurePlaytimesPage .pet-name { font-size: 16px; }
+#departurePlaytimesPage .pet-owner { font-size: 12px; }
+#departurePlaytimesPage .departure-time { font-size: 11px; }
+#departurePlaytimesPage .service { column-gap: 16px; }
+#departurePlaytimesPage .service-name { font-size: 14px; }
+#departurePlaytimesPage .service-action, #departurePlaytimesPage .skip-button { min-width: 123px; }
+#departurePlaytimesPage .skip-button { padding-inline: 10px; font-size: 11px; }
+#departurePlaytimesPage .board-foot { padding-inline: 18px; }
+#departurePlaytimesPage .notice, #departurePlaytimesPage .skipped-notice { margin-inline: 18px; }
+}
+@media (max-width: 740px) {
+#departurePlaytimesPage { margin-left: 20px; margin-right: 20px; }
+#departurePlaytimesPage { margin-top: 24px; }
+#departurePlaytimesPage .heading { gap: 16px; align-items: flex-start; }
+#departurePlaytimesPage h1 { font-size: 30px; }
+#departurePlaytimesPage .day { max-width: 110px; padding-top: 2px; }
+#departurePlaytimesPage .day strong { font-size: 11px; }
+#departurePlaytimesPage .day > span { font-size: 10px; }
+#departurePlaytimesPage .departure { grid-template-columns: 1fr; gap: 15px; padding: 18px; }
+#departurePlaytimesPage .pet { padding-top: 0; align-items: center; }
+#departurePlaytimesPage .pet-name { font-size: 17px; }
+#departurePlaytimesPage .pet-owner { font-size: 13px; }
+#departurePlaytimesPage .departure-time { font-size: 12px; }
+#departurePlaytimesPage .service { min-height: 68px; column-gap: 18px; }
+#departurePlaytimesPage .service-name { font-size: 15px; }
+#departurePlaytimesPage .service-status { margin-top: 5px; }
+#departurePlaytimesPage .status { font-size: 12px; }
+#departurePlaytimesPage .service-action, #departurePlaytimesPage .skip-button { min-width: 130px; }
+#departurePlaytimesPage .skip-button { font-size: 12px; }
+#departurePlaytimesPage .note-input { font-size: 16px; }
+#departurePlaytimesPage .below-board { gap: 15px; flex-wrap: wrap; }
+#departurePlaytimesPage .below-board > p { text-align: left; max-width: none; }
+}
+@media (max-width: 680px) {
+#departurePlaytimesPage .toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 16px 18px; }
+#departurePlaytimesPage .list-heading { grid-row: 1; grid-column: 1; }
+#departurePlaytimesPage .tools { display: contents; }
+#departurePlaytimesPage .search { grid-row: 2; grid-column: 1; width: 100%; min-width: 0; }
+#departurePlaytimesPage .search input { width: 100%; font-size: 13px; }
+#departurePlaytimesPage .type-filter { grid-row: 2; grid-column: 2; }
+#departurePlaytimesPage #refresh { grid-row: 1; grid-column: 2; justify-self: end; width: 44px; height: 44px; border: 0; background: var(--soft); border-radius: 8px; }
+#departurePlaytimesPage #refresh svg { width: 16px; height: 16px; }
+#departurePlaytimesPage .type-filter-menu { right: 0; }
+}
+@media (max-width: 440px) {
+#departurePlaytimesPage { margin-left: 15px; margin-right: 15px; }
+#departurePlaytimesPage { margin-top: 25px; }
+#departurePlaytimesPage .heading { flex-wrap: wrap; gap: 13px; margin: 0 2px 23px; }
+#departurePlaytimesPage h1 { font-size: 29px; letter-spacing: -.05em; }
+#departurePlaytimesPage .intro { font-size: 12px; margin-top: 9px; }
+#departurePlaytimesPage .day { flex-direction: row; align-items: center; max-width: none; gap: 8px; padding-top: 0; }
+#departurePlaytimesPage .day strong { font-size: 11px; }
+#departurePlaytimesPage .day > span { font-size: 10px; }
+#departurePlaytimesPage .board { border-radius: 14px; }
+#departurePlaytimesPage .toolbar { border-radius: 14px 14px 0 0; padding: 13px 15px; gap: 10px; }
+#departurePlaytimesPage .list-heading h2 { font-size: 13px; }
+#departurePlaytimesPage .type-filter-toggle { padding-inline: 10px; font-size: 11px; }
+#departurePlaytimesPage .type-filter-menu { width: 200px; }
+#departurePlaytimesPage .search { padding-inline: 10px; }
+#departurePlaytimesPage .departure { padding: 17px 15px; gap: 13px; }
+#departurePlaytimesPage .care-badge { width: 43px; height: 43px; }
+#departurePlaytimesPage .care-badge > img { width: 32px; height: 32px; }
+#departurePlaytimesPage .pet { gap: 11px; }
+#departurePlaytimesPage .service { column-gap: 11px; }
+#departurePlaytimesPage .service-action, #departurePlaytimesPage .skip-button { min-width: 125px; }
+#departurePlaytimesPage .skip-button { font-size: 12px; padding-inline: 10px; }
+#departurePlaytimesPage .notice, #departurePlaytimesPage .skipped-notice { margin-inline: 15px; padding: 11px 12px; font-size: 11px; }
+#departurePlaytimesPage .board-foot { padding: 13px 15px; font-size: 9px; }
+#departurePlaytimesPage .empty { padding-block: 42px; }
+#departurePlaytimesPage .below-board > p { font-size: 10px; }
+#departurePlaytimesPage .quiet-button { font-size: 11px; }
+#departurePlaytimesPage dialog { padding: 20px; }
+#departurePlaytimesPage .dialog-heading h2 { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+#departurePlaytimesPage *, #departurePlaytimesPage *::before, #departurePlaytimesPage *::after { animation: none !important; transition: none !important; }
+}
+#departurePlaytimesPage {flex:1;min-width:0;font-size:14px;color:var(--text);overflow:visible;}
+#departurePlaytimesPage .previous-drafts {margin:18px 2px;padding:14px;border:1px solid var(--amber-line);border-radius:9px;background:var(--amber-soft);color:var(--text);font-size:12px;line-height:1.6;}
+#departurePlaytimesPage .previous-drafts summary {font-weight:600;color:var(--amber);cursor:pointer;}
+#departurePlaytimesPage .previous-drafts p {color:var(--muted);margin:9px 0;}
+#departurePlaytimesPage .previous-draft {margin-top:12px;}
+#departurePlaytimesPage .previous-draft label {display:block;margin-bottom:5px;font-weight:600;}
+#departurePlaytimesPage .previous-draft textarea {display:block;width:100%;min-height:66px;padding:9px;border:1px solid var(--control-line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;}
+#departurePlaytimesPage .previous-draft button {margin-top:5px;padding:5px 0;border:0;background:none;color:var(--accent-text);font:inherit;text-decoration:underline;text-underline-offset:3px;}

@@ -14,3 +14,7 @@ entrypoint = "./functions/hq-slack-access-sync/index.ts"
 [functions.hq-workspace-access]
 verify_jwt = true
 entrypoint = "./functions/hq-workspace-access/index.ts"
+
+[functions.hq-departure-playtimes]
+verify_jwt = true
+entrypoint = "./functions/hq-departure-playtimes/index.ts"

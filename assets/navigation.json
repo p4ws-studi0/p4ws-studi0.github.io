@@ -1275,6 +1275,24 @@
       ]
     },
     {
+      "id": "departure-playtimes",
+      "href": "/departure-playtimes",
+      "title": "Departure Playtimes",
+      "category": "Pet Care & Training",
+      "kind": "page",
+      "iconKey": "calendar",
+      "aliases": [
+        "departures",
+        "departing pets",
+        "departing dogs",
+        "boarding checkouts",
+        "checkout playtimes",
+        "playtime tracking",
+        "skipped playtimes",
+        "boarding activities"
+      ]
+    },
+    {
       "id": "potential-training-clients",
       "href": "/potential-training-clients",
       "title": "Potential Training Clients",

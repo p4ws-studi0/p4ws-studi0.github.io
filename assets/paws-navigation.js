@@ -52,6 +52,7 @@
     '/': ['home','accent'], '/kb/': ['book','blue'],
     '/occupied-runs': ['runs','blue'], '/end-of-day': ['close','rose'], '/tours': ['calendar','violet'],
     '/training': ['training','amber'], '/potential-training-clients': ['people','amber'],
+    '/departure-playtimes': ['calendar','green'],
     '/follow-up-calls': ['phone','green'], '/grooming-price-list': ['grooming','violet'],
     '/boarding-base-rates': ['price','accent'], '/gift-cards': ['gift','rose'],
     '/marketing-initiatives': ['megaphone','amber'], '/dog-licenses': ['shield','blue'],

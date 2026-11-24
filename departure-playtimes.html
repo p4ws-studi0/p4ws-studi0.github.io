@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark">
+  <script src="/assets/clean-urls.js?v=20261017f"></script>
+  <link rel="stylesheet" href="/assets/page-transition.css?v=20261017c">
+  <script src="/assets/page-transition-bootstrap.js?v=20261017f"></script>
+  <title>Departure playtimes · Paws HQ</title><link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;750;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script><script>tailwind.config={darkMode:'class'}</script>
+  <link rel="stylesheet" href="/assets/departure-playtimes.css?v=20261124a">
+</head>
+<body class="paws-departure-page">
+  <div id="header"></div>
+  <div class="pt-16 flex">
+    <aside id="sideMenu" class="fixed z-30 w-64 h-screen bg-white/10 dark:bg-white/10 glass border-r border-white/10 -translate-x-full pt-6 px-5" aria-label="Main navigation"></aside>
+    <main id="departurePlaytimesPage">
+    <header class="heading"><div><h1>Departure playtimes</h1><p class="intro">Only mark a playtime skipped if it didn’t happen.</p></div><div class="day"><strong id="dayLabel">Today</strong><span>Eastern time</span></div></header>
+    <section class="board" aria-label="Departure playtimes">
+      <div class="toolbar"><div class="list-heading"><h2>Boarding departures <span id="allBadge">—</span></h2></div><div class="tools"><label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input id="search" type="search" placeholder="Find a pet…" aria-label="Find a pet or playtime"></label><div class="type-filter"><button id="careFilterToggle" class="type-filter-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="careFilterMenu"><span id="careFilterLabel">Filter by</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></button><div class="type-filter-menu" id="careFilterMenu" role="menu" aria-label="Filter by care type" hidden><button type="button" role="menuitemradio" aria-checked="true" id="careFilterAll" data-care-filter="all"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>All types</span><span class="filter-check" aria-hidden="true">✓</span></button><button type="button" role="menuitemradio" aria-checked="false" id="careFilterTlc" data-care-filter="tlc"><img src="/assets/departure-playtimes/tlc.svg" alt="" width="26" height="26"><span>TLC</span><span class="filter-check" aria-hidden="true">✓</span></button><button type="button" role="menuitemradio" aria-checked="false" id="careFilterPuppy" data-care-filter="puppy"><img src="/assets/departure-playtimes/puppy.svg" alt="" width="26" height="26"><span>Puppy</span><span class="filter-check" aria-hidden="true">✓</span></button><button type="button" role="menuitemradio" aria-checked="false" id="careFilterBronze" data-care-filter="bronze"><img src="/assets/departure-playtimes/bronze.svg" alt="" width="26" height="26"><span>Bronze</span><span class="filter-check" aria-hidden="true">✓</span></button><button type="button" role="menuitemradio" aria-checked="false" id="careFilterSilver" data-care-filter="silver"><img src="/assets/departure-playtimes/silver.svg" alt="" width="26" height="26"><span>Silver</span><span class="filter-check" aria-hidden="true">✓</span></button><button type="button" role="menuitemradio" aria-checked="false" id="careFilterGold" data-care-filter="gold"><img src="/assets/departure-playtimes/gold.svg" alt="" width="26" height="26"><span>Gold</span><span class="filter-check" aria-hidden="true">✓</span></button></div></div><button class="icon-button" id="refresh" type="button" aria-label="Refresh schedule" title="Refresh schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg></button></div></div>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <div id="skippedNotice" class="skipped-notice" role="status" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5M12 17h.01"/></svg><strong id="skippedNoticeText"></strong></div>
+      <div id="departures" aria-busy="true"><div class="empty"><span class="loading-dot"></span><p>Loading today’s departures…</p></div></div>
+      <div class="board-foot"><span id="syncStatus">Loading today’s schedule…</span><span class="auto-note"><span></span>Updates automatically</span></div>
+    </section>
+    <div class="below-board"><button type="button" id="historyOpen" class="quiet-button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 3 7M3 5v6h6M12 7v5l3 2"/></svg>Recent changes</button><p>On today’s plan means scheduled, not independently verified. Just update anything that didn’t happen.</p></div>
+    <details id="previousDrafts" class="previous-drafts" hidden><summary>Notes kept from an earlier date</summary><p>Copy any text you still need. These drafts won’t be added to today’s schedule.</p><div id="previousDraftList"></div></details>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <dialog id="historyDialog" aria-labelledby="historyTitle"><div class="dialog-heading"><h2 id="historyTitle">Recent changes</h2><button id="historyClose" class="icon-button" type="button" aria-label="Close recent changes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div><p class="dialog-note">Notes, skipped playtimes, and who updated them.</p><ol id="historyList"></ol></dialog>
+    <noscript><p>Please enable JavaScript to view departure playtimes.</p></noscript>
+    </main>
+  </div>
+  <div id="footer"></div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/script.js?v=20261025b"></script>
+  <script>
+    for(const [id,file] of [['header','header'],['sideMenu','sidebar'],['footer','footer']])fetch(`/partials/${file}.html`).then(response=>{if(!response.ok)throw new Error('Could not load '+file);return response.text()}).then(html=>{document.getElementById(id).innerHTML=html;if(id==='header')document.dispatchEvent(new Event('header:ready'));}).catch(error=>console.warn(error.message));
+  </script>
+  <script src="/assets/departure-playtimes.js?v=20261124a" defer></script>
+</body>
+</html>
